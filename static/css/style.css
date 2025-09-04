@@ -956,6 +956,51 @@ body {
     border: 1px solid var(--border-light);
 }
 
+.player-result {
+    width: 100%;
+}
+
+.player-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: var(--spacing-2);
+}
+
+.player-name {
+    font-weight: 600;
+    font-size: var(--font-size-base);
+    color: var(--gray-900);
+}
+
+.round-points {
+    font-weight: 600;
+    color: var(--success-color);
+    font-size: var(--font-size-lg);
+}
+
+.player-details {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-1);
+    font-size: var(--font-size-sm);
+    color: var(--gray-600);
+}
+
+.vote-info {
+    font-weight: 500;
+    color: var(--gray-700);
+}
+
+.votes-received {
+    color: var(--gray-600);
+}
+
+.scoring-breakdown {
+    color: var(--gray-600);
+    font-style: italic;
+}
+
 .score-change {
     font-weight: 600;
     color: var(--success-color);

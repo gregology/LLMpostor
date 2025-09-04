@@ -1021,25 +1021,65 @@ class LLMposterGameClient {
             `;
         }
         
-        // Display round scores
-        if (this.elements.roundScoresList && results.player_scores) {
+        // Display enhanced round scores
+        if (this.elements.roundScoresList && results.player_results) {
             this.elements.roundScoresList.innerHTML = '';
             
-            Object.entries(results.player_scores).forEach(([playerName, scoreData]) => {
+            // Convert player_results to array and sort by round_points (descending)
+            const playerArray = Object.values(results.player_results)
+                .sort((a, b) => b.round_points - a.round_points);
+            
+            playerArray.forEach((player) => {
                 const scoreItem = document.createElement('div');
                 scoreItem.className = 'score-item';
+                
+                // Determine what they voted for
+                let votedForText = '';
+                if (player.guess_target !== null && player.guess_target !== undefined) {
+                    if (player.guess_target === results.llm_response_index) {
+                        votedForText = 'Voted: 🤖 (AI)';
+                    } else {
+                        // Find who they voted for
+                        const votedResponse = results.responses[player.guess_target];
+                        if (votedResponse && votedResponse.author_name) {
+                            votedForText = `Voted: ${this.escapeHtml(votedResponse.author_name)}`;
+                        } else {
+                            votedForText = 'Voted: Unknown';
+                        }
+                    }
+                } else {
+                    votedForText = 'No vote';
+                }
+                
+                // Build scoring breakdown
+                const scoringDetails = [];
+                if (player.correct_guess) {
+                    scoringDetails.push('Correct guess: +1 pt');
+                }
+                if (player.deception_points > 0) {
+                    const voteCount = player.response_votes;
+                    scoringDetails.push(`Fooled ${voteCount} player${voteCount !== 1 ? 's' : ''}: +${player.deception_points} pts`);
+                }
+                if (scoringDetails.length === 0) {
+                    scoringDetails.push('No points this round');
+                }
+                
                 scoreItem.innerHTML = `
-                    <div class="player-name">${this.escapeHtml(playerName)}</div>
-                    <div class="score-details">
-                        <span class="points">+${scoreData.points_earned} pts</span>
-                        <span class="reason">${scoreData.reason}</span>
+                    <div class="player-result">
+                        <div class="player-header">
+                            <span class="player-name">${this.escapeHtml(player.name)}</span>
+                            <span class="round-points">+${player.round_points} pts</span>
+                        </div>
+                        <div class="player-details">
+                            <div class="vote-info">${votedForText}</div>
+                            <div class="votes-received">Votes received: ${player.response_votes}</div>
+                            <div class="scoring-breakdown">${scoringDetails.join(' • ')}</div>
+                        </div>
                     </div>
                 `;
                 this.elements.roundScoresList.appendChild(scoreItem);
             });
         }
-        
-
     }
     
     // Timer Management
