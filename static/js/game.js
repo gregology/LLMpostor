@@ -335,6 +335,13 @@ class LLMposterGameClient {
         // Reset guess submission flag if there was an error submitting guess
         if (error.code && (error.code.includes('GUESS') || error.code === 'SUBMIT_GUESS_FAILED')) {
             this.hasSubmittedGuess = false;
+            
+            // Clear submission timeout if it exists
+            if (this.guessSubmissionTimeout) {
+                clearTimeout(this.guessSubmissionTimeout);
+                this.guessSubmissionTimeout = null;
+            }
+            
             // Re-enable buttons
             const responseCards = this.elements.responsesList?.querySelectorAll('.response-card');
             if (responseCards) {
@@ -685,6 +692,28 @@ class LLMposterGameClient {
         
         const guessIndex = parseInt(responseIndex, 10);
         console.log(`Submitting guess for response ${responseIndex} (parsed: ${guessIndex})`, typeof guessIndex);
+        
+        // Add timeout to reset state if no response received
+        const timeoutId = setTimeout(() => {
+            console.error('Guess submission timeout - no response from server');
+            this.hasSubmittedGuess = false;
+            // Re-enable buttons
+            const responseCards = this.elements.responsesList?.querySelectorAll('.response-card');
+            if (responseCards) {
+                responseCards.forEach((card) => {
+                    const guessBtn = card.querySelector('.guess-btn');
+                    guessBtn.disabled = false;
+                    guessBtn.textContent = 'Select This Response';
+                    guessBtn.classList.remove('btn-primary', 'btn-disabled');
+                    guessBtn.classList.add('btn-outline');
+                });
+            }
+            this.showToast('Submission timeout - please try again', 'error');
+        }, 10000); // 10 second timeout
+        
+        // Store timeout ID so we can clear it when we get a response
+        this.guessSubmissionTimeout = timeoutId;
+        
         this.socket.emit('submit_guess', {
             guess_index: guessIndex
         });
@@ -847,11 +876,32 @@ class LLMposterGameClient {
             this.elements.responseState.classList.remove('hidden');
         }
         
-        // Only reset response form when transitioning TO response phase, not when already in it
-        if (!wasAlreadyInResponsePhase && this.elements.responseInput) {
-            this.elements.responseInput.value = '';
+        // Reset response form for new round (even if we're already in response phase)
+        if (this.elements.responseInput) {
+            // Only clear the input if it's a genuinely new round/phase transition
+            // Don't clear if user is just typing
+            if (!wasAlreadyInResponsePhase || this.elements.responseInput.disabled) {
+                this.elements.responseInput.value = '';
+            }
             this.elements.responseInput.disabled = false;
         }
+        
+        // Ensure submit button is visible for response phase
+        if (this.elements.submitResponseBtn) {
+            this.elements.submitResponseBtn.style.display = '';
+            
+            // Only reset button state if we're transitioning FROM another phase or if button was disabled due to invalid input
+            // Don't reset if user has already submitted (button shows "Response Submitted")
+            const isAlreadySubmitted = this.elements.submitResponseBtn.textContent === 'Response Submitted';
+            
+            if (!wasAlreadyInResponsePhase && !isAlreadySubmitted) {
+                this.elements.submitResponseBtn.textContent = 'Submit Response';
+                this.elements.submitResponseBtn.disabled = false;
+                this.elements.submitResponseBtn.classList.remove('btn-success');
+                this.elements.submitResponseBtn.classList.add('btn-primary');
+            }
+        }
+        
         this.setSubmitButtonLoading(false);
         this.updateCharacterCount();
     }
@@ -863,6 +913,11 @@ class LLMposterGameClient {
         }
         // Reset guess submission flag for new guessing phase
         this.hasSubmittedGuess = false;
+        
+        // Ensure response phase button is hidden (in case of UI state issues)
+        if (this.elements.submitResponseBtn) {
+            this.elements.submitResponseBtn.style.display = 'none';
+        }
     }
     
     switchToResultsPhase() {
@@ -1159,6 +1214,13 @@ class LLMposterGameClient {
     
     showGuessSubmittedState(guessIndex) {
         console.log(`Showing guess submitted state for index: ${guessIndex}`);
+        
+        // Clear submission timeout if it exists
+        if (this.guessSubmissionTimeout) {
+            clearTimeout(this.guessSubmissionTimeout);
+            this.guessSubmissionTimeout = null;
+        }
+        
         // Highlight selected response
         const responseCards = this.elements.responsesList?.querySelectorAll('.response-card');
         if (responseCards) {

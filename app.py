@@ -758,18 +758,24 @@ def handle_submit_guess(data):
             "Guess index is required"
         )
     
-    # Validate guess index against available responses
+    # Map the filtered index back to the original response index
     responses = game_state.get('responses', [])
-    guess_index = ErrorHandler.validate_guess_index(data['guess_index'], len(responses))
+    filtered_responses = [i for i, response in enumerate(responses) if response['author_id'] != player_id]
     
-    # Submit the guess
-    if game_manager.submit_player_guess(room_id, player_id, guess_index):
+    # Validate guess index against filtered responses
+    guess_index = ErrorHandler.validate_guess_index(data['guess_index'], len(filtered_responses))
+    
+    # Map the filtered index to the actual response index
+    actual_response_index = filtered_responses[guess_index]
+    
+    # Submit the guess with the actual response index
+    if game_manager.submit_player_guess(room_id, player_id, actual_response_index):
         logger.info(f'Player {player_id} submitted guess {guess_index} in room {room_id}')
         
         # Send confirmation to submitting player
         emit('guess_submitted', ErrorHandler.create_success_response({
             'message': 'Guess submitted successfully',
-            'guess_index': guess_index
+            'guess_index': guess_index  # This is the filtered index the player sees
         }))
         
         # Check if phase changed to results (all players guessed)
@@ -935,23 +941,21 @@ def _broadcast_room_state_update(room_id: str):
             safe_game_state['response_count'] = len(game_state['responses'])
             safe_game_state['time_remaining'] = game_manager.get_phase_time_remaining(room_id)
         
-        if game_state['phase'] in ['guessing', 'results']:
-            # Show responses (anonymized during guessing phase)
+        if game_state['phase'] == 'results':
+            # Show responses (with authorship revealed in results phase)
             safe_game_state['responses'] = []
             for i, response in enumerate(game_state['responses']):
                 response_data = {
                     'index': i,
-                    'text': response['text']
+                    'text': response['text'],
+                    'is_llm': response['is_llm']
                 }
-                # Only reveal authorship in results phase
-                if game_state['phase'] == 'results':
-                    response_data['is_llm'] = response['is_llm']
-                    if not response['is_llm']:
-                        # Find player name for human responses
-                        author_id = response['author_id']
-                        players = room_state['players']
-                        if author_id in players:
-                            response_data['author_name'] = players[author_id]['name']
+                if not response['is_llm']:
+                    # Find player name for human responses
+                    author_id = response['author_id']
+                    players = room_state['players']
+                    if author_id in players:
+                        response_data['author_name'] = players[author_id]['name']
                 
                 safe_game_state['responses'].append(response_data)
         
@@ -974,7 +978,30 @@ def _broadcast_room_state_update(room_id: str):
             if round_results:
                 safe_game_state['round_results'] = round_results
         
-        socketio.emit('room_state_updated', safe_game_state, room=room_id)
+        # During guessing phase, send personalized room states (excluding own responses)
+        if game_state['phase'] == 'guessing':
+            for player_id in room_state['players']:
+                player = room_state['players'][player_id]
+                if not player.get('connected', False):
+                    continue
+                
+                # Create personalized game state for this player
+                personalized_game_state = safe_game_state.copy()
+                personalized_game_state['responses'] = []
+                
+                # Filter out this player's own response
+                for i, response in enumerate(game_state['responses']):
+                    if response['author_id'] != player_id:
+                        personalized_game_state['responses'].append({
+                            'index': i,
+                            'text': response['text']
+                        })
+                
+                socketio.emit('room_state_updated', personalized_game_state, room=player['socket_id'])
+        else:
+            # For all other phases, broadcast normally
+            socketio.emit('room_state_updated', safe_game_state, room=room_id)
+        
         logger.debug(f'Broadcasted room state update to room {room_id}')
         
     except Exception as e:
@@ -1121,23 +1148,31 @@ def _broadcast_guessing_phase_started(room_id: str):
         
         game_state = room_state['game_state']
         
-        # Prepare anonymized responses for display
-        anonymized_responses = []
-        for i, response in enumerate(game_state['responses']):
-            anonymized_responses.append({
-                'index': i,
-                'text': response['text']
-            })
+        # Send personalized responses to each player (excluding their own response)
+        for player_id in room_state['players']:
+            player = room_state['players'][player_id]
+            if not player.get('connected', False):
+                continue
+                
+            # Filter out this player's own response
+            filtered_responses = []
+            for i, response in enumerate(game_state['responses']):
+                if response['author_id'] != player_id:
+                    filtered_responses.append({
+                        'index': i,
+                        'text': response['text']
+                    })
+            
+            guessing_info = {
+                'phase': 'guessing',
+                'responses': filtered_responses,
+                'round_number': game_state['round_number'],
+                'phase_duration': game_state['phase_duration'],
+                'time_remaining': game_manager.get_phase_time_remaining(room_id)
+            }
+            
+            socketio.emit('guessing_phase_started', guessing_info, room=player['socket_id'])
         
-        guessing_info = {
-            'phase': 'guessing',
-            'responses': anonymized_responses,
-            'round_number': game_state['round_number'],
-            'phase_duration': game_state['phase_duration'],
-            'time_remaining': game_manager.get_phase_time_remaining(room_id)
-        }
-        
-        socketio.emit('guessing_phase_started', guessing_info, room=room_id)
         logger.debug(f'Broadcasted guessing phase start to room {room_id}')
         
     except Exception as e:

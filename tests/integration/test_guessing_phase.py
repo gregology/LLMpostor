@@ -122,7 +122,7 @@ class TestGuessingPhase:
                 
                 assert event_data['phase'] == 'guessing'
                 assert 'responses' in event_data
-                assert len(event_data['responses']) == 3  # 2 player responses + 1 LLM response
+                assert len(event_data['responses']) == 2  # 1 other player response + 1 LLM response (own response filtered out)
                 assert 'round_number' in event_data
                 assert 'phase_duration' in event_data
                 
@@ -335,9 +335,9 @@ class TestGuessingPhase:
             
             client.get_received()  # Clear events
             
-            # Try to submit second guess
+            # Try to submit second guess (same index, should fail as duplicate)
             client.emit('submit_guess', {
-                'guess_index': 2
+                'guess_index': 1
             })
             
             received = client.get_received()
@@ -376,7 +376,7 @@ class TestGuessingPhase:
             })
             
             client2.emit('submit_guess', {
-                'guess_index': 2
+                'guess_index': 0
             })
             
             # Check that results phase started
