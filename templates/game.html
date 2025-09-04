@@ -1,0 +1,177 @@
+{% extends "base.html" %}
+
+{% block title %}LLMposter - Room {{ room_id }}{% endblock %}
+
+{% block content %}
+<div class="game-container">
+    <!-- Room Header -->
+    <div class="room-header">
+        <div class="room-info">
+            <h2 class="room-title">Room: <span class="room-name">{{ room_id }}</span></h2>
+            <div class="connection-status">
+                <span id="connectionStatus" class="status-indicator connecting">
+                    <span class="status-dot"></span>
+                    Connecting...
+                </span>
+            </div>
+        </div>
+        
+        <div class="room-actions">
+            <button id="leaveRoomBtn" class="btn btn-secondary btn-small">Leave Room</button>
+            <button id="shareRoomBtn" class="btn btn-outline btn-small">Share Room</button>
+        </div>
+    </div>
+    
+    <!-- Players Panel -->
+    <div class="players-panel">
+        <h3 class="panel-title">
+            Players (<span id="playerCount">0</span>)
+            <span class="round-indicator"><span id="roundsPlayed">0</span> rounds played</span>
+        </h3>
+        <div id="playersList" class="players-list">
+            <!-- Players will be populated by JavaScript -->
+        </div>
+    </div>
+    
+    <!-- Game Area -->
+    <div class="game-area">
+        <!-- Waiting State -->
+        <div id="waitingState" class="game-state waiting-state">
+            <div class="waiting-content">
+                <div class="waiting-icon">⏳</div>
+                <h3>Waiting for Players</h3>
+                <div class="game-actions">
+                    <button id="startRoundBtn" class="btn btn-primary btn-large" disabled>
+                        <span class="btn-text">Start Round</span>
+                        <span class="btn-loading hidden">
+                            <div class="btn-spinner"></div>
+                            Starting...
+                        </span>
+                    </button>
+                    <p class="start-hint">Need at least 2 players to start</p>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Response Phase -->
+        <div id="responseState" class="game-state response-state hidden">
+            <div class="phase-header">
+                <h3 class="phase-title">Write Your Response</h3>
+                <div class="timer-container">
+                    <div class="timer">
+                        <span id="responseTimer" class="timer-text">3:00</span>
+                        <div class="timer-bar">
+                            <div id="responseTimerBar" class="timer-progress"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="prompt-container">
+                <div class="prompt-header">
+                    <span class="prompt-label">Prompt:</span>
+                    <span class="model-badge">
+                        <span class="model-label">Target Model:</span>
+                        <span id="targetModel" class="model-name">GPT-4</span>
+                    </span>
+                </div>
+                <div id="currentPrompt" class="prompt-text">
+                    Loading prompt...
+                </div>
+            </div>
+            
+            <div class="response-form">
+                <div class="form-group">
+                    <label for="responseInput">Your Response (try to write like the AI model would):</label>
+                    <textarea 
+                        id="responseInput" 
+                        placeholder="Write your response here..." 
+                        maxlength="500"
+                        rows="4"
+                    ></textarea>
+                    <div class="char-counter">
+                        <span id="charCount">0</span>/500 characters
+                    </div>
+                </div>
+                
+                <button id="submitResponseBtn" class="btn btn-primary btn-large" disabled>
+                    <span class="btn-text">Submit Response</span>
+                    <span class="btn-loading hidden">
+                        <div class="btn-spinner"></div>
+                        Submitting...
+                    </span>
+                </button>
+            </div>
+            
+            <div class="submission-status">
+                <div id="submissionCount" class="status-text">
+                    Waiting for responses... (<span class="submitted-count">0</span>/<span class="total-count">0</span> submitted)
+                </div>
+            </div>
+        </div>
+        
+        <!-- Guessing Phase -->
+        <div id="guessingState" class="game-state guessing-state hidden">
+            <div class="phase-header">
+                <h3 class="phase-title">Guess the AI Response</h3>
+                <div class="timer-container">
+                    <div class="timer">
+                        <span id="guessingTimer" class="timer-text">2:00</span>
+                        <div class="timer-bar">
+                            <div id="guessingTimerBar" class="timer-progress"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="guessing-instructions">
+                <p>Which response was written by <span id="guessingTargetModel" class="model-highlight">the AI</span>?</p>
+            </div>
+            
+            <div id="responsesList" class="responses-list">
+                <!-- Responses will be populated by JavaScript -->
+            </div>
+            
+            <div class="guessing-status">
+                <div id="guessingCount" class="status-text">
+                    Waiting for guesses... (<span class="guessed-count">0</span>/<span class="total-count">0</span> guessed)
+                </div>
+            </div>
+        </div>
+        
+        <!-- Results Phase -->
+        <div id="resultsState" class="game-state results-state hidden">
+            <div class="phase-header">
+                <h3 class="phase-title">Round Results</h3>
+                <div class="next-round-timer">
+                    Next round in: <span id="nextRoundTimer" class="timer-text">30</span>
+                </div>
+            </div>
+            
+            <div class="results-content">
+                <div class="correct-answer">
+                    <h4>The AI Response Was:</h4>
+                    <div id="correctResponse" class="response-card correct-response">
+                        <!-- Correct response will be highlighted -->
+                    </div>
+                </div>
+                
+                <div class="round-scores">
+                    <h4>This Round's Scores:</h4>
+                    <div id="roundScoresList" class="scores-list">
+                        <!-- Round scores will be populated -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+
+</div>
+
+<!-- Game State Data -->
+<script>
+// Pass room ID to the game client
+const roomId = "{{ room_id }}";
+</script>
+{% endblock %}
