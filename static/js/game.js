@@ -448,7 +448,7 @@ class LLMposterGameClient {
         this.updateConnectionStatus('connected', 'Connected');
         
         // Update room name display
-        if (this.elements.roomName) {
+        if (this.elements.roomName && data.room_id) {
             this.elements.roomName.textContent = data.room_id;
         }
     }
@@ -1356,8 +1356,10 @@ class LLMposterGameClient {
     }
 }
 
-// Initialize the game client
-const gameClient = new LLMposterGameClient();
-
-// Expose globally for debugging
-window.gameClient = gameClient;
+// Initialize the game client when DOM is ready
+document.addEventListener('DOMContentLoaded', function() {
+    const gameClient = new LLMposterGameClient();
+    
+    // Expose globally for debugging
+    window.gameClient = gameClient;
+});
