@@ -103,7 +103,7 @@ class TestErrorHandler:
         valid_responses = [
             "This is a valid response.",
             "A",  # Single character
-            "A" * 1000  # Max length
+            "A" * 100  # Max length
         ]
         
         for response in valid_responses:

@@ -22,7 +22,7 @@ app = Flask(__name__)
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'dev-secret-key-change-in-production')
 
 # Initialize Socket.IO with CORS enabled for development
-socketio = SocketIO(app, cors_allowed_origins="*", async_mode='threading')
+socketio = SocketIO(app, cors_allowed_origins="*", async_mode='eventlet')
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -287,7 +287,8 @@ def find_available_room():
 @app.route('/<room_id>')
 def room(room_id):
     """Serve the game interface for a specific room."""
-    return render_template('game.html', room_id=room_id)
+    from src.error_handler import ErrorHandler
+    return render_template('game.html', room_id=room_id, max_response_length=ErrorHandler.MAX_RESPONSE_LENGTH)
 
 @socketio.on('connect')
 def handle_connect():

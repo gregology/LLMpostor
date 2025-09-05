@@ -10,7 +10,7 @@ bind = f"0.0.0.0:{os.environ.get('PORT', 8000)}"
 backlog = 2048
 
 # Worker processes
-workers = int(os.environ.get('WORKERS', 1))  # Must be 1 for Socket.IO with eventlet
+workers = 1  # Must be 1 for Socket.IO with eventlet
 worker_class = "eventlet"
 worker_connections = int(os.environ.get('WORKER_CONNECTIONS', 1000))
 timeout = int(os.environ.get('TIMEOUT', 30))

@@ -84,11 +84,11 @@
                     <textarea 
                         id="responseInput" 
                         placeholder="Write your response here..." 
-                        maxlength="500"
+                        maxlength="{{ max_response_length }}"
                         rows="4"
                     ></textarea>
                     <div class="char-counter">
-                        <span id="charCount">0</span>/500 characters
+                        <span id="charCount">0</span>/{{ max_response_length }} characters
                     </div>
                 </div>
                 
@@ -169,8 +169,9 @@
 
 <!-- Game State Data -->
 <script>
-// Pass room ID to the game client
+// Pass room ID and config to the game client
 const roomId = "{{ room_id }}";
+const maxResponseLength = {{ max_response_length }};
 </script>
 {% endblock %}
 
