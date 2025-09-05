@@ -13,6 +13,7 @@ class LLMposterGameClient {
         this.timers = {};
         this.isConnected = false;
         this.hasSubmittedGuess = false; // Flag to prevent multiple guess submissions
+        this.hasSubmittedResponse = false; // Flag to prevent response UI reset
         this.roundsCompleted = 0; // Track completed rounds
         
         // UI element references
@@ -502,6 +503,7 @@ class LLMposterGameClient {
             return;
         }
         
+        this.hasSubmittedResponse = false; // Reset the flag
         this.showToast(`Round ${data.round_number} started!`, 'info');
         this.updatePromptDisplay(data);
         this.switchToResponsePhase();
@@ -823,7 +825,9 @@ class LLMposterGameClient {
                 this.switchToWaitingState();
                 break;
             case 'responding':
-                this.switchToResponsePhase();
+                if (!this.hasSubmittedResponse) {
+                    this.switchToResponsePhase();
+                }
                 if (gameState.current_prompt) {
                     this.updatePromptDisplay(gameState.current_prompt);
                 }
@@ -889,17 +893,14 @@ class LLMposterGameClient {
         // Ensure submit button is visible for response phase
         if (this.elements.submitResponseBtn) {
             this.elements.submitResponseBtn.style.display = '';
-            
-            // Only reset button state if we're transitioning FROM another phase or if button was disabled due to invalid input
-            // Don't reset if user has already submitted (button shows "Response Submitted")
-            const isAlreadySubmitted = this.elements.submitResponseBtn.textContent === 'Response Submitted';
-            
-            if (!wasAlreadyInResponsePhase && !isAlreadySubmitted) {
-                this.elements.submitResponseBtn.textContent = 'Submit Response';
-                this.elements.submitResponseBtn.disabled = false;
-                this.elements.submitResponseBtn.classList.remove('btn-success');
-                this.elements.submitResponseBtn.classList.add('btn-primary');
+
+            const btnText = this.elements.submitResponseBtn.querySelector('.btn-text');
+            if (btnText) {
+                btnText.textContent = 'Submit Response';
             }
+            
+            this.elements.submitResponseBtn.classList.remove('btn-success');
+            this.elements.submitResponseBtn.classList.add('btn-primary');
         }
         
         this.setSubmitButtonLoading(false);
@@ -1241,13 +1242,25 @@ class LLMposterGameClient {
     }
     
     showResponseSubmittedState() {
+        this.hasSubmittedResponse = true;
         if (this.elements.responseInput) {
             this.elements.responseInput.disabled = true;
         }
         
         if (this.elements.submitResponseBtn) {
-            this.elements.submitResponseBtn.textContent = 'Response Submitted';
+            const btnText = this.elements.submitResponseBtn.querySelector('.btn-text');
+            const btnLoading = this.elements.submitResponseBtn.querySelector('.btn-loading');
+
+            if (btnText) {
+                btnText.textContent = 'Response Submitted';
+                btnText.classList.remove('hidden');
+            }
+            if (btnLoading) {
+                btnLoading.classList.add('hidden');
+            }
+
             this.elements.submitResponseBtn.disabled = true;
+            this.elements.submitResponseBtn.classList.remove('btn-primary');
             this.elements.submitResponseBtn.classList.add('btn-success');
         }
     }
