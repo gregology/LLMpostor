@@ -1,0 +1,927 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LLMpostor - Pixel Dungeon Quest</title>
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Silkscreen:wght@400;700&family=VT323&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'VT323', monospace;
+            background: linear-gradient(135deg, #2a1810 0%, #1a0f08 50%, #0d0704 100%);
+            color: #ffdd44;
+            min-height: 100vh;
+            position: relative;
+            overflow-x: hidden;
+            background-image: 
+                repeating-linear-gradient(
+                    90deg,
+                    rgba(255, 221, 68, 0.02) 0px,
+                    rgba(255, 221, 68, 0.02) 8px,
+                    transparent 8px,
+                    transparent 16px
+                ),
+                repeating-linear-gradient(
+                    0deg,
+                    rgba(139, 69, 19, 0.03) 0px,
+                    rgba(139, 69, 19, 0.03) 8px,
+                    transparent 8px,
+                    transparent 16px
+                );
+        }
+
+        /* Dungeon stone texture */
+        body::before {
+            content: "";
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: 
+                radial-gradient(circle at 30% 20%, rgba(255, 221, 68, 0.1) 0%, transparent 50%),
+                radial-gradient(circle at 70% 80%, rgba(255, 69, 0, 0.1) 0%, transparent 50%),
+                radial-gradient(circle at 50% 50%, rgba(139, 69, 19, 0.05) 0%, transparent 50%);
+            pointer-events: none;
+            z-index: 1;
+            animation: dungeonAmbiance 12s ease-in-out infinite alternate;
+        }
+
+        @keyframes dungeonAmbiance {
+            0% { opacity: 0.7; }
+            100% { opacity: 1; }
+        }
+
+        /* Flickering torchlight */
+        body::after {
+            content: "";
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: 
+                radial-gradient(ellipse at 20% 30%, rgba(255, 140, 0, 0.08) 0%, transparent 40%),
+                radial-gradient(ellipse at 80% 70%, rgba(255, 140, 0, 0.06) 0%, transparent 35%);
+            pointer-events: none;
+            z-index: 1;
+            animation: torchFlicker 3s ease-in-out infinite;
+        }
+
+        @keyframes torchFlicker {
+            0%, 100% { opacity: 0.6; }
+            25% { opacity: 1; }
+            50% { opacity: 0.8; }
+            75% { opacity: 0.9; }
+        }
+
+        .dungeon-chamber {
+            max-width: 1000px;
+            margin: 30px auto;
+            position: relative;
+            z-index: 2;
+            padding: 20px;
+        }
+
+        .stone-frame {
+            background: linear-gradient(145deg, #654321, #4a2511);
+            border: 8px solid #2f1b14;
+            border-radius: 20px;
+            padding: 40px;
+            position: relative;
+            box-shadow: 
+                0 20px 40px rgba(0, 0, 0, 0.8),
+                inset 0 0 30px rgba(255, 221, 68, 0.1);
+            background-image: 
+                repeating-linear-gradient(
+                    45deg,
+                    rgba(47, 27, 20, 0.3) 0px,
+                    rgba(47, 27, 20, 0.3) 8px,
+                    transparent 8px,
+                    transparent 16px
+                ),
+                repeating-linear-gradient(
+                    -45deg,
+                    rgba(101, 67, 33, 0.2) 0px,
+                    rgba(101, 67, 33, 0.2) 12px,
+                    transparent 12px,
+                    transparent 24px
+                );
+        }
+
+        /* Torch decorations */
+        .stone-frame::before {
+            content: "🔥";
+            position: absolute;
+            top: 25px;
+            left: 30px;
+            font-size: 24px;
+            animation: torchDance 2s ease-in-out infinite;
+        }
+
+        .stone-frame::after {
+            content: "🔥";
+            position: absolute;
+            top: 25px;
+            right: 30px;
+            font-size: 24px;
+            animation: torchDance 2.5s ease-in-out infinite reverse;
+        }
+
+        @keyframes torchDance {
+            0%, 100% { 
+                transform: rotate(0deg) scale(1); 
+                filter: hue-rotate(0deg);
+            }
+            25% { 
+                transform: rotate(-3deg) scale(1.1); 
+                filter: hue-rotate(15deg);
+            }
+            75% { 
+                transform: rotate(3deg) scale(0.9); 
+                filter: hue-rotate(-15deg);
+            }
+        }
+
+        .quest-scroll {
+            text-align: center;
+            margin-bottom: 35px;
+            background: linear-gradient(145deg, #f4e4bc, #e6d7a3);
+            border: 6px solid #8b4513;
+            border-radius: 15px;
+            padding: 25px;
+            position: relative;
+            box-shadow: 
+                inset 0 0 25px rgba(139, 69, 19, 0.2),
+                0 10px 20px rgba(0, 0, 0, 0.5);
+            background-image: 
+                radial-gradient(circle at 80% 20%, rgba(139, 69, 19, 0.1) 2px, transparent 2px),
+                radial-gradient(circle at 20% 80%, rgba(139, 69, 19, 0.1) 1px, transparent 1px);
+            background-size: 32px 32px, 24px 24px;
+            transform: rotate(-1deg);
+        }
+
+        .quest-scroll::before {
+            content: "";
+            position: absolute;
+            top: -5px;
+            left: -5px;
+            right: -5px;
+            bottom: -5px;
+            background: 
+                repeating-conic-gradient(
+                    from 0deg at 50% 50%,
+                    #8b4513 0deg 45deg,
+                    #654321 45deg 90deg
+                );
+            border-radius: 20px;
+            z-index: -1;
+            animation: scrollBorder 8s linear infinite;
+        }
+
+        @keyframes scrollBorder {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .dungeon-title {
+            font-family: 'Press Start 2P', cursive;
+            font-size: 28px;
+            color: #8b4513;
+            text-shadow: 
+                2px 2px 0 #ffdd44,
+                4px 4px 0 #2f1b14;
+            margin-bottom: 12px;
+            animation: titleGlint 4s ease-in-out infinite;
+        }
+
+        @keyframes titleGlint {
+            0%, 90% { filter: brightness(1); }
+            95% { filter: brightness(1.3); }
+            100% { filter: brightness(1); }
+        }
+
+        .adventure-badge {
+            background: linear-gradient(45deg, #ff4500, #ff8c00);
+            color: #ffffff;
+            padding: 10px 25px;
+            border-radius: 20px;
+            font-family: 'Silkscreen', cursive;
+            font-size: 16px;
+            font-weight: 700;
+            display: inline-block;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            border: 4px solid #2f1b14;
+            box-shadow: 
+                0 0 20px rgba(255, 69, 0, 0.5),
+                inset 0 0 10px rgba(255, 255, 255, 0.2);
+            position: relative;
+        }
+
+        .adventure-badge::before {
+            content: "⚔️";
+            position: absolute;
+            left: -15px;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 20px;
+            animation: swordGlint 3s ease-in-out infinite;
+        }
+
+        @keyframes swordGlint {
+            0%, 80% { opacity: 0.7; }
+            10%, 20% { opacity: 1; transform: translateY(-50%) rotate(15deg); }
+            15% { opacity: 0.5; transform: translateY(-50%) rotate(-15deg); }
+        }
+
+        .hero-chamber {
+            background: linear-gradient(145deg, #2f1b14, #1a0f0b);
+            border: 4px solid #ffdd44;
+            border-radius: 15px;
+            padding: 25px;
+            margin-bottom: 25px;
+            position: relative;
+            box-shadow: 
+                inset 0 0 25px rgba(255, 221, 68, 0.1),
+                0 10px 25px rgba(0, 0, 0, 0.6);
+        }
+
+        .hero-chamber::before {
+            content: "HERO'S CHAMBER";
+            position: absolute;
+            top: -12px;
+            left: 25px;
+            background: #ff4500;
+            color: #ffffff;
+            padding: 6px 14px;
+            border-radius: 12px;
+            font-family: 'Press Start 2P', cursive;
+            font-size: 10px;
+            font-weight: 400;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            border: 2px solid #2f1b14;
+            box-shadow: 0 0 12px rgba(255, 69, 0, 0.4);
+        }
+
+        /* Crystal decoration */
+        .hero-chamber::after {
+            content: "💎";
+            position: absolute;
+            top: 18px;
+            right: 20px;
+            font-size: 20px;
+            animation: crystalPulse 3s ease-in-out infinite;
+        }
+
+        @keyframes crystalPulse {
+            0%, 100% { 
+                transform: scale(1); 
+                filter: brightness(1);
+            }
+            50% { 
+                transform: scale(1.2); 
+                filter: brightness(1.5);
+            }
+        }
+
+        .character-section {
+            margin-bottom: 20px;
+        }
+
+        .dungeon-label {
+            display: block;
+            font-family: 'Press Start 2P', cursive;
+            font-size: 12px;
+            margin-bottom: 8px;
+            color: #ffdd44;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            text-shadow: 0 0 8px rgba(255, 221, 68, 0.5);
+        }
+
+        .rune-input {
+            width: 100%;
+            padding: 14px 20px;
+            background: rgba(244, 228, 188, 0.9);
+            border: 4px solid #8b4513;
+            border-radius: 8px;
+            color: #2f1b14;
+            font-family: 'VT323', monospace;
+            font-size: 20px;
+            font-weight: 400;
+            transition: all 0.3s ease;
+            box-shadow: 
+                inset 0 0 15px rgba(139, 69, 19, 0.2),
+                0 4px 12px rgba(0, 0, 0, 0.3);
+        }
+
+        .rune-input:focus {
+            outline: none;
+            border-color: #ffdd44;
+            background: rgba(255, 221, 68, 0.2);
+            box-shadow: 
+                inset 0 0 20px rgba(255, 221, 68, 0.3),
+                0 0 20px rgba(255, 221, 68, 0.4);
+            animation: runeGlow 1.5s ease-in-out infinite;
+        }
+
+        @keyframes runeGlow {
+            0%, 100% { text-shadow: 0 0 3px #2f1b14; }
+            50% { text-shadow: 0 0 12px #8b4513, 0 0 20px #ffdd44; }
+        }
+
+        .rune-input::placeholder {
+            color: rgba(47, 27, 20, 0.6);
+            font-style: italic;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 18px;
+            justify-content: center;
+            margin-top: 25px;
+            flex-wrap: wrap;
+        }
+
+        .pixel-button {
+            background: linear-gradient(145deg, #ff4500, #e63900);
+            border: 4px solid #ffdd44;
+            border-radius: 8px;
+            color: #ffffff;
+            padding: 16px 30px;
+            font-family: 'Press Start 2P', cursive;
+            font-size: 12px;
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            transition: all 0.2s ease;
+            box-shadow: 
+                0 6px 0 #cc3300,
+                0 0 25px rgba(255, 69, 0, 0.4),
+                inset 0 0 8px rgba(255, 255, 255, 0.2);
+        }
+
+        .pixel-button::before {
+            content: "";
+            position: absolute;
+            top: 3px;
+            left: 3px;
+            right: 3px;
+            height: 3px;
+            background: linear-gradient(90deg, rgba(255, 255, 255, 0.8), transparent, rgba(255, 255, 255, 0.8));
+            border-radius: 1px;
+        }
+
+        .pixel-button::after {
+            content: "⚡";
+            position: absolute;
+            top: 6px;
+            right: 10px;
+            font-size: 12px;
+            animation: energyBurst 2.5s linear infinite;
+        }
+
+        @keyframes energyBurst {
+            0%, 85% { opacity: 0.7; }
+            5%, 15% { opacity: 1; transform: scale(1.3); }
+            10% { opacity: 0.5; transform: scale(1); }
+        }
+
+        .pixel-button:hover {
+            transform: translateY(-3px);
+            box-shadow: 
+                0 9px 0 #cc3300,
+                0 0 30px rgba(255, 69, 0, 0.6),
+                inset 0 0 12px rgba(255, 255, 255, 0.3);
+        }
+
+        .pixel-button:active {
+            transform: translateY(3px);
+            box-shadow: 
+                0 3px 0 #cc3300,
+                0 0 15px rgba(255, 69, 0, 0.3),
+                inset 0 0 4px rgba(255, 255, 255, 0.1);
+        }
+
+        .magic-button {
+            background: linear-gradient(145deg, #9932cc, #7b2ca3);
+            box-shadow: 
+                0 6px 0 #662299,
+                0 0 25px rgba(153, 50, 204, 0.4),
+                inset 0 0 8px rgba(255, 255, 255, 0.2);
+        }
+
+        .magic-button:hover {
+            box-shadow: 
+                0 9px 0 #662299,
+                0 0 30px rgba(153, 50, 204, 0.6),
+                inset 0 0 12px rgba(255, 255, 255, 0.3);
+        }
+
+        .magic-button:active {
+            box-shadow: 
+                0 3px 0 #662299,
+                0 0 15px rgba(153, 50, 204, 0.3),
+                inset 0 0 4px rgba(255, 255, 255, 0.1);
+        }
+
+        .magic-button::after {
+            content: "🔮";
+        }
+
+        .ancient-tome {
+            background: linear-gradient(145deg, #4a2511, #2f1b14);
+            border: 4px solid #ff8c00;
+            border-radius: 12px;
+            padding: 25px;
+            position: relative;
+            box-shadow: 
+                inset 0 0 25px rgba(255, 140, 0, 0.1),
+                0 10px 25px rgba(0, 0, 0, 0.6);
+            background-image: 
+                radial-gradient(circle at 70% 30%, rgba(255, 140, 0, 0.1) 2px, transparent 2px),
+                radial-gradient(circle at 30% 70%, rgba(255, 221, 68, 0.05) 3px, transparent 3px);
+            background-size: 40px 40px, 28px 28px;
+        }
+
+        .ancient-tome::before {
+            content: "ANCIENT QUEST LOG";
+            position: absolute;
+            top: -12px;
+            left: 25px;
+            background: #9932cc;
+            color: #ffffff;
+            padding: 6px 14px;
+            border-radius: 12px;
+            font-family: 'Press Start 2P', cursive;
+            font-size: 10px;
+            border: 2px solid #ffdd44;
+            box-shadow: 0 0 12px rgba(153, 50, 204, 0.4);
+        }
+
+        .quest-objectives {
+            display: grid;
+            gap: 20px;
+            margin-top: 25px;
+        }
+
+        .objective-item {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            background: rgba(255, 221, 68, 0.05);
+            border: 3px solid #8b4513;
+            border-radius: 10px;
+            padding: 20px;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        .objective-item::before {
+            content: "";
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            width: 8px;
+            height: 8px;
+            background: #ff4500;
+            border-radius: 50%;
+            box-shadow: 0 0 12px #ff4500;
+            animation: questMarker 4s infinite;
+        }
+
+        @keyframes questMarker {
+            0%, 80% { opacity: 0.5; transform: scale(1); }
+            10% { opacity: 1; transform: scale(1.5); }
+            20% { opacity: 0.7; transform: scale(1.2); }
+        }
+
+        .objective-item:hover {
+            background: rgba(255, 221, 68, 0.1);
+            transform: scale(1.02) rotate(0.5deg);
+            box-shadow: 0 12px 25px rgba(139, 69, 19, 0.3);
+            border-color: #ffdd44;
+        }
+
+        .level-badge {
+            min-width: 50px;
+            height: 50px;
+            background: linear-gradient(145deg, #ffdd44, #e6c535);
+            border: 3px solid #8b4513;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: 'Press Start 2P', cursive;
+            font-size: 16px;
+            color: #2f1b14;
+            text-shadow: 1px 1px 0 rgba(244, 228, 188, 0.5);
+            position: relative;
+            box-shadow: 
+                0 0 15px rgba(255, 221, 68, 0.5),
+                inset 0 0 8px rgba(255, 255, 255, 0.3);
+            animation: levelPulse 5s ease-in-out infinite;
+        }
+
+        @keyframes levelPulse {
+            0%, 100% { 
+                box-shadow: 0 0 15px rgba(255, 221, 68, 0.5), inset 0 0 8px rgba(255, 255, 255, 0.3); 
+            }
+            50% { 
+                box-shadow: 0 0 25px rgba(255, 221, 68, 0.8), inset 0 0 12px rgba(255, 255, 255, 0.4); 
+            }
+        }
+
+        .level-badge::after {
+            content: "✨";
+            position: absolute;
+            top: -6px;
+            right: -6px;
+            font-size: 12px;
+            animation: levelSparkle 2s ease-in-out infinite;
+        }
+
+        @keyframes levelSparkle {
+            0%, 100% { opacity: 0.5; transform: rotate(0deg); }
+            50% { opacity: 1; transform: rotate(180deg); }
+        }
+
+        .objective-text h3 {
+            font-family: 'Silkscreen', cursive;
+            font-size: 16px;
+            font-weight: 700;
+            margin-bottom: 6px;
+            color: #ffdd44;
+            text-transform: uppercase;
+            text-shadow: 0 0 8px rgba(255, 221, 68, 0.3);
+        }
+
+        .objective-text p {
+            font-size: 16px;
+            color: #f4e4bc;
+            line-height: 1.5;
+        }
+
+        .dungeon-creatures {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            top: 0;
+            left: 0;
+            pointer-events: none;
+            z-index: -1;
+        }
+
+        .creature {
+            position: absolute;
+            font-size: 18px;
+            opacity: 0.6;
+            animation: creatureWander 14s ease-in-out infinite;
+        }
+
+        .creature:nth-child(1) { 
+            top: 12%; 
+            left: 8%; 
+            animation-delay: 0s; 
+        }
+        .creature:nth-child(2) { 
+            top: 25%; 
+            right: 12%; 
+            animation-delay: 3.5s; 
+        }
+        .creature:nth-child(3) { 
+            bottom: 35%; 
+            left: 15%; 
+            animation-delay: 7s; 
+        }
+        .creature:nth-child(4) { 
+            bottom: 18%; 
+            right: 8%; 
+            animation-delay: 10.5s; 
+        }
+
+        @keyframes creatureWander {
+            0%, 100% { 
+                transform: translateY(0) rotate(0deg) scale(1);
+                opacity: 0.4;
+            }
+            25% { 
+                transform: translateY(-25px) rotate(90deg) scale(1.1);
+                opacity: 0.7;
+            }
+            50% { 
+                transform: translateY(-12px) rotate(180deg) scale(0.9);
+                opacity: 0.5;
+            }
+            75% { 
+                transform: translateY(-20px) rotate(270deg) scale(1.05);
+                opacity: 0.6;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .dungeon-chamber {
+                margin: 15px;
+                padding: 15px;
+            }
+            
+            .stone-frame {
+                padding: 25px;
+            }
+            
+            .dungeon-title {
+                font-size: 20px;
+            }
+            
+            .action-buttons {
+                flex-direction: column;
+                align-items: center;
+            }
+            
+            .pixel-button {
+                width: 100%;
+                max-width: 280px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="dungeon-creatures">
+        <div class="creature">🐉</div>
+        <div class="creature">🗡️</div>
+        <div class="creature">🛡️</div>
+        <div class="creature">💀</div>
+    </div>
+
+    <div class="dungeon-chamber">
+        <div class="stone-frame">
+            <div class="quest-scroll">
+                <div class="dungeon-title">LLMpostor</div>
+                <div class="adventure-badge">Pixel Dungeon Quest!</div>
+            </div>
+            
+            <div class="hero-chamber">
+                <form>
+                    <div class="character-section">
+                        <label class="dungeon-label">Hero Name</label>
+                        <input type="text" class="rune-input" placeholder="Enter thy adventurer name..." maxlength="20">
+                    </div>
+                    
+                    <div class="character-section">
+                        <label class="dungeon-label">Dungeon Level</label>
+                        <input type="text" class="rune-input" placeholder="Choose thy dungeon realm..." maxlength="30">
+                    </div>
+                    
+                    <div class="action-buttons">
+                        <button type="submit" class="pixel-button">Enter Dungeon!</button>
+                        <button type="button" class="pixel-button magic-button">Cast Portal!</button>
+                    </div>
+                </form>
+            </div>
+            
+            <div class="ancient-tome">
+                <div class="quest-objectives">
+                    <div class="objective-item">
+                        <div class="level-badge">1</div>
+                        <div class="objective-text">
+                            <h3>Receive Quest</h3>
+                            <p>Discover the ancient riddle and learn about your AI adversary</p>
+                        </div>
+                    </div>
+                    <div class="objective-item">
+                        <div class="level-badge">2</div>
+                        <div class="objective-text">
+                            <h3>Craft Deception</h3>
+                            <p>Forge responses that mimic the AI beast to fool other heroes</p>
+                        </div>
+                    </div>
+                    <div class="objective-item">
+                        <div class="level-badge">3</div>
+                        <div class="objective-text">
+                            <h3>Unmask Enemy</h3>
+                            <p>Use your wisdom to identify the true AI among false duplicates</p>
+                        </div>
+                    </div>
+                    <div class="objective-item">
+                        <div class="level-badge">4</div>
+                        <div class="objective-text">
+                            <h3>Claim Treasure</h3>
+                            <p>Earn gold and experience for successful trickery and detection</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Dungeon sound effects
+            const dungeonSounds = ['HUZZAH!', 'QUEST!', 'ADVENTURE!', 'MAGIC!', 'TREASURE!', 'VICTORY!'];
+            
+            document.querySelectorAll('.pixel-button').forEach(button => {
+                button.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    
+                    // Create floating dungeon sound effect
+                    const soundEffect = document.createElement('div');
+                    soundEffect.textContent = dungeonSounds[Math.floor(Math.random() * dungeonSounds.length)];
+                    soundEffect.style.cssText = `
+                        position: fixed;
+                        left: ${e.clientX}px;
+                        top: ${e.clientY}px;
+                        font-family: 'Press Start 2P', cursive;
+                        font-size: 14px;
+                        color: #ffdd44;
+                        pointer-events: none;
+                        z-index: 9999;
+                        text-shadow: 2px 2px 0 #8b4513, 0 0 12px #ffdd44;
+                        background: rgba(47, 27, 20, 0.9);
+                        padding: 8px 14px;
+                        border-radius: 8px;
+                        border: 2px solid #ff4500;
+                        animation: dungeonPop 2s ease-out forwards;
+                    `;
+                    
+                    // Add animation if it doesn't exist
+                    if (!document.querySelector('#dungeon-animations')) {
+                        const style = document.createElement('style');
+                        style.id = 'dungeon-animations';
+                        style.textContent = `
+                            @keyframes dungeonPop {
+                                0% { 
+                                    transform: translate(-50%, -50%) scale(0) rotate(0deg);
+                                    opacity: 1;
+                                }
+                                20% { 
+                                    transform: translate(-50%, -50%) scale(1.3) rotate(-10deg);
+                                    opacity: 1;
+                                }
+                                40% { 
+                                    transform: translate(-50%, -50%) scale(0.9) rotate(5deg);
+                                    opacity: 1;
+                                }
+                                60% { 
+                                    transform: translate(-50%, -50%) scale(1.1) rotate(-3deg);
+                                    opacity: 0.8;
+                                }
+                                100% { 
+                                    transform: translate(-50%, -50%) scale(0.2) rotate(0deg);
+                                    opacity: 0;
+                                }
+                            }
+                        `;
+                        document.head.appendChild(style);
+                    }
+                    
+                    document.body.appendChild(soundEffect);
+                    
+                    setTimeout(() => {
+                        if (document.body.contains(soundEffect)) {
+                            document.body.removeChild(soundEffect);
+                        }
+                    }, 2000);
+                });
+            });
+
+            // Rune input effects
+            document.querySelectorAll('.rune-input').forEach(input => {
+                input.addEventListener('input', function() {
+                    if (Math.random() < 0.3) { // 30% chance
+                        // Magic rune effect
+                        this.style.background = 'rgba(255, 221, 68, 0.3)';
+                        this.style.boxShadow = `
+                            inset 0 0 20px rgba(255, 221, 68, 0.4),
+                            0 0 30px rgba(255, 221, 68, 0.6)
+                        `;
+                        setTimeout(() => {
+                            if (this === document.activeElement) {
+                                this.style.background = 'rgba(255, 221, 68, 0.2)';
+                                this.style.boxShadow = `
+                                    inset 0 0 20px rgba(255, 221, 68, 0.3),
+                                    0 0 20px rgba(255, 221, 68, 0.4)
+                                `;
+                            } else {
+                                this.style.background = 'rgba(244, 228, 188, 0.9)';
+                                this.style.boxShadow = `
+                                    inset 0 0 15px rgba(139, 69, 19, 0.2),
+                                    0 4px 12px rgba(0, 0, 0, 0.3)
+                                `;
+                            }
+                        }, 350);
+                    }
+                });
+
+                // Dungeon tremor when typing
+                input.addEventListener('keypress', function() {
+                    const chamber = document.querySelector('.stone-frame');
+                    chamber.style.transform = 'translateX(1px) rotate(0.1deg)';
+                    setTimeout(() => {
+                        chamber.style.transform = 'translateX(-0.5px) rotate(-0.05deg)';
+                    }, 100);
+                    setTimeout(() => {
+                        chamber.style.transform = 'translateX(0) rotate(0deg)';
+                    }, 200);
+                });
+            });
+
+            // Random dungeon ambiance
+            setInterval(() => {
+                if (Math.random() < 0.06) { // 6% chance
+                    const frame = document.querySelector('.stone-frame');
+                    frame.style.boxShadow = `
+                        0 20px 40px rgba(0, 0, 0, 0.8),
+                        inset 0 0 40px rgba(255, 221, 68, 0.2)
+                    `;
+                    setTimeout(() => {
+                        frame.style.boxShadow = `
+                            0 20px 40px rgba(0, 0, 0, 0.8),
+                            inset 0 0 30px rgba(255, 221, 68, 0.1)
+                        `;
+                    }, 600);
+                }
+            }, 5000);
+
+            // Creature interactions
+            setInterval(() => {
+                if (Math.random() < 0.15) { // 15% chance
+                    const creatures = document.querySelectorAll('.creature');
+                    const randomCreature = creatures[Math.floor(Math.random() * creatures.length)];
+                    randomCreature.style.filter = 'brightness(2) drop-shadow(0 0 10px currentColor)';
+                    randomCreature.style.transform = 'scale(1.4) rotate(45deg)';
+                    setTimeout(() => {
+                        randomCreature.style.filter = 'brightness(1)';
+                        randomCreature.style.transform = 'scale(1) rotate(0deg)';
+                    }, 500);
+                }
+            }, 2500);
+
+            // Quest activation effect
+            document.querySelectorAll('.pixel-button').forEach(button => {
+                button.addEventListener('mousedown', function() {
+                    // Dungeon flash effect
+                    document.body.style.filter = 'brightness(1.2) contrast(1.1) hue-rotate(15deg)';
+                    setTimeout(() => {
+                        document.body.style.filter = 'brightness(1) contrast(1) hue-rotate(0deg)';
+                    }, 150);
+                });
+            });
+
+            // Objective highlighting
+            setInterval(() => {
+                if (Math.random() < 0.12) { // 12% chance
+                    const objectives = document.querySelectorAll('.objective-item');
+                    const randomObjective = objectives[Math.floor(Math.random() * objectives.length)];
+                    randomObjective.style.borderColor = '#ff4500';
+                    randomObjective.style.boxShadow = '0 0 20px rgba(255, 69, 0, 0.5)';
+                    setTimeout(() => {
+                        randomObjective.style.borderColor = '#8b4513';
+                        randomObjective.style.boxShadow = 'none';
+                    }, 800);
+                }
+            }, 4000);
+
+            // Level badge shine effect
+            setInterval(() => {
+                if (Math.random() < 0.18) { // 18% chance
+                    const badges = document.querySelectorAll('.level-badge');
+                    const randomBadge = badges[Math.floor(Math.random() * badges.length)];
+                    randomBadge.style.background = 'linear-gradient(145deg, #fff700, #ffdd44)';
+                    randomBadge.style.transform = 'scale(1.1)';
+                    setTimeout(() => {
+                        randomBadge.style.background = 'linear-gradient(145deg, #ffdd44, #e6c535)';
+                        randomBadge.style.transform = 'scale(1)';
+                    }, 400);
+                }
+            }, 3000);
+
+            // Scroll mystical effects
+            setInterval(() => {
+                if (Math.random() < 0.08) { // 8% chance
+                    const scroll = document.querySelector('.quest-scroll');
+                    scroll.style.transform = 'rotate(-2deg) scale(1.01)';
+                    scroll.style.filter = 'brightness(1.1)';
+                    setTimeout(() => {
+                        scroll.style.transform = 'rotate(1deg) scale(1)';
+                        scroll.style.filter = 'brightness(1)';
+                    }, 300);
+                    setTimeout(() => {
+                        scroll.style.transform = 'rotate(-1deg) scale(1)';
+                        scroll.style.filter = 'brightness(1)';
+                    }, 600);
+                }
+            }, 6000);
+        });
+    </script>
+</body>
+</html>

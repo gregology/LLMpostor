@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LLMposter - Hologram</title>
+    <style>
+        body {
+            background-color: #000;
+            color: #0ff;
+            font-family: "Orbitron", sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            perspective: 1000px;
+            padding: 2rem 0;
+        }
+        .container {
+            text-align: center;
+            transform: rotateX(20deg);
+            border: 1px solid #0ff;
+            padding: 2rem;
+            box-shadow: 0 0 20px #0ff, inset 0 0 20px #0ff;
+            background: rgba(0, 255, 255, 0.1);
+            width: 600px;
+        }
+        h1, h3 {
+            font-size: 4rem;
+            text-shadow: 0 0 10px #0ff, 0 0 20px #0ff, 0 0 30px #0ff;
+            margin-bottom: 1rem;
+        }
+        p {
+            font-size: 1.2rem;
+            text-shadow: 0 0 5px #0ff;
+            margin-bottom: 2rem;
+        }
+        .form-group {
+            margin-bottom: 1rem;
+        }
+        input {
+            background: rgba(0, 255, 255, 0.1);
+            border: 1px solid #0ff;
+            color: #0ff;
+            padding: 0.5rem 1rem;
+            font-family: inherit;
+            box-shadow: 0 0 10px #0ff;
+        }
+        button {
+            background: transparent;
+            border: 1px solid #0ff;
+            color: #0ff;
+            padding: 0.5rem 1rem;
+            font-family: inherit;
+            cursor: pointer;
+            text-shadow: 0 0 5px #0ff;
+            box-shadow: 0 0 10px #0ff;
+            margin: 0.5rem;
+        }
+        .how-to-play {
+            margin-top: 3rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>LLMposter</h1>
+        <p>Holographic Game Interface</p>
+        <div class="form-group">
+            <input type="text" id="playerName" placeholder="Enter Your Alias" required maxlength="20">
+        </div>
+        <div class="form-group">
+            <input type="text" id="roomInput" placeholder="Enter Room ID" required maxlength="30">
+        </div>
+        <button type="submit">Engage</button>
+        <div class="quick-join">
+            <p>Or attempt a random connection:</p>
+            <button id="quickJoinBtn">Random Link</button>
+        </div>
+
+        <div class="how-to-play">
+            <h3>Protocol</h3>
+            <p>1. Receive Transmission</p>
+            <p>2. Formulate Response</p>
+            <p>3. Identify AI</p>
+            <p>4. Accumulate Points</p>
+        </div>
+    </div>
+</body>
+</html>

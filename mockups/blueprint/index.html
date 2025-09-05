@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LLMposter - Blueprint</title>
+    <style>
+        body {
+            background-color: #001f3f;
+            color: #fff;
+            font-family: "Courier New", Courier, monospace;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 2rem 0;
+            background-image: linear-gradient(rgba(255, 255, 255, 0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(255, 255, 255, 0.1) 1px, transparent 1px);
+            background-size: 20px 20px;
+        }
+        .container {
+            border: 2px solid #fff;
+            padding: 2rem;
+            text-align: center;
+            background-color: #001f3f;
+            width: 600px;
+        }
+        h1, h3 {
+            font-size: 2.5rem;
+            margin-bottom: 1rem;
+            font-weight: normal;
+            letter-spacing: 2px;
+        }
+        p {
+            font-size: 1.2rem;
+            margin-bottom: 2rem;
+        }
+        .form-group {
+            margin-bottom: 1rem;
+        }
+        label {
+            display: block;
+            margin-bottom: 0.5rem;
+            text-transform: uppercase;
+        }
+        input {
+            background-color: transparent;
+            color: #fff;
+            border: 1px solid #fff;
+            padding: 0.5rem;
+            font-family: inherit;
+            width: 200px;
+        }
+        button {
+            background-color: #fff;
+            color: #001f3f;
+            border: none;
+            padding: 0.5rem 1rem;
+            font-family: inherit;
+            cursor: pointer;
+            text-transform: uppercase;
+            margin: 0.5rem;
+        }
+        .how-to-play {
+            margin-top: 3rem;
+            text-align: left;
+        }
+        .steps {
+            display: flex;
+            justify-content: space-between;
+        }
+        .step {
+            width: 23%;
+        }
+        .step-number {
+            font-size: 2rem;
+            font-weight: bold;
+            border-bottom: 1px solid #fff;
+            padding-bottom: 0.5rem;
+            margin-bottom: 1rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>LLMposter</h1>
+        <p>Schematic for a new game instance.</p>
+        <div class="form-group">
+            <label for="playerName">Operator Name:</label>
+            <input type="text" id="playerName" placeholder="Enter your designation" required maxlength="20">
+        </div>
+        <div class="form-group">
+            <label for="roomInput">Room ID:</label>
+            <input type="text" id="roomInput" placeholder="Enter room identifier" required maxlength="30">
+        </div>
+        <button type="submit">Initialize</button>
+        <div class="quick-join">
+            <p>Or attempt a random connection:</p>
+            <button id="quickJoinBtn">Connect to Random Grid</button>
+        </div>
+
+        <div class="how-to-play">
+            <h3>Operational Parameters</h3>
+            <div class="steps">
+                <div class="step">
+                    <div class="step-number">01</div>
+                    <h4>Acquire Prompt</h4>
+                    <p>Each cycle begins with a prompt and target model.</p>
+                </div>
+                <div class="step">
+                    <div class="step-number">02</div>
+                    <h4>Generate Response</h4>
+                    <p>Emulate the designated AI model's response pattern.</p>
+                </div>
+                <div class="step">
+                    <div class="step-number">03</div>
+                    <h4>Identify AI</h4>
+                    <p>Discern the AI-generated response from human output.</p>
+                </div>
+                <div class="step">
+                    <div class="step-number">04</div>
+                    <h4>Calculate Score</h4>
+                    <p>Accrue points for successful deception and detection.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

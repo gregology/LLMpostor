@@ -1,0 +1,783 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LLMpostor - Terminal Hacker</title>
+    <link href="https://fonts.googleapis.com/css2?family=Source+Code+Pro:wght@400;700;900&family=Fira+Code:wght@400;700&family=JetBrains+Mono:wght@400;700;800&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Source Code Pro', monospace;
+            background: #000000;
+            color: #00ff41;
+            min-height: 100vh;
+            position: relative;
+            overflow-x: hidden;
+            cursor: text;
+            background-image: 
+                radial-gradient(circle at 25% 25%, rgba(0, 255, 65, 0.03) 0%, transparent 50%),
+                radial-gradient(circle at 75% 75%, rgba(0, 255, 65, 0.02) 0%, transparent 50%);
+        }
+
+        /* Terminal scanlines effect */
+        body::before {
+            content: "";
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: 
+                repeating-linear-gradient(
+                    0deg,
+                    transparent 0px,
+                    transparent 2px,
+                    rgba(0, 255, 65, 0.03) 2px,
+                    rgba(0, 255, 65, 0.03) 4px
+                );
+            pointer-events: none;
+            z-index: 1;
+            animation: scanlines 0.1s linear infinite;
+        }
+
+        @keyframes scanlines {
+            0% { background-position: 0 0px; }
+            100% { background-position: 0 4px; }
+        }
+
+        /* Terminal glow effect */
+        body::after {
+            content: "";
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: 
+                radial-gradient(ellipse at center, 
+                transparent 40%, 
+                rgba(0, 0, 0, 0.1) 60%, 
+                rgba(0, 0, 0, 0.4) 100%);
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        .terminal-window {
+            max-width: 1200px;
+            margin: 20px auto;
+            position: relative;
+            z-index: 2;
+            padding: 20px;
+        }
+
+        .terminal-frame {
+            background: linear-gradient(145deg, #001100, #000000);
+            border: 2px solid #00ff41;
+            border-radius: 8px;
+            padding: 0;
+            position: relative;
+            box-shadow: 
+                0 0 30px rgba(0, 255, 65, 0.3),
+                inset 0 0 20px rgba(0, 255, 65, 0.05);
+        }
+
+        .terminal-header {
+            background: linear-gradient(145deg, #00ff41, #00cc33);
+            color: #000000;
+            padding: 10px 15px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-radius: 6px 6px 0 0;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 12px;
+            font-weight: 700;
+        }
+
+        .terminal-controls {
+            display: flex;
+            gap: 8px;
+        }
+
+        .terminal-button {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .close-btn { background: #ff5f56; }
+        .minimize-btn { background: #ffbd2e; }
+        .maximize-btn { background: #27ca3f; }
+
+        .terminal-button:hover {
+            filter: brightness(1.2);
+            transform: scale(1.1);
+        }
+
+        .terminal-title {
+            font-family: 'JetBrains Mono', monospace;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .terminal-body {
+            background: #000000;
+            padding: 20px;
+            min-height: 600px;
+            position: relative;
+            font-family: 'Fira Code', monospace;
+            font-size: 14px;
+            line-height: 1.4;
+        }
+
+        .system-info {
+            color: #00ff41;
+            margin-bottom: 20px;
+            font-weight: 400;
+        }
+
+        .system-info .highlight {
+            color: #ffff00;
+            font-weight: 700;
+        }
+
+        .hack-session {
+            background: rgba(0, 255, 65, 0.05);
+            border: 1px solid #00ff41;
+            border-radius: 4px;
+            padding: 20px;
+            margin: 20px 0;
+            position: relative;
+        }
+
+        .hack-session::before {
+            content: "[CLASSIFIED]";
+            position: absolute;
+            top: -10px;
+            left: 15px;
+            background: #000000;
+            color: #ff0000;
+            padding: 2px 8px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 10px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            animation: classified 2s infinite;
+        }
+
+        @keyframes classified {
+            0%, 50% { opacity: 1; }
+            51%, 100% { opacity: 0.5; }
+        }
+
+        .prompt-line {
+            display: flex;
+            align-items: center;
+            margin: 15px 0;
+            gap: 10px;
+        }
+
+        .user-prompt {
+            color: #00ff41;
+            font-weight: 700;
+        }
+
+        .root-prompt {
+            color: #ff0000;
+            font-weight: 700;
+        }
+
+        .command-input {
+            flex: 1;
+            background: transparent;
+            border: none;
+            color: #00ff41;
+            font-family: 'Fira Code', monospace;
+            font-size: 14px;
+            outline: none;
+            padding: 8px 12px;
+            border: 1px solid transparent;
+            border-radius: 3px;
+            transition: all 0.3s ease;
+        }
+
+        .command-input:focus {
+            border-color: #00ff41;
+            background: rgba(0, 255, 65, 0.05);
+            box-shadow: 0 0 10px rgba(0, 255, 65, 0.3);
+        }
+
+        .command-input::placeholder {
+            color: rgba(0, 255, 65, 0.5);
+            font-style: italic;
+        }
+
+        .hack-buttons {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            margin: 25px 0;
+            flex-wrap: wrap;
+        }
+
+        .terminal-btn {
+            background: linear-gradient(145deg, #003300, #001100);
+            border: 2px solid #00ff41;
+            border-radius: 4px;
+            color: #00ff41;
+            padding: 12px 20px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 12px;
+            font-weight: 700;
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            transition: all 0.3s ease;
+            min-width: 140px;
+        }
+
+        .terminal-btn::before {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(0, 255, 65, 0.2), transparent);
+            transition: left 0.5s;
+        }
+
+        .terminal-btn:hover {
+            color: #ffffff;
+            background: linear-gradient(145deg, #00ff41, #00cc33);
+            border-color: #ffffff;
+            box-shadow: 0 0 20px rgba(0, 255, 65, 0.5);
+            text-shadow: 0 0 5px rgba(255, 255, 255, 0.8);
+        }
+
+        .terminal-btn:hover::before {
+            left: 100%;
+        }
+
+        .terminal-btn:active {
+            transform: scale(0.98);
+            box-shadow: 0 0 10px rgba(0, 255, 65, 0.3);
+        }
+
+        .exploit-btn {
+            border-color: #ff0000;
+            color: #ff0000;
+            background: linear-gradient(145deg, #330000, #110000);
+        }
+
+        .exploit-btn:hover {
+            color: #ffffff;
+            background: linear-gradient(145deg, #ff0000, #cc0000);
+            border-color: #ffffff;
+            box-shadow: 0 0 20px rgba(255, 0, 0, 0.5);
+        }
+
+        .system-log {
+            background: rgba(0, 0, 0, 0.8);
+            border: 1px solid #ffff00;
+            border-radius: 4px;
+            padding: 20px;
+            margin: 20px 0;
+            position: relative;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .system-log::before {
+            content: "[SYSTEM.LOG]";
+            position: absolute;
+            top: -10px;
+            left: 15px;
+            background: #000000;
+            color: #ffff00;
+            padding: 2px 8px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 10px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .log-entry {
+            display: flex;
+            align-items: flex-start;
+            margin: 8px 0;
+            gap: 12px;
+            padding: 8px;
+            border-radius: 2px;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        .log-entry:hover {
+            background: rgba(0, 255, 65, 0.05);
+            transform: translateX(3px);
+        }
+
+        .log-number {
+            min-width: 30px;
+            background: linear-gradient(145deg, #ffff00, #cccc00);
+            color: #000000;
+            padding: 4px 8px;
+            border-radius: 3px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 11px;
+            font-weight: 700;
+            text-align: center;
+            box-shadow: 0 0 5px rgba(255, 255, 0, 0.3);
+        }
+
+        .log-text {
+            flex: 1;
+            color: #00ff41;
+            font-size: 13px;
+        }
+
+        .log-text .warning {
+            color: #ffaa00;
+            font-weight: 700;
+        }
+
+        .log-text .error {
+            color: #ff0000;
+            font-weight: 700;
+        }
+
+        .log-text .success {
+            color: #00ff41;
+            font-weight: 700;
+        }
+
+        /* Matrix-style code rain effect */
+        .code-rain {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            top: 0;
+            left: 0;
+            pointer-events: none;
+            z-index: -1;
+            opacity: 0.1;
+        }
+
+        .rain-column {
+            position: absolute;
+            top: -100%;
+            color: #00ff41;
+            font-family: 'Fira Code', monospace;
+            font-size: 12px;
+            animation: matrixRain 8s linear infinite;
+            white-space: nowrap;
+        }
+
+        .rain-column:nth-child(1) { left: 5%; animation-delay: 0s; }
+        .rain-column:nth-child(2) { left: 15%; animation-delay: 1s; }
+        .rain-column:nth-child(3) { left: 25%; animation-delay: 2s; }
+        .rain-column:nth-child(4) { left: 35%; animation-delay: 3s; }
+        .rain-column:nth-child(5) { left: 45%; animation-delay: 4s; }
+        .rain-column:nth-child(6) { left: 55%; animation-delay: 5s; }
+        .rain-column:nth-child(7) { left: 65%; animation-delay: 6s; }
+        .rain-column:nth-child(8) { left: 75%; animation-delay: 7s; }
+        .rain-column:nth-child(9) { left: 85%; animation-delay: 0.5s; }
+        .rain-column:nth-child(10) { left: 95%; animation-delay: 1.5s; }
+
+        @keyframes matrixRain {
+            0% { 
+                top: -100%; 
+                opacity: 0; 
+            }
+            5% { 
+                opacity: 1; 
+            }
+            95% { 
+                opacity: 1; 
+            }
+            100% { 
+                top: 100%; 
+                opacity: 0; 
+            }
+        }
+
+        .cursor-blink {
+            animation: blink 1s infinite;
+        }
+
+        @keyframes blink {
+            0%, 50% { opacity: 1; }
+            51%, 100% { opacity: 0; }
+        }
+
+        /* Scrollbar styling */
+        .system-log::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .system-log::-webkit-scrollbar-track {
+            background: rgba(0, 255, 65, 0.1);
+        }
+
+        .system-log::-webkit-scrollbar-thumb {
+            background: rgba(0, 255, 65, 0.5);
+            border-radius: 4px;
+        }
+
+        .system-log::-webkit-scrollbar-thumb:hover {
+            background: rgba(0, 255, 65, 0.7);
+        }
+
+        @media (max-width: 768px) {
+            .terminal-window {
+                margin: 10px;
+                padding: 10px;
+            }
+            
+            .terminal-body {
+                padding: 15px;
+                font-size: 12px;
+            }
+            
+            .hack-buttons {
+                flex-direction: column;
+                align-items: center;
+            }
+            
+            .terminal-btn {
+                width: 100%;
+                max-width: 250px;
+            }
+            
+            .system-log {
+                max-height: 200px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="code-rain">
+        <div class="rain-column">01001100 01001100 01001101</div>
+        <div class="rain-column">11100001 10110011 00101101</div>
+        <div class="rain-column">00110101 11001010 10010111</div>
+        <div class="rain-column">10101100 01010011 11110000</div>
+        <div class="rain-column">01110110 10001111 00110010</div>
+        <div class="rain-column">11010101 00111100 10100101</div>
+        <div class="rain-column">00001111 11110000 01010101</div>
+        <div class="rain-column">10110010 00101101 11001100</div>
+        <div class="rain-column">01100110 10010011 00111111</div>
+        <div class="rain-column">11111000 00001111 10101010</div>
+    </div>
+
+    <div class="terminal-window">
+        <div class="terminal-frame">
+            <div class="terminal-header">
+                <div class="terminal-title">LLMPOSTOR v2.1.337</div>
+                <div class="terminal-controls">
+                    <div class="terminal-button close-btn"></div>
+                    <div class="terminal-button minimize-btn"></div>
+                    <div class="terminal-button maximize-btn"></div>
+                </div>
+            </div>
+            
+            <div class="terminal-body">
+                <div class="system-info">
+                    <div>System: <span class="highlight">NeuroNet OS 3.14159</span></div>
+                    <div>User: <span class="highlight">anonymous@darknet</span></div>
+                    <div>Security Level: <span class="highlight" style="color: #ff0000;">COMPROMISED</span></div>
+                    <div>Last Login: <span class="highlight">Never logged out</span></div>
+                </div>
+                
+                <div class="hack-session">
+                    <div class="prompt-line">
+                        <span class="root-prompt">root@llmpostor:#</span>
+                        <input type="text" class="command-input" placeholder="Enter hacker alias..." maxlength="20">
+                    </div>
+                    
+                    <div class="prompt-line">
+                        <span class="user-prompt">user@target:#</span>
+                        <input type="text" class="command-input" placeholder="Select network node..." maxlength="30">
+                    </div>
+                    
+                    <div class="hack-buttons">
+                        <button class="terminal-btn">./execute</button>
+                        <button class="terminal-btn exploit-btn">./exploit</button>
+                    </div>
+                </div>
+                
+                <div class="system-log">
+                    <div class="log-entry">
+                        <div class="log-number">01</div>
+                        <div class="log-text">
+                            <span class="success">CONNECT:</span> Infiltrate target AI system and download neural patterns
+                        </div>
+                    </div>
+                    <div class="log-entry">
+                        <div class="log-number">02</div>
+                        <div class="log-text">
+                            <span class="warning">SPOOF:</span> Generate synthetic responses using advanced mimicry algorithms
+                        </div>
+                    </div>
+                    <div class="log-entry">
+                        <div class="log-number">03</div>
+                        <div class="log-text">
+                            <span class="error">DETECT:</span> Analyze network traffic to identify authentic AI signatures
+                        </div>
+                    </div>
+                    <div class="log-entry">
+                        <div class="log-number">04</div>
+                        <div class="log-text">
+                            <span class="success">PROFIT:</span> Collect cryptocurrency rewards for successful infiltration
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="prompt-line">
+                    <span class="root-prompt">root@llmpostor:#</span>
+                    <span>_</span>
+                    <span class="cursor-blink">█</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Hacker sound effects
+            const hackerSounds = ['ACCESS GRANTED!', 'BREACH!', 'EXPLOIT!', 'HACK THE PLANET!', 'SYSTEM OWNED!', 'ROOT ACCESS!'];
+            
+            document.querySelectorAll('.terminal-btn').forEach(button => {
+                button.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    
+                    // Create floating hacker sound effect
+                    const soundEffect = document.createElement('div');
+                    soundEffect.textContent = hackerSounds[Math.floor(Math.random() * hackerSounds.length)];
+                    soundEffect.style.cssText = `
+                        position: fixed;
+                        left: ${e.clientX}px;
+                        top: ${e.clientY}px;
+                        font-family: 'JetBrains Mono', monospace;
+                        font-size: 12px;
+                        color: #00ff41;
+                        pointer-events: none;
+                        z-index: 9999;
+                        text-shadow: 0 0 10px #00ff41, 0 0 20px #00ff41;
+                        background: rgba(0, 0, 0, 0.9);
+                        padding: 6px 12px;
+                        border-radius: 4px;
+                        border: 1px solid #00ff41;
+                        animation: hackerPop 2s ease-out forwards;
+                    `;
+                    
+                    // Add animation if it doesn't exist
+                    if (!document.querySelector('#hacker-animations')) {
+                        const style = document.createElement('style');
+                        style.id = 'hacker-animations';
+                        style.textContent = `
+                            @keyframes hackerPop {
+                                0% { 
+                                    transform: translate(-50%, -50%) scale(0);
+                                    opacity: 1;
+                                }
+                                20% { 
+                                    transform: translate(-50%, -50%) scale(1.1);
+                                    opacity: 1;
+                                }
+                                40% { 
+                                    transform: translate(-50%, -50%) scale(0.95);
+                                    opacity: 1;
+                                }
+                                60% { 
+                                    transform: translate(-50%, -50%) scale(1.05);
+                                    opacity: 0.8;
+                                }
+                                100% { 
+                                    transform: translate(-50%, -50%) scale(0.3);
+                                    opacity: 0;
+                                }
+                            }
+                        `;
+                        document.head.appendChild(style);
+                    }
+                    
+                    document.body.appendChild(soundEffect);
+                    
+                    setTimeout(() => {
+                        if (document.body.contains(soundEffect)) {
+                            document.body.removeChild(soundEffect);
+                        }
+                    }, 2000);
+                });
+            });
+
+            // Terminal input effects
+            document.querySelectorAll('.command-input').forEach(input => {
+                input.addEventListener('input', function() {
+                    if (Math.random() < 0.4) { // 40% chance
+                        // Terminal processing effect
+                        this.style.background = 'rgba(0, 255, 65, 0.1)';
+                        this.style.boxShadow = `
+                            0 0 15px rgba(0, 255, 65, 0.4),
+                            inset 0 0 10px rgba(0, 255, 65, 0.2)
+                        `;
+                        setTimeout(() => {
+                            if (this === document.activeElement) {
+                                this.style.background = 'rgba(0, 255, 65, 0.05)';
+                                this.style.boxShadow = '0 0 10px rgba(0, 255, 65, 0.3)';
+                            } else {
+                                this.style.background = 'transparent';
+                                this.style.boxShadow = 'none';
+                            }
+                        }, 300);
+                    }
+                });
+
+                // Typing sound simulation
+                input.addEventListener('keypress', function() {
+                    const terminal = document.querySelector('.terminal-frame');
+                    terminal.style.boxShadow = `
+                        0 0 40px rgba(0, 255, 65, 0.4),
+                        inset 0 0 25px rgba(0, 255, 65, 0.08)
+                    `;
+                    setTimeout(() => {
+                        terminal.style.boxShadow = `
+                            0 0 30px rgba(0, 255, 65, 0.3),
+                            inset 0 0 20px rgba(0, 255, 65, 0.05)
+                        `;
+                    }, 100);
+                });
+            });
+
+            // Random terminal glitches
+            setInterval(() => {
+                if (Math.random() < 0.05) { // 5% chance
+                    const terminal = document.querySelector('.terminal-body');
+                    terminal.style.filter = 'brightness(1.2) contrast(1.1)';
+                    terminal.style.textShadow = '0 0 5px #00ff41';
+                    setTimeout(() => {
+                        terminal.style.filter = 'brightness(1) contrast(1)';
+                        terminal.style.textShadow = 'none';
+                    }, 150);
+                }
+            }, 2000);
+
+            // Log entry interactions
+            document.querySelectorAll('.log-entry').forEach((entry, index) => {
+                entry.addEventListener('mouseenter', function() {
+                    this.style.borderLeft = '3px solid #00ff41';
+                    this.style.paddingLeft = '12px';
+                    setTimeout(() => {
+                        const number = this.querySelector('.log-number');
+                        number.style.background = 'linear-gradient(145deg, #00ff41, #00cc33)';
+                        number.style.color = '#000000';
+                    }, index * 50);
+                });
+
+                entry.addEventListener('mouseleave', function() {
+                    this.style.borderLeft = 'none';
+                    this.style.paddingLeft = '8px';
+                    const number = this.querySelector('.log-number');
+                    number.style.background = 'linear-gradient(145deg, #ffff00, #cccc00)';
+                    number.style.color = '#000000';
+                });
+            });
+
+            // Matrix rain regeneration
+            setInterval(() => {
+                const rainColumns = document.querySelectorAll('.rain-column');
+                const randomColumn = rainColumns[Math.floor(Math.random() * rainColumns.length)];
+                const binaryStrings = [
+                    '01001100 01001100 01001101',
+                    '11100001 10110011 00101101',
+                    '00110101 11001010 10010111',
+                    '10101100 01010011 11110000',
+                    '01110110 10001111 00110010'
+                ];
+                randomColumn.textContent = binaryStrings[Math.floor(Math.random() * binaryStrings.length)];
+            }, 3000);
+
+            // System status updates
+            setInterval(() => {
+                if (Math.random() < 0.15) { // 15% chance
+                    const systemInfo = document.querySelector('.system-info');
+                    systemInfo.style.textShadow = '0 0 5px #00ff41';
+                    setTimeout(() => {
+                        systemInfo.style.textShadow = 'none';
+                    }, 500);
+                }
+            }, 4000);
+
+            // Terminal button effects
+            document.querySelectorAll('.terminal-button').forEach(button => {
+                button.addEventListener('click', function() {
+                    this.style.transform = 'scale(0.8)';
+                    setTimeout(() => {
+                        this.style.transform = 'scale(1)';
+                    }, 100);
+                });
+            });
+
+            // Hack session glow effect
+            setInterval(() => {
+                if (Math.random() < 0.1) { // 10% chance
+                    const hackSession = document.querySelector('.hack-session');
+                    hackSession.style.borderColor = '#ffff00';
+                    hackSession.style.boxShadow = '0 0 20px rgba(255, 255, 0, 0.3)';
+                    setTimeout(() => {
+                        hackSession.style.borderColor = '#00ff41';
+                        hackSession.style.boxShadow = 'none';
+                    }, 800);
+                }
+            }, 5000);
+
+            // Simulate terminal activity
+            setInterval(() => {
+                if (Math.random() < 0.08) { // 8% chance
+                    const logEntries = document.querySelectorAll('.log-entry');
+                    const randomEntry = logEntries[Math.floor(Math.random() * logEntries.length)];
+                    randomEntry.style.background = 'rgba(0, 255, 65, 0.1)';
+                    randomEntry.style.transform = 'translateX(5px)';
+                    setTimeout(() => {
+                        randomEntry.style.background = 'transparent';
+                        randomEntry.style.transform = 'translateX(0)';
+                    }, 600);
+                }
+            }, 3000);
+
+            // Button press effects
+            document.querySelectorAll('.terminal-btn').forEach(button => {
+                button.addEventListener('mousedown', function() {
+                    // Screen flash
+                    document.body.style.background = '#001100';
+                    setTimeout(() => {
+                        document.body.style.background = '#000000';
+                    }, 100);
+                });
+            });
+
+            // Auto-scroll system log occasionally
+            setInterval(() => {
+                if (Math.random() < 0.2) { // 20% chance
+                    const systemLog = document.querySelector('.system-log');
+                    systemLog.scrollTop = Math.random() * systemLog.scrollHeight;
+                }
+            }, 10000);
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,882 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LLMpostor - Space Mission Control</title>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Space+Mono:wght@400;700&family=Audiowide&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Space Mono', monospace;
+            background: linear-gradient(135deg, #0a0a2e 0%, #16213e 50%, #0f3460 100%);
+            color: #ffffff;
+            min-height: 100vh;
+            position: relative;
+            overflow-x: hidden;
+            background-image: 
+                radial-gradient(circle at 20% 80%, rgba(120, 119, 198, 0.3) 0%, transparent 50%),
+                radial-gradient(circle at 80% 20%, rgba(255, 119, 48, 0.2) 0%, transparent 50%),
+                radial-gradient(circle at 40% 40%, rgba(255, 255, 255, 0.05) 0%, transparent 50%);
+        }
+
+        /* Floating stars */
+        body::before {
+            content: "";
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: 
+                radial-gradient(2px 2px at 20px 30px, #ffffff, transparent),
+                radial-gradient(2px 2px at 40px 70px, #ffffff, transparent),
+                radial-gradient(1px 1px at 90px 40px, #ffffff, transparent),
+                radial-gradient(1px 1px at 130px 80px, #ffffff, transparent),
+                radial-gradient(2px 2px at 160px 30px, #ffffff, transparent);
+            background-repeat: repeat;
+            background-size: 200px 100px;
+            animation: starfield 50s linear infinite;
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        @keyframes starfield {
+            0% { background-position: 0 0; }
+            100% { background-position: -200px -100px; }
+        }
+
+        /* Rocket exhaust effect */
+        body::after {
+            content: "";
+            position: fixed;
+            bottom: 0;
+            left: 50%;
+            width: 200px;
+            height: 300px;
+            background: 
+                radial-gradient(ellipse at center, 
+                rgba(255, 119, 48, 0.4) 0%, 
+                rgba(255, 69, 0, 0.2) 30%, 
+                transparent 70%);
+            transform: translateX(-50%);
+            animation: rocketExhaust 2s ease-in-out infinite alternate;
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        @keyframes rocketExhaust {
+            0% { height: 250px; opacity: 0.6; }
+            100% { height: 350px; opacity: 0.8; }
+        }
+
+        .mission-control {
+            max-width: 1100px;
+            margin: 30px auto;
+            position: relative;
+            z-index: 2;
+            padding: 20px;
+        }
+
+        .command-module {
+            background: linear-gradient(145deg, #1a1a2e, #16213e);
+            border: 4px solid #0f3460;
+            border-radius: 25px;
+            padding: 40px;
+            position: relative;
+            box-shadow: 
+                0 20px 40px rgba(0, 0, 0, 0.5),
+                inset 0 0 30px rgba(120, 119, 198, 0.1),
+                0 0 50px rgba(120, 119, 198, 0.3);
+            background-image: 
+                linear-gradient(45deg, rgba(120, 119, 198, 0.03) 25%, transparent 25%),
+                linear-gradient(-45deg, rgba(120, 119, 198, 0.03) 25%, transparent 25%),
+                linear-gradient(45deg, transparent 75%, rgba(120, 119, 198, 0.03) 75%),
+                linear-gradient(-45deg, transparent 75%, rgba(120, 119, 198, 0.03) 75%);
+            background-size: 30px 30px;
+            background-position: 0 0, 0 15px, 15px -15px, -15px 0px;
+        }
+
+        /* Rocket ship decoration */
+        .command-module::before {
+            content: "🚀";
+            position: absolute;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 35px;
+            animation: rocketFloat 4s ease-in-out infinite;
+        }
+
+        @keyframes rocketFloat {
+            0%, 100% { transform: translateX(-50%) translateY(0) rotate(0deg); }
+            25% { transform: translateX(-50%) translateY(-10px) rotate(5deg); }
+            75% { transform: translateX(-50%) translateY(-5px) rotate(-3deg); }
+        }
+
+        /* Control panel indicators */
+        .command-module::after {
+            content: "";
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            width: 15px;
+            height: 15px;
+            background: #00ff41;
+            border-radius: 50%;
+            box-shadow: 
+                0 0 15px #00ff41,
+                -25px 0 0 0 #ff4757,
+                -25px 0 15px 0 #ff4757,
+                -50px 0 0 0 #3742fa,
+                -50px 0 15px 0 #3742fa;
+            animation: controlLights 3s infinite;
+        }
+
+        @keyframes controlLights {
+            0%, 100% { opacity: 1; }
+            33% { opacity: 0.4; }
+            66% { opacity: 0.7; }
+        }
+
+        .mission-header {
+            text-align: center;
+            margin-bottom: 40px;
+            background: linear-gradient(145deg, #0f3460, #16213e);
+            border: 3px solid #7877c6;
+            border-radius: 20px;
+            padding: 30px;
+            position: relative;
+            box-shadow: 
+                inset 0 0 30px rgba(120, 119, 198, 0.2),
+                0 10px 20px rgba(0, 0, 0, 0.3);
+        }
+
+        .mission-header::before {
+            content: "";
+            position: absolute;
+            top: -2px;
+            left: -2px;
+            right: -2px;
+            bottom: -2px;
+            background: linear-gradient(45deg, #7877c6, #ff7730, #7877c6);
+            border-radius: 22px;
+            z-index: -1;
+            animation: headerGlow 4s linear infinite;
+        }
+
+        @keyframes headerGlow {
+            0% { opacity: 0.7; }
+            50% { opacity: 1; }
+            100% { opacity: 0.7; }
+        }
+
+        .space-title {
+            font-family: 'Audiowide', cursive;
+            font-size: 42px;
+            font-weight: 900;
+            background: linear-gradient(45deg, #7877c6, #ff7730, #ffffff);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 15px;
+            text-shadow: 0 0 30px rgba(120, 119, 198, 0.5);
+            animation: titlePulse 3s ease-in-out infinite;
+        }
+
+        @keyframes titlePulse {
+            0%, 100% { filter: brightness(1); }
+            50% { filter: brightness(1.3); }
+        }
+
+        .mission-badge {
+            background: linear-gradient(45deg, #ff7730, #ffa502);
+            color: #ffffff;
+            padding: 12px 30px;
+            border-radius: 25px;
+            font-family: 'Orbitron', monospace;
+            font-size: 16px;
+            font-weight: 700;
+            display: inline-block;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            border: 3px solid #ffffff;
+            box-shadow: 
+                0 0 25px rgba(255, 119, 48, 0.5),
+                inset 0 0 15px rgba(255, 255, 255, 0.2);
+            position: relative;
+        }
+
+        .mission-badge::before {
+            content: "⭐";
+            position: absolute;
+            left: -15px;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 20px;
+            animation: starRotate 4s linear infinite;
+        }
+
+        @keyframes starRotate {
+            0% { transform: translateY(-50%) rotate(0deg); }
+            100% { transform: translateY(-50%) rotate(360deg); }
+        }
+
+        .launch-pad {
+            background: linear-gradient(145deg, #0a0a2e, #16213e);
+            border: 3px solid #7877c6;
+            border-radius: 20px;
+            padding: 30px;
+            margin-bottom: 30px;
+            position: relative;
+            box-shadow: 
+                inset 0 0 30px rgba(120, 119, 198, 0.1),
+                0 10px 30px rgba(0, 0, 0, 0.4);
+        }
+
+        .launch-pad::before {
+            content: "LAUNCH SEQUENCE INITIATED";
+            position: absolute;
+            top: -15px;
+            left: 30px;
+            background: #ff7730;
+            color: #ffffff;
+            padding: 8px 16px;
+            border-radius: 15px;
+            font-family: 'Orbitron', monospace;
+            font-size: 12px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            border: 2px solid #ffffff;
+            box-shadow: 0 0 15px rgba(255, 119, 48, 0.4);
+            animation: launchBlink 2s infinite;
+        }
+
+        @keyframes launchBlink {
+            0%, 50% { opacity: 1; }
+            51%, 100% { opacity: 0.6; }
+        }
+
+        .astronaut-section {
+            margin-bottom: 25px;
+        }
+
+        .space-label {
+            display: block;
+            font-family: 'Orbitron', monospace;
+            font-size: 14px;
+            font-weight: 700;
+            margin-bottom: 10px;
+            color: #7877c6;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            text-shadow: 0 0 10px rgba(120, 119, 198, 0.5);
+        }
+
+        .cosmic-input {
+            width: 100%;
+            padding: 16px 24px;
+            background: linear-gradient(145deg, rgba(10, 10, 46, 0.8), rgba(22, 33, 62, 0.8));
+            border: 3px solid #7877c6;
+            border-radius: 15px;
+            color: #ffffff;
+            font-family: 'Space Mono', monospace;
+            font-size: 16px;
+            font-weight: 700;
+            transition: all 0.3s ease;
+            box-shadow: 
+                inset 0 0 20px rgba(120, 119, 198, 0.2),
+                0 5px 15px rgba(0, 0, 0, 0.3);
+            backdrop-filter: blur(10px);
+        }
+
+        .cosmic-input:focus {
+            outline: none;
+            border-color: #ff7730;
+            color: #ff7730;
+            box-shadow: 
+                inset 0 0 30px rgba(255, 119, 48, 0.2),
+                0 0 25px rgba(255, 119, 48, 0.4);
+            animation: cosmicPulse 1s ease-in-out infinite;
+        }
+
+        @keyframes cosmicPulse {
+            0%, 100% { 
+                text-shadow: 0 0 5px currentColor; 
+                transform: scale(1);
+            }
+            50% { 
+                text-shadow: 0 0 20px currentColor, 0 0 30px currentColor; 
+                transform: scale(1.02);
+            }
+        }
+
+        .cosmic-input::placeholder {
+            color: rgba(120, 119, 198, 0.6);
+            font-style: italic;
+        }
+
+        .launch-controls {
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+            margin-top: 30px;
+            flex-wrap: wrap;
+        }
+
+        .rocket-button {
+            background: linear-gradient(145deg, #ff7730, #e55039);
+            border: 4px solid #ffffff;
+            border-radius: 20px;
+            color: #ffffff;
+            padding: 18px 35px;
+            font-family: 'Orbitron', monospace;
+            font-size: 16px;
+            font-weight: 700;
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            transition: all 0.3s ease;
+            box-shadow: 
+                0 8px 0 #c44536,
+                0 0 30px rgba(255, 119, 48, 0.4),
+                inset 0 0 20px rgba(255, 255, 255, 0.1);
+        }
+
+        .rocket-button::before {
+            content: "";
+            position: absolute;
+            top: 5px;
+            left: 5px;
+            right: 5px;
+            height: 3px;
+            background: linear-gradient(90deg, #ffffff, rgba(255, 255, 255, 0.3), #ffffff);
+            border-radius: 2px;
+            animation: energyFlow 2s linear infinite;
+        }
+
+        @keyframes energyFlow {
+            0% { opacity: 0.5; transform: scaleX(1); }
+            50% { opacity: 1; transform: scaleX(1.2); }
+            100% { opacity: 0.5; transform: scaleX(1); }
+        }
+
+        .rocket-button::after {
+            content: "🌟";
+            position: absolute;
+            top: 8px;
+            right: 12px;
+            font-size: 14px;
+            animation: thruster 3s linear infinite;
+        }
+
+        @keyframes thruster {
+            0% { transform: scale(1) rotate(0deg); }
+            25% { transform: scale(1.2) rotate(90deg); }
+            50% { transform: scale(1) rotate(180deg); }
+            75% { transform: scale(0.8) rotate(270deg); }
+            100% { transform: scale(1) rotate(360deg); }
+        }
+
+        .rocket-button:hover {
+            transform: translateY(-4px);
+            box-shadow: 
+                0 12px 0 #c44536,
+                0 0 40px rgba(255, 119, 48, 0.6),
+                inset 0 0 30px rgba(255, 255, 255, 0.2);
+        }
+
+        .rocket-button:active {
+            transform: translateY(4px);
+            box-shadow: 
+                0 4px 0 #c44536,
+                0 0 20px rgba(255, 119, 48, 0.3),
+                inset 0 0 10px rgba(255, 255, 255, 0.1);
+        }
+
+        .explorer-button {
+            background: linear-gradient(145deg, #7877c6, #5f27cd);
+            box-shadow: 
+                0 8px 0 #4834a8,
+                0 0 30px rgba(120, 119, 198, 0.4),
+                inset 0 0 20px rgba(255, 255, 255, 0.1);
+        }
+
+        .explorer-button:hover {
+            box-shadow: 
+                0 12px 0 #4834a8,
+                0 0 40px rgba(120, 119, 198, 0.6),
+                inset 0 0 30px rgba(255, 255, 255, 0.2);
+        }
+
+        .explorer-button:active {
+            box-shadow: 
+                0 4px 0 #4834a8,
+                0 0 20px rgba(120, 119, 198, 0.3),
+                inset 0 0 10px rgba(255, 255, 255, 0.1);
+        }
+
+        .mission-briefing {
+            background: linear-gradient(145deg, #16213e, #0f3460);
+            border: 3px solid #ff7730;
+            border-radius: 20px;
+            padding: 30px;
+            position: relative;
+            box-shadow: 
+                inset 0 0 30px rgba(255, 119, 48, 0.1),
+                0 10px 30px rgba(0, 0, 0, 0.4);
+            background-image: 
+                radial-gradient(circle at 70% 30%, rgba(255, 119, 48, 0.1) 2px, transparent 2px),
+                radial-gradient(circle at 30% 70%, rgba(120, 119, 198, 0.1) 3px, transparent 3px);
+            background-size: 50px 50px, 35px 35px;
+        }
+
+        .mission-briefing::before {
+            content: "MISSION OBJECTIVES";
+            position: absolute;
+            top: -15px;
+            left: 30px;
+            background: #7877c6;
+            color: #ffffff;
+            padding: 8px 16px;
+            border-radius: 15px;
+            font-family: 'Orbitron', monospace;
+            font-size: 12px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            border: 2px solid #ffffff;
+            box-shadow: 0 0 15px rgba(120, 119, 198, 0.4);
+        }
+
+        .mission-steps {
+            display: grid;
+            gap: 25px;
+            margin-top: 30px;
+        }
+
+        .mission-step {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            background: rgba(120, 119, 198, 0.1);
+            border: 3px solid #7877c6;
+            border-radius: 20px;
+            padding: 25px;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        .mission-step::before {
+            content: "";
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            width: 12px;
+            height: 12px;
+            background: #00ff41;
+            border-radius: 50%;
+            box-shadow: 0 0 15px #00ff41;
+            animation: satelliteSignal 4s infinite;
+        }
+
+        @keyframes satelliteSignal {
+            0%, 80% { opacity: 0.5; transform: scale(1); }
+            10% { opacity: 1; transform: scale(1.5); }
+            20% { opacity: 0.7; transform: scale(1.2); }
+        }
+
+        .mission-step:hover {
+            background: rgba(120, 119, 198, 0.2);
+            transform: scale(1.03);
+            box-shadow: 0 15px 30px rgba(120, 119, 198, 0.3);
+            border-color: #ff7730;
+        }
+
+        .step-console {
+            min-width: 70px;
+            height: 70px;
+            background: linear-gradient(145deg, #ff7730, #e55039);
+            border: 3px solid #ffffff;
+            border-radius: 15px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: 'Audiowide', cursive;
+            font-size: 24px;
+            font-weight: 900;
+            color: #ffffff;
+            text-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
+            position: relative;
+            box-shadow: 
+                0 0 20px rgba(255, 119, 48, 0.5),
+                inset 0 0 15px rgba(255, 255, 255, 0.2);
+            animation: consoleGlow 5s ease-in-out infinite;
+        }
+
+        @keyframes consoleGlow {
+            0%, 100% { box-shadow: 0 0 20px rgba(255, 119, 48, 0.5), inset 0 0 15px rgba(255, 255, 255, 0.2); }
+            50% { box-shadow: 0 0 40px rgba(255, 119, 48, 0.8), inset 0 0 25px rgba(255, 255, 255, 0.3); }
+        }
+
+        .step-console::after {
+            content: "";
+            position: absolute;
+            bottom: 5px;
+            left: 5px;
+            right: 5px;
+            height: 2px;
+            background: linear-gradient(90deg, #ffffff, transparent, #ffffff);
+            animation: dataFlow 3s linear infinite;
+        }
+
+        @keyframes dataFlow {
+            0% { opacity: 0.3; transform: scaleX(1); }
+            50% { opacity: 1; transform: scaleX(1.2); }
+            100% { opacity: 0.3; transform: scaleX(1); }
+        }
+
+        .step-data h3 {
+            font-family: 'Orbitron', monospace;
+            font-size: 18px;
+            font-weight: 700;
+            margin-bottom: 8px;
+            color: #ff7730;
+            text-transform: uppercase;
+            text-shadow: 0 0 10px rgba(255, 119, 48, 0.3);
+        }
+
+        .step-data p {
+            font-size: 16px;
+            color: #ffffff;
+            line-height: 1.6;
+            font-weight: 400;
+        }
+
+        .space-particles {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            top: 0;
+            left: 0;
+            pointer-events: none;
+            z-index: -1;
+        }
+
+        .particle {
+            position: absolute;
+            font-size: 20px;
+            opacity: 0.7;
+            animation: spaceFloat 15s ease-in-out infinite;
+        }
+
+        .particle:nth-child(1) { 
+            top: 15%; 
+            left: 10%; 
+            animation-delay: 0s; 
+        }
+        .particle:nth-child(2) { 
+            top: 25%; 
+            right: 15%; 
+            animation-delay: 5s; 
+        }
+        .particle:nth-child(3) { 
+            bottom: 40%; 
+            left: 20%; 
+            animation-delay: 10s; 
+        }
+        .particle:nth-child(4) { 
+            bottom: 20%; 
+            right: 10%; 
+            animation-delay: 12s; 
+        }
+
+        @keyframes spaceFloat {
+            0%, 100% { 
+                transform: translateY(0) rotate(0deg) scale(1);
+                opacity: 0.4;
+            }
+            25% { 
+                transform: translateY(-40px) rotate(90deg) scale(1.2);
+                opacity: 0.8;
+            }
+            50% { 
+                transform: translateY(-20px) rotate(180deg) scale(0.9);
+                opacity: 0.6;
+            }
+            75% { 
+                transform: translateY(-35px) rotate(270deg) scale(1.1);
+                opacity: 0.9;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .mission-control {
+                margin: 15px;
+                padding: 15px;
+            }
+            
+            .command-module {
+                padding: 25px;
+            }
+            
+            .space-title {
+                font-size: 32px;
+            }
+            
+            .launch-controls {
+                flex-direction: column;
+                align-items: center;
+            }
+            
+            .rocket-button {
+                width: 100%;
+                max-width: 300px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="space-particles">
+        <div class="particle">🛸</div>
+        <div class="particle">🌌</div>
+        <div class="particle">⭐</div>
+        <div class="particle">🚀</div>
+    </div>
+
+    <div class="mission-control">
+        <div class="command-module">
+            <div class="mission-header">
+                <div class="space-title">LLMpostor</div>
+                <div class="mission-badge">Space Mission Control</div>
+            </div>
+            
+            <div class="launch-pad">
+                <form>
+                    <div class="astronaut-section">
+                        <label class="space-label">Astronaut Callsign</label>
+                        <input type="text" class="cosmic-input" placeholder="Enter your space explorer name..." maxlength="20">
+                    </div>
+                    
+                    <div class="astronaut-section">
+                        <label class="space-label">Space Station</label>
+                        <input type="text" class="cosmic-input" placeholder="Target space station coordinates..." maxlength="30">
+                    </div>
+                    
+                    <div class="launch-controls">
+                        <button type="submit" class="rocket-button">Launch Mission!</button>
+                        <button type="button" class="rocket-button explorer-button">Auto Pilot!</button>
+                    </div>
+                </form>
+            </div>
+            
+            <div class="mission-briefing">
+                <div class="mission-steps">
+                    <div class="mission-step">
+                        <div class="step-console">01</div>
+                        <div class="step-data">
+                            <h3>Data Transmission</h3>
+                            <p>Receive mission data and AI entity specifications from Earth Command</p>
+                        </div>
+                    </div>
+                    <div class="mission-step">
+                        <div class="step-console">02</div>
+                        <div class="step-data">
+                            <h3>Signal Mimicry</h3>
+                            <p>Generate synthetic responses to blend with alien AI communications</p>
+                        </div>
+                    </div>
+                    <div class="mission-step">
+                        <div class="step-console">03</div>
+                        <div class="step-data">
+                            <h3>Entity Detection</h3>
+                            <p>Scan transmission patterns to identify authentic AI among decoys</p>
+                        </div>
+                    </div>
+                    <div class="mission-step">
+                        <div class="step-console">04</div>
+                        <div class="step-data">
+                            <h3>Mission Points</h3>
+                            <p>Earn stellar credits for successful infiltration and accurate detection</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Space sound effects
+            const spaceSounds = ['BLAST OFF!', 'HOUSTON!', 'ROGER!', 'LAUNCH!', 'IGNITION!', 'GO FLIGHT!'];
+            
+            document.querySelectorAll('.rocket-button').forEach(button => {
+                button.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    
+                    // Create floating space sound effect
+                    const soundEffect = document.createElement('div');
+                    soundEffect.textContent = spaceSounds[Math.floor(Math.random() * spaceSounds.length)];
+                    soundEffect.style.cssText = `
+                        position: fixed;
+                        left: ${e.clientX}px;
+                        top: ${e.clientY}px;
+                        font-family: 'Orbitron', monospace;
+                        font-size: 18px;
+                        color: #ff7730;
+                        pointer-events: none;
+                        z-index: 9999;
+                        text-shadow: 0 0 15px #ff7730, 0 0 30px #ffffff;
+                        background: rgba(16, 33, 62, 0.9);
+                        padding: 8px 15px;
+                        border-radius: 20px;
+                        border: 2px solid #7877c6;
+                        animation: spacePop 2.5s ease-out forwards;
+                    `;
+                    
+                    // Add animation if it doesn't exist
+                    if (!document.querySelector('#space-animations')) {
+                        const style = document.createElement('style');
+                        style.id = 'space-animations';
+                        style.textContent = `
+                            @keyframes spacePop {
+                                0% { 
+                                    transform: translate(-50%, -50%) scale(0) rotate(0deg);
+                                    opacity: 1;
+                                }
+                                20% { 
+                                    transform: translate(-50%, -50%) scale(1.4) rotate(-20deg);
+                                    opacity: 1;
+                                }
+                                40% { 
+                                    transform: translate(-50%, -50%) scale(0.9) rotate(15deg);
+                                    opacity: 1;
+                                }
+                                60% { 
+                                    transform: translate(-50%, -50%) scale(1.2) rotate(-10deg);
+                                    opacity: 0.8;
+                                }
+                                100% { 
+                                    transform: translate(-50%, -50%) scale(0.2) rotate(0deg);
+                                    opacity: 0;
+                                }
+                            }
+                        `;
+                        document.head.appendChild(style);
+                    }
+                    
+                    document.body.appendChild(soundEffect);
+                    
+                    setTimeout(() => {
+                        if (document.body.contains(soundEffect)) {
+                            document.body.removeChild(soundEffect);
+                        }
+                    }, 2500);
+                });
+            });
+
+            // Cosmic input effects
+            document.querySelectorAll('.cosmic-input').forEach(input => {
+                input.addEventListener('input', function() {
+                    if (Math.random() < 0.25) { // 25% chance
+                        // Energy surge effect
+                        this.style.background = 'linear-gradient(145deg, rgba(255, 119, 48, 0.3), rgba(120, 119, 198, 0.3))';
+                        this.style.boxShadow = `
+                            inset 0 0 30px rgba(255, 119, 48, 0.4),
+                            0 0 40px rgba(120, 119, 198, 0.5)
+                        `;
+                        setTimeout(() => {
+                            if (this === document.activeElement) {
+                                this.style.background = 'linear-gradient(145deg, rgba(10, 10, 46, 0.8), rgba(22, 33, 62, 0.8))';
+                                this.style.boxShadow = `
+                                    inset 0 0 30px rgba(255, 119, 48, 0.2),
+                                    0 0 25px rgba(255, 119, 48, 0.4)
+                                `;
+                            } else {
+                                this.style.background = 'linear-gradient(145deg, rgba(10, 10, 46, 0.8), rgba(22, 33, 62, 0.8))';
+                                this.style.boxShadow = `
+                                    inset 0 0 20px rgba(120, 119, 198, 0.2),
+                                    0 5px 15px rgba(0, 0, 0, 0.3)
+                                `;
+                            }
+                        }, 400);
+                    }
+                });
+
+                // Launch vibration effect when typing
+                input.addEventListener('keypress', function() {
+                    const module = document.querySelector('.command-module');
+                    module.style.transform = 'translateY(-2px) rotate(0.2deg)';
+                    setTimeout(() => {
+                        module.style.transform = 'translateY(1px) rotate(-0.1deg)';
+                    }, 100);
+                    setTimeout(() => {
+                        module.style.transform = 'translateY(0) rotate(0deg)';
+                    }, 200);
+                });
+            });
+
+            // Random space station movements
+            setInterval(() => {
+                if (Math.random() < 0.06) { // 6% chance
+                    const module = document.querySelector('.command-module');
+                    module.style.transform = 'translateX(2px) rotate(0.3deg)';
+                    setTimeout(() => {
+                        module.style.transform = 'translateX(-1px) rotate(-0.2deg)';
+                    }, 400);
+                    setTimeout(() => {
+                        module.style.transform = 'translateX(0) rotate(0deg)';
+                    }, 800);
+                }
+            }, 4000);
+
+            // Particle system enhancement
+            setInterval(() => {
+                if (Math.random() < 0.1) { // 10% chance
+                    const particles = document.querySelectorAll('.particle');
+                    const randomParticle = particles[Math.floor(Math.random() * particles.length)];
+                    randomParticle.style.filter = 'brightness(2) drop-shadow(0 0 20px currentColor)';
+                    randomParticle.style.transform = 'scale(1.3)';
+                    setTimeout(() => {
+                        randomParticle.style.filter = 'brightness(1)';
+                        randomParticle.style.transform = 'scale(1)';
+                    }, 800);
+                }
+            }, 2500);
+
+            // Launch sequence countdown effect
+            document.querySelectorAll('.rocket-button').forEach(button => {
+                button.addEventListener('mousedown', function() {
+                    // Screen flash effect
+                    document.body.style.background = 'linear-gradient(135deg, #1a1a3e 0%, #26335e 50%, #2f4470 100%)';
+                    setTimeout(() => {
+                        document.body.style.background = 'linear-gradient(135deg, #0a0a2e 0%, #16213e 50%, #0f3460 100%)';
+                    }, 150);
+                });
+            });
+
+            // Satellite communication effect
+            setInterval(() => {
+                if (Math.random() < 0.12) { // 12% chance
+                    const steps = document.querySelectorAll('.mission-step');
+                    steps.forEach(step => {
+                        const signal = step.querySelector('::before');
+                        step.style.borderColor = '#00ff41';
+                        setTimeout(() => {
+                            step.style.borderColor = '#7877c6';
+                        }, 500);
+                    });
+                }
+            }, 5000);
+        });
+    </script>
+</body>
+</html>

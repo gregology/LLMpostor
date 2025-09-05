@@ -1,0 +1,525 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LLMpostor - Synthwave Nights</title>
+    <link href="https://fonts.googleapis.com/css2?family=Audiowide&family=Raleway:wght@400;600;800&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Raleway', sans-serif;
+            background: linear-gradient(135deg, #1a0033, #000011);
+            color: #ffffff;
+            min-height: 100vh;
+            position: relative;
+            overflow-x: hidden;
+        }
+
+        /* Animated background */
+        body::before {
+            content: "";
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 200%;
+            height: 200%;
+            background: 
+                radial-gradient(circle at 20% 20%, rgba(255, 20, 147, 0.1) 0%, transparent 50%),
+                radial-gradient(circle at 80% 80%, rgba(0, 255, 255, 0.1) 0%, transparent 50%),
+                radial-gradient(circle at 40% 70%, rgba(138, 43, 226, 0.1) 0%, transparent 50%);
+            animation: float 20s ease-in-out infinite;
+            z-index: -2;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translate(0, 0) rotate(0deg); }
+            33% { transform: translate(-20px, -20px) rotate(1deg); }
+            66% { transform: translate(20px, -10px) rotate(-1deg); }
+        }
+
+        /* Grid overlay */
+        body::after {
+            content: "";
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: 
+                linear-gradient(rgba(255, 20, 147, 0.1) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0, 255, 255, 0.1) 1px, transparent 1px);
+            background-size: 50px 50px;
+            pointer-events: none;
+            z-index: -1;
+            animation: grid-move 15s linear infinite;
+        }
+
+        @keyframes grid-move {
+            0% { transform: translate(0, 0); }
+            100% { transform: translate(50px, 50px); }
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 40px 20px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .neon-card {
+            background: rgba(0, 0, 0, 0.7);
+            border: 2px solid transparent;
+            border-radius: 20px;
+            padding: 40px;
+            backdrop-filter: blur(10px);
+            position: relative;
+            box-shadow: 
+                0 20px 40px rgba(0, 0, 0, 0.3),
+                inset 0 0 50px rgba(255, 20, 147, 0.1);
+        }
+
+        .neon-card::before {
+            content: "";
+            position: absolute;
+            top: -2px;
+            left: -2px;
+            right: -2px;
+            bottom: -2px;
+            background: linear-gradient(45deg, #ff1493, #00ffff, #8a2be2, #ff1493);
+            border-radius: 20px;
+            z-index: -1;
+            animation: neon-border 3s linear infinite;
+        }
+
+        @keyframes neon-border {
+            0% { background-position: 0% 0%; }
+            100% { background-position: 400% 0%; }
+        }
+
+        .title {
+            font-family: 'Audiowide', cursive;
+            font-size: 48px;
+            text-align: center;
+            margin-bottom: 20px;
+            background: linear-gradient(45deg, #ff1493, #00ffff, #8a2be2);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            text-shadow: 0 0 50px rgba(255, 20, 147, 0.5);
+            animation: title-glow 2s ease-in-out infinite alternate;
+            position: relative;
+        }
+
+        @keyframes title-glow {
+            0% { 
+                filter: drop-shadow(0 0 10px #ff1493) drop-shadow(0 0 20px #ff1493);
+            }
+            100% { 
+                filter: drop-shadow(0 0 20px #00ffff) drop-shadow(0 0 30px #00ffff);
+            }
+        }
+
+        .subtitle {
+            text-align: center;
+            font-size: 18px;
+            color: #ff1493;
+            margin-bottom: 40px;
+            text-transform: uppercase;
+            letter-spacing: 3px;
+            font-weight: 600;
+        }
+
+        .join-section {
+            background: rgba(255, 20, 147, 0.1);
+            border: 1px solid #ff1493;
+            border-radius: 15px;
+            padding: 30px;
+            margin-bottom: 40px;
+            box-shadow: 
+                0 0 30px rgba(255, 20, 147, 0.2),
+                inset 0 0 30px rgba(255, 20, 147, 0.05);
+        }
+
+        .section-title {
+            font-size: 24px;
+            font-weight: 800;
+            margin-bottom: 25px;
+            text-align: center;
+            color: #00ffff;
+            text-shadow: 0 0 10px #00ffff;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        .form-group {
+            margin-bottom: 25px;
+        }
+
+        .form-label {
+            display: block;
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 10px;
+            color: #ff1493;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .neon-input {
+            width: 100%;
+            padding: 18px 25px;
+            background: rgba(0, 0, 0, 0.6);
+            border: 2px solid #8a2be2;
+            border-radius: 25px;
+            color: #ffffff;
+            font-family: 'Raleway', sans-serif;
+            font-size: 16px;
+            transition: all 0.3s ease;
+            box-shadow: 
+                0 0 20px rgba(138, 43, 226, 0.2),
+                inset 0 0 20px rgba(0, 0, 0, 0.3);
+        }
+
+        .neon-input:focus {
+            outline: none;
+            border-color: #00ffff;
+            box-shadow: 
+                0 0 30px rgba(0, 255, 255, 0.4),
+                inset 0 0 20px rgba(0, 255, 255, 0.1);
+            transform: scale(1.02);
+        }
+
+        .neon-input::placeholder {
+            color: rgba(255, 255, 255, 0.5);
+            font-style: italic;
+        }
+
+        .button-row {
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+            margin-top: 30px;
+            flex-wrap: wrap;
+        }
+
+        .neon-button {
+            background: linear-gradient(45deg, #ff1493, #8a2be2);
+            border: none;
+            border-radius: 25px;
+            color: #ffffff;
+            padding: 18px 35px;
+            font-family: 'Raleway', sans-serif;
+            font-size: 16px;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 
+                0 0 25px rgba(255, 20, 147, 0.4),
+                0 10px 20px rgba(0, 0, 0, 0.2);
+        }
+
+        .neon-button::before {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+            transition: left 0.5s;
+        }
+
+        .neon-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 
+                0 0 40px rgba(255, 20, 147, 0.6),
+                0 15px 25px rgba(0, 0, 0, 0.3);
+        }
+
+        .neon-button:hover::before {
+            left: 100%;
+        }
+
+        .secondary-button {
+            background: linear-gradient(45deg, #00ffff, #8a2be2);
+            box-shadow: 
+                0 0 25px rgba(0, 255, 255, 0.4),
+                0 10px 20px rgba(0, 0, 0, 0.2);
+        }
+
+        .secondary-button:hover {
+            box-shadow: 
+                0 0 40px rgba(0, 255, 255, 0.6),
+                0 15px 25px rgba(0, 0, 0, 0.3);
+        }
+
+        .instructions {
+            background: rgba(0, 255, 255, 0.1);
+            border: 1px solid #00ffff;
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 
+                0 0 30px rgba(0, 255, 255, 0.2),
+                inset 0 0 30px rgba(0, 255, 255, 0.05);
+        }
+
+        .steps-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 25px;
+            margin-top: 30px;
+        }
+
+        .step-card {
+            background: rgba(0, 0, 0, 0.5);
+            border: 1px solid #8a2be2;
+            border-radius: 15px;
+            padding: 25px;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .step-card::before {
+            content: "";
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: conic-gradient(from 0deg at 50% 50%, transparent, rgba(138, 43, 226, 0.1), transparent);
+            animation: rotate 4s linear infinite;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .step-card:hover::before {
+            opacity: 1;
+        }
+
+        @keyframes rotate {
+            100% { transform: rotate(360deg); }
+        }
+
+        .step-number {
+            font-size: 32px;
+            font-weight: 800;
+            background: linear-gradient(45deg, #ff1493, #00ffff);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 15px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .step-title {
+            font-size: 20px;
+            font-weight: 800;
+            margin-bottom: 10px;
+            color: #00ffff;
+            position: relative;
+            z-index: 1;
+        }
+
+        .step-desc {
+            font-size: 16px;
+            color: #ffffff;
+            opacity: 0.9;
+            line-height: 1.6;
+            position: relative;
+            z-index: 1;
+        }
+
+        .floating-elements {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            top: 0;
+            left: 0;
+            pointer-events: none;
+            z-index: -1;
+        }
+
+        .floating-element {
+            position: absolute;
+            width: 6px;
+            height: 6px;
+            background: #ff1493;
+            border-radius: 50%;
+            box-shadow: 0 0 10px #ff1493;
+            animation: float-up 8s linear infinite;
+        }
+
+        .floating-element:nth-child(2n) {
+            background: #00ffff;
+            box-shadow: 0 0 10px #00ffff;
+            animation-duration: 10s;
+        }
+
+        .floating-element:nth-child(3n) {
+            background: #8a2be2;
+            box-shadow: 0 0 10px #8a2be2;
+            animation-duration: 12s;
+        }
+
+        @keyframes float-up {
+            0% {
+                transform: translateY(100vh) scale(0);
+                opacity: 0;
+            }
+            10% {
+                opacity: 1;
+            }
+            90% {
+                opacity: 1;
+            }
+            100% {
+                transform: translateY(-100px) scale(1);
+                opacity: 0;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 20px 15px;
+            }
+            
+            .title {
+                font-size: 36px;
+            }
+            
+            .neon-card {
+                padding: 25px;
+            }
+            
+            .button-row {
+                flex-direction: column;
+                align-items: center;
+            }
+            
+            .neon-button {
+                width: 100%;
+                max-width: 300px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="floating-elements">
+        <div class="floating-element" style="left: 10%; animation-delay: -2s;"></div>
+        <div class="floating-element" style="left: 20%; animation-delay: -4s;"></div>
+        <div class="floating-element" style="left: 30%; animation-delay: -1s;"></div>
+        <div class="floating-element" style="left: 40%; animation-delay: -3s;"></div>
+        <div class="floating-element" style="left: 50%; animation-delay: -5s;"></div>
+        <div class="floating-element" style="left: 60%; animation-delay: -2.5s;"></div>
+        <div class="floating-element" style="left: 70%; animation-delay: -4.5s;"></div>
+        <div class="floating-element" style="left: 80%; animation-delay: -1.5s;"></div>
+        <div class="floating-element" style="left: 90%; animation-delay: -3.5s;"></div>
+    </div>
+
+    <div class="container">
+        <div class="neon-card">
+            <h1 class="title">LLMpostor</h1>
+            <div class="subtitle">Synthwave Nights</div>
+            
+            <div class="join-section">
+                <h2 class="section-title">Connect to the Grid</h2>
+                <form>
+                    <div class="form-group">
+                        <label class="form-label">Username</label>
+                        <input type="text" class="neon-input" placeholder="Enter your neon handle..." maxlength="20">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">Room Channel</label>
+                        <input type="text" class="neon-input" placeholder="Enter room frequency..." maxlength="30">
+                    </div>
+                    
+                    <div class="button-row">
+                        <button type="submit" class="neon-button">Jack In</button>
+                        <button type="button" class="neon-button secondary-button">Random Channel</button>
+                    </div>
+                </form>
+            </div>
+            
+            <div class="instructions">
+                <h2 class="section-title">Neural Network Protocol</h2>
+                <div class="steps-grid">
+                    <div class="step-card">
+                        <div class="step-number">01</div>
+                        <div class="step-title">Data Download</div>
+                        <div class="step-desc">Receive encrypted prompt and target AI signature</div>
+                    </div>
+                    <div class="step-card">
+                        <div class="step-number">02</div>
+                        <div class="step-title">Neural Mimic</div>
+                        <div class="step-desc">Generate response matching AI behavioral patterns</div>
+                    </div>
+                    <div class="step-card">
+                        <div class="step-number">03</div>
+                        <div class="step-desc">Scan for authentic AI among synthetic responses</div>
+                    </div>
+                    <div class="step-card">
+                        <div class="step-number">04</div>
+                        <div class="step-title">Score Upload</div>
+                        <div class="step-desc">Earn credits through successful deception and detection</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Add interactive glow effects
+        document.addEventListener('mousemove', (e) => {
+            const cursor = document.createElement('div');
+            cursor.style.position = 'fixed';
+            cursor.style.left = e.clientX + 'px';
+            cursor.style.top = e.clientY + 'px';
+            cursor.style.width = '10px';
+            cursor.style.height = '10px';
+            cursor.style.background = '#ff1493';
+            cursor.style.borderRadius = '50%';
+            cursor.style.pointerEvents = 'none';
+            cursor.style.boxShadow = '0 0 20px #ff1493';
+            cursor.style.opacity = '0.7';
+            cursor.style.zIndex = '9999';
+            cursor.style.transition = 'all 0.5s ease';
+            
+            document.body.appendChild(cursor);
+            
+            setTimeout(() => {
+                cursor.style.opacity = '0';
+                cursor.style.transform = 'scale(2)';
+            }, 10);
+            
+            setTimeout(() => {
+                document.body.removeChild(cursor);
+            }, 500);
+        });
+
+        // Add form interactions
+        document.querySelectorAll('.neon-input').forEach(input => {
+            input.addEventListener('focus', () => {
+                input.style.transform = 'scale(1.02)';
+            });
+            
+            input.addEventListener('blur', () => {
+                input.style.transform = 'scale(1)';
+            });
+        });
+    </script>
+</body>
+</html>

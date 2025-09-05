@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LLMposter - Steampunk</title>
+    <style>
+        body {
+            background-color: #6a4f4b;
+            background-image: url("data:image/svg+xml,%3Csvg width='40' height='40' viewBox='0 0 40 40' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%239c7e70' fill-opacity='0.4' fill-rule='evenodd'%3E%3Cpath d='M0 40L40 0H20L0 20M40 40V20L20 40'/%3E%3C/g%3E%3C/svg%3E");
+            font-family: "IM Fell English", serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 2rem 0;
+        }
+        .container {
+            background-color: #d2b48c;
+            border: 10px solid #8b4513;
+            border-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='75' height='75'%3E%3Crect width='100%25' height='100%25' fill='none' stroke='%238B4513' stroke-width='4'/%3E%3C/svg%3E") 10;
+            padding: 2rem;
+            text-align: center;
+            width: 600px;
+        }
+        h1, h3 {
+            font-size: 3rem;
+            color: #5a3d2b;
+            text-shadow: 1px 1px #fff;
+            margin-bottom: 1rem;
+        }
+        p {
+            font-size: 1.2rem;
+            color: #5a3d2b;
+            margin-bottom: 2rem;
+        }
+        .form-group {
+            margin-bottom: 1rem;
+        }
+        input {
+            background-color: #f5deb3;
+            border: 2px solid #8b4513;
+            padding: 0.5rem;
+            font-family: inherit;
+            width: 200px;
+        }
+        button {
+            background-color: #8b4513;
+            color: #fff;
+            border: 2px solid #5a3d2b;
+            padding: 0.5rem 1rem;
+            font-family: inherit;
+            cursor: pointer;
+            box-shadow: 2px 2px 0 #5a3d2b;
+            margin: 0.5rem;
+        }
+        .how-to-play {
+            margin-top: 3rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>LLMposter</h1>
+        <p>A Peculiar Word-Game Apparatus</p>
+        <div class="form-group">
+            <input type="text" id="playerName" placeholder="Enter Your Moniker" required maxlength="20">
+        </div>
+        <div class="form-group">
+            <input type="text" id="roomInput" placeholder="Enter Chamber Key" required maxlength="30">
+        </div>
+        <button type="submit">Commence</button>
+        <div class="quick-join">
+            <p>Or join a random contraption:</p>
+            <button id="quickJoinBtn">Random Engagement</button>
+        </div>
+
+        <div class="how-to-play">
+            <h3>Rules of Engagement</h3>
+            <p>1. Receive a peculiar prompt.</p>
+            <p>2. Fashion a response in the style of the thinking machine.</p>
+            <p>3. Identify the automaton's own response.</p>
+            <p>4. Earn points for your cunning and observational prowess.</p>
+        </div>
+    </div>
+</body>
+</html>

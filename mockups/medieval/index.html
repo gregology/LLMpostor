@@ -1,0 +1,885 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LLMpostor - Medieval Quest</title>
+    <link href="https://fonts.googleapis.com/css2?family=MedievalSharp&family=Cinzel:wght@400;600;700&family=UnifrakturMaguntia&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Cinzel', serif;
+            background: linear-gradient(135deg, #2c1810 0%, #1a0f08 50%, #0d0704 100%);
+            color: #f4d03f;
+            min-height: 100vh;
+            position: relative;
+            overflow-x: hidden;
+            background-image: 
+                radial-gradient(circle at 30% 20%, rgba(255, 215, 0, 0.1) 0%, transparent 50%),
+                radial-gradient(circle at 70% 80%, rgba(139, 69, 19, 0.2) 0%, transparent 50%);
+        }
+
+        /* Floating magical particles */
+        body::before {
+            content: "";
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: 
+                radial-gradient(2px 2px at 30px 40px, #ffd700, transparent),
+                radial-gradient(3px 3px at 80px 20px, #ff6b35, transparent),
+                radial-gradient(1px 1px at 120px 70px, #f4d03f, transparent),
+                radial-gradient(2px 2px at 60px 90px, #8b4513, transparent),
+                radial-gradient(1px 1px at 140px 50px, #ffd700, transparent);
+            background-repeat: repeat;
+            background-size: 180px 120px;
+            animation: magicParticles 40s linear infinite;
+            pointer-events: none;
+            z-index: 1;
+            opacity: 0.3;
+        }
+
+        @keyframes magicParticles {
+            0% { background-position: 0 0; }
+            100% { background-position: -180px -120px; }
+        }
+
+        /* Parchment texture overlay */
+        body::after {
+            content: "";
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: 
+                url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100"><rect width="100" height="100" fill="%23f4d03f" opacity="0.02"/><circle cx="20" cy="30" r="1" fill="%23d4ac0d" opacity="0.1"/><circle cx="70" cy="60" r="2" fill="%23b7950b" opacity="0.08"/><circle cx="45" cy="80" r="1.5" fill="%23d4ac0d" opacity="0.12"/></svg>');
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        .castle-hall {
+            max-width: 1000px;
+            margin: 30px auto;
+            position: relative;
+            z-index: 2;
+            padding: 20px;
+        }
+
+        .grand-scroll {
+            background: linear-gradient(145deg, #8b4513, #654321);
+            border: 8px solid #2c1810;
+            border-radius: 30px 30px 15px 15px;
+            padding: 40px;
+            position: relative;
+            box-shadow: 
+                0 20px 40px rgba(0, 0, 0, 0.6),
+                inset 0 0 30px rgba(244, 208, 63, 0.1);
+            background-image: 
+                repeating-linear-gradient(
+                    90deg,
+                    rgba(139, 69, 19, 0.3) 0px,
+                    rgba(139, 69, 19, 0.3) 3px,
+                    rgba(101, 67, 33, 0.3) 3px,
+                    rgba(101, 67, 33, 0.3) 6px
+                );
+        }
+
+        /* Castle battlements decoration */
+        .grand-scroll::before {
+            content: "";
+            position: absolute;
+            top: -25px;
+            left: 30px;
+            width: 200px;
+            height: 25px;
+            background: 
+                repeating-linear-gradient(
+                    90deg,
+                    #2c1810 0px,
+                    #2c1810 20px,
+                    transparent 20px,
+                    transparent 30px
+                );
+        }
+
+        /* Royal seal decoration */
+        .grand-scroll::after {
+            content: "👑";
+            position: absolute;
+            top: 15px;
+            right: 30px;
+            font-size: 30px;
+            animation: crownGlow 4s ease-in-out infinite;
+        }
+
+        @keyframes crownGlow {
+            0%, 100% { 
+                filter: drop-shadow(0 0 5px #ffd700); 
+                transform: rotate(0deg);
+            }
+            50% { 
+                filter: drop-shadow(0 0 15px #ffd700); 
+                transform: rotate(-5deg);
+            }
+        }
+
+        .royal-parchment {
+            text-align: center;
+            margin-bottom: 40px;
+            background: linear-gradient(145deg, #f4d03f, #d4ac0d);
+            border: 6px solid #8b4513;
+            border-radius: 20px;
+            padding: 30px;
+            position: relative;
+            box-shadow: 
+                inset 0 0 30px rgba(139, 69, 19, 0.2),
+                0 10px 20px rgba(0, 0, 0, 0.4);
+            background-image: 
+                radial-gradient(circle at 80% 20%, rgba(139, 69, 19, 0.1) 3px, transparent 3px),
+                radial-gradient(circle at 20% 80%, rgba(139, 69, 19, 0.1) 2px, transparent 2px);
+            background-size: 60px 60px, 40px 40px;
+        }
+
+        .royal-parchment::before {
+            content: "";
+            position: absolute;
+            top: -8px;
+            left: -8px;
+            right: -8px;
+            bottom: -8px;
+            background: 
+                conic-gradient(from 0deg at 50% 50%, #8b4513, #d4ac0d, #8b4513, #d4ac0d, #8b4513);
+            border-radius: 28px;
+            z-index: -1;
+            animation: scrollBorder 10s linear infinite;
+        }
+
+        @keyframes scrollBorder {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .quest-title {
+            font-family: 'UnifrakturMaguntia', cursive;
+            font-size: 44px;
+            color: #8b4513;
+            text-shadow: 
+                3px 3px 0 #2c1810,
+                6px 6px 0 rgba(44, 24, 16, 0.3);
+            margin-bottom: 15px;
+            animation: titleSway 4s ease-in-out infinite;
+        }
+
+        @keyframes titleSway {
+            0%, 100% { transform: rotate(0deg); }
+            25% { transform: rotate(-1deg); }
+            75% { transform: rotate(1deg); }
+        }
+
+        .guild-banner {
+            background: linear-gradient(45deg, #8b0000, #dc143c);
+            color: #ffd700;
+            padding: 12px 30px;
+            border-radius: 25px;
+            font-family: 'MedievalSharp', cursive;
+            font-size: 18px;
+            display: inline-block;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            border: 4px solid #ffd700;
+            box-shadow: 
+                0 0 25px rgba(255, 215, 0, 0.4),
+                inset 0 0 15px rgba(255, 215, 0, 0.2);
+            position: relative;
+        }
+
+        .guild-banner::before {
+            content: "⚔️";
+            position: absolute;
+            left: -20px;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 24px;
+            animation: swordClash 3s ease-in-out infinite;
+        }
+
+        @keyframes swordClash {
+            0%, 100% { transform: translateY(-50%) rotate(0deg); }
+            25% { transform: translateY(-50%) rotate(15deg); }
+            75% { transform: translateY(-50%) rotate(-15deg); }
+        }
+
+        .guild-hall {
+            background: linear-gradient(145deg, #2c1810, #1a0f08);
+            border: 6px solid #8b4513;
+            border-radius: 20px;
+            padding: 30px;
+            margin-bottom: 30px;
+            position: relative;
+            box-shadow: 
+                inset 0 0 30px rgba(244, 208, 63, 0.1),
+                0 10px 30px rgba(0, 0, 0, 0.5);
+        }
+
+        .guild-hall::before {
+            content: "ADVENTURER'S GUILD";
+            position: absolute;
+            top: -15px;
+            left: 30px;
+            background: #8b0000;
+            color: #ffd700;
+            padding: 8px 16px;
+            border-radius: 15px;
+            font-family: 'MedievalSharp', cursive;
+            font-size: 14px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            border: 3px solid #ffd700;
+            box-shadow: 0 0 15px rgba(255, 215, 0, 0.4);
+        }
+
+        /* Torch flame effect */
+        .guild-hall::after {
+            content: "🔥";
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            font-size: 20px;
+            animation: torchFlame 2s ease-in-out infinite;
+        }
+
+        @keyframes torchFlame {
+            0%, 100% { 
+                transform: scale(1) rotate(0deg); 
+                filter: hue-rotate(0deg);
+            }
+            25% { 
+                transform: scale(1.1) rotate(-2deg); 
+                filter: hue-rotate(10deg);
+            }
+            75% { 
+                transform: scale(0.9) rotate(2deg); 
+                filter: hue-rotate(-10deg);
+            }
+        }
+
+        .hero-section {
+            margin-bottom: 25px;
+        }
+
+        .medieval-label {
+            display: block;
+            font-family: 'MedievalSharp', cursive;
+            font-size: 16px;
+            font-weight: 700;
+            margin-bottom: 10px;
+            color: #ffd700;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            text-shadow: 0 0 10px rgba(255, 215, 0, 0.3);
+        }
+
+        .enchanted-input {
+            width: 100%;
+            padding: 16px 24px;
+            background: linear-gradient(145deg, rgba(244, 208, 63, 0.9), rgba(212, 172, 13, 0.9));
+            border: 4px solid #8b4513;
+            border-radius: 15px;
+            color: #2c1810;
+            font-family: 'Cinzel', serif;
+            font-size: 18px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            box-shadow: 
+                inset 0 0 20px rgba(139, 69, 19, 0.2),
+                0 5px 15px rgba(0, 0, 0, 0.3);
+        }
+
+        .enchanted-input:focus {
+            outline: none;
+            border-color: #ffd700;
+            background: linear-gradient(145deg, rgba(255, 215, 0, 0.9), rgba(244, 208, 63, 0.9));
+            box-shadow: 
+                inset 0 0 30px rgba(255, 215, 0, 0.3),
+                0 0 25px rgba(255, 215, 0, 0.5);
+            animation: magicGlow 1.5s ease-in-out infinite;
+        }
+
+        @keyframes magicGlow {
+            0%, 100% { text-shadow: 0 0 5px #2c1810; }
+            50% { text-shadow: 0 0 15px #8b4513, 0 0 25px #ffd700; }
+        }
+
+        .enchanted-input::placeholder {
+            color: rgba(44, 24, 16, 0.7);
+            font-style: italic;
+        }
+
+        .quest-buttons {
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+            margin-top: 30px;
+            flex-wrap: wrap;
+        }
+
+        .knight-button {
+            background: linear-gradient(145deg, #8b0000, #dc143c);
+            border: 6px solid #ffd700;
+            border-radius: 20px;
+            color: #ffd700;
+            padding: 18px 35px;
+            font-family: 'MedievalSharp', cursive;
+            font-size: 18px;
+            font-weight: 700;
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            transition: all 0.3s ease;
+            box-shadow: 
+                0 8px 0 #660000,
+                0 0 30px rgba(139, 0, 0, 0.4),
+                inset 0 0 20px rgba(255, 215, 0, 0.1);
+        }
+
+        .knight-button::before {
+            content: "";
+            position: absolute;
+            top: 5px;
+            left: 5px;
+            right: 5px;
+            height: 4px;
+            background: linear-gradient(90deg, #ffd700, rgba(255, 215, 0, 0.3), #ffd700);
+            border-radius: 2px;
+            animation: enchantmentFlow 3s linear infinite;
+        }
+
+        @keyframes enchantmentFlow {
+            0% { opacity: 0.5; transform: scaleX(1); }
+            50% { opacity: 1; transform: scaleX(1.2); }
+            100% { opacity: 0.5; transform: scaleX(1); }
+        }
+
+        .knight-button::after {
+            content: "⚡";
+            position: absolute;
+            top: 8px;
+            right: 12px;
+            font-size: 16px;
+            animation: lightningBolt 4s linear infinite;
+        }
+
+        @keyframes lightningBolt {
+            0%, 90% { opacity: 0.7; }
+            5%, 15% { opacity: 1; transform: scale(1.2); }
+            10% { opacity: 0.5; transform: scale(1); }
+        }
+
+        .knight-button:hover {
+            transform: translateY(-4px);
+            box-shadow: 
+                0 12px 0 #660000,
+                0 0 40px rgba(139, 0, 0, 0.6),
+                inset 0 0 30px rgba(255, 215, 0, 0.2);
+        }
+
+        .knight-button:active {
+            transform: translateY(4px);
+            box-shadow: 
+                0 4px 0 #660000,
+                0 0 20px rgba(139, 0, 0, 0.3),
+                inset 0 0 10px rgba(255, 215, 0, 0.1);
+        }
+
+        .mage-button {
+            background: linear-gradient(145deg, #4a148c, #7b1fa2);
+            border-color: #e1bee7;
+            color: #e1bee7;
+            box-shadow: 
+                0 8px 0 #3a0f6b,
+                0 0 30px rgba(74, 20, 140, 0.4),
+                inset 0 0 20px rgba(225, 190, 231, 0.1);
+        }
+
+        .mage-button:hover {
+            box-shadow: 
+                0 12px 0 #3a0f6b,
+                0 0 40px rgba(74, 20, 140, 0.6),
+                inset 0 0 30px rgba(225, 190, 231, 0.2);
+        }
+
+        .mage-button:active {
+            box-shadow: 
+                0 4px 0 #3a0f6b,
+                0 0 20px rgba(74, 20, 140, 0.3),
+                inset 0 0 10px rgba(225, 190, 231, 0.1);
+        }
+
+        .mage-button::after {
+            content: "🔮";
+        }
+
+        .tome-of-wisdom {
+            background: linear-gradient(145deg, #8b4513, #654321);
+            border: 6px solid #ffd700;
+            border-radius: 20px;
+            padding: 30px;
+            position: relative;
+            box-shadow: 
+                inset 0 0 30px rgba(255, 215, 0, 0.2),
+                0 10px 30px rgba(0, 0, 0, 0.5);
+            background-image: 
+                radial-gradient(circle at 70% 30%, rgba(255, 215, 0, 0.2) 3px, transparent 3px),
+                radial-gradient(circle at 30% 70%, rgba(255, 215, 0, 0.1) 4px, transparent 4px);
+            background-size: 50px 50px, 35px 35px;
+        }
+
+        .tome-of-wisdom::before {
+            content: "SACRED TOME OF QUESTS";
+            position: absolute;
+            top: -15px;
+            left: 30px;
+            background: #4a148c;
+            color: #e1bee7;
+            padding: 8px 16px;
+            border-radius: 15px;
+            font-family: 'MedievalSharp', cursive;
+            font-size: 14px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            border: 3px solid #e1bee7;
+            box-shadow: 0 0 15px rgba(225, 190, 231, 0.4);
+        }
+
+        .quest-steps {
+            display: grid;
+            gap: 25px;
+            margin-top: 30px;
+        }
+
+        .quest-step {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            background: rgba(255, 215, 0, 0.1);
+            border: 4px solid #8b4513;
+            border-radius: 20px;
+            padding: 25px;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        .quest-step::before {
+            content: "✨";
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            font-size: 16px;
+            animation: magicSparkle 3s infinite;
+        }
+
+        @keyframes magicSparkle {
+            0%, 80% { opacity: 0.5; transform: scale(1) rotate(0deg); }
+            10% { opacity: 1; transform: scale(1.3) rotate(90deg); }
+            20% { opacity: 0.7; transform: scale(1.1) rotate(180deg); }
+        }
+
+        .quest-step:hover {
+            background: rgba(255, 215, 0, 0.2);
+            transform: scale(1.03) rotate(0.5deg);
+            box-shadow: 0 15px 30px rgba(139, 69, 19, 0.3);
+        }
+
+        .quest-medallion {
+            min-width: 70px;
+            height: 70px;
+            background: linear-gradient(145deg, #ffd700, #b8860b);
+            border: 4px solid #8b4513;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: 'UnifrakturMaguntia', cursive;
+            font-size: 24px;
+            font-weight: 700;
+            color: #8b4513;
+            text-shadow: 2px 2px 0 #2c1810;
+            position: relative;
+            box-shadow: 
+                0 0 20px rgba(255, 215, 0, 0.5),
+                inset 0 0 15px rgba(255, 255, 255, 0.3);
+            animation: medallionGlow 6s ease-in-out infinite;
+        }
+
+        @keyframes medallionGlow {
+            0%, 100% { 
+                box-shadow: 0 0 20px rgba(255, 215, 0, 0.5), inset 0 0 15px rgba(255, 255, 255, 0.3); 
+                transform: rotate(0deg);
+            }
+            50% { 
+                box-shadow: 0 0 30px rgba(255, 215, 0, 0.8), inset 0 0 25px rgba(255, 255, 255, 0.4); 
+                transform: rotate(5deg);
+            }
+        }
+
+        .quest-medallion::after {
+            content: "🗡️";
+            position: absolute;
+            top: -8px;
+            right: -8px;
+            font-size: 16px;
+            animation: weaponRotate 4s ease-in-out infinite;
+        }
+
+        @keyframes weaponRotate {
+            0%, 100% { transform: rotate(0deg); }
+            50% { transform: rotate(180deg); }
+        }
+
+        .quest-info h3 {
+            font-family: 'MedievalSharp', cursive;
+            font-size: 20px;
+            font-weight: 700;
+            margin-bottom: 8px;
+            color: #ffd700;
+            text-transform: uppercase;
+            text-shadow: 0 0 10px rgba(255, 215, 0, 0.3);
+        }
+
+        .quest-info p {
+            font-size: 16px;
+            color: #f4d03f;
+            line-height: 1.6;
+            font-weight: 600;
+        }
+
+        .floating-magic {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            top: 0;
+            left: 0;
+            pointer-events: none;
+            z-index: -1;
+        }
+
+        .magic-symbol {
+            position: absolute;
+            font-size: 24px;
+            opacity: 0.6;
+            animation: floatMagic 14s ease-in-out infinite;
+        }
+
+        .magic-symbol:nth-child(1) { 
+            top: 10%; 
+            left: 10%; 
+            animation-delay: 0s; 
+        }
+        .magic-symbol:nth-child(2) { 
+            top: 20%; 
+            right: 15%; 
+            animation-delay: 4s; 
+        }
+        .magic-symbol:nth-child(3) { 
+            bottom: 30%; 
+            left: 20%; 
+            animation-delay: 8s; 
+        }
+        .magic-symbol:nth-child(4) { 
+            bottom: 20%; 
+            right: 10%; 
+            animation-delay: 12s; 
+        }
+
+        @keyframes floatMagic {
+            0%, 100% { 
+                transform: translateY(0) rotate(0deg) scale(1);
+                opacity: 0.4;
+            }
+            25% { 
+                transform: translateY(-35px) rotate(90deg) scale(1.2);
+                opacity: 0.8;
+            }
+            50% { 
+                transform: translateY(-20px) rotate(180deg) scale(0.9);
+                opacity: 0.6;
+            }
+            75% { 
+                transform: translateY(-30px) rotate(270deg) scale(1.1);
+                opacity: 0.9;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .castle-hall {
+                margin: 15px;
+                padding: 15px;
+            }
+            
+            .grand-scroll {
+                padding: 25px;
+            }
+            
+            .quest-title {
+                font-size: 32px;
+            }
+            
+            .quest-buttons {
+                flex-direction: column;
+                align-items: center;
+            }
+            
+            .knight-button {
+                width: 100%;
+                max-width: 300px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="floating-magic">
+        <div class="magic-symbol">🧙‍♂️</div>
+        <div class="magic-symbol">🗡️</div>
+        <div class="magic-symbol">🏰</div>
+        <div class="magic-symbol">🐉</div>
+    </div>
+
+    <div class="castle-hall">
+        <div class="grand-scroll">
+            <div class="royal-parchment">
+                <div class="quest-title">LLMpostor</div>
+                <div class="guild-banner">Medieval Quest Adventure!</div>
+            </div>
+            
+            <div class="guild-hall">
+                <form>
+                    <div class="hero-section">
+                        <label class="medieval-label">Hero Name</label>
+                        <input type="text" class="enchanted-input" placeholder="Enter thy noble name, brave adventurer..." maxlength="20">
+                    </div>
+                    
+                    <div class="hero-section">
+                        <label class="medieval-label">Quest Destination</label>
+                        <input type="text" class="enchanted-input" placeholder="Which realm dost thou seek to explore..." maxlength="30">
+                    </div>
+                    
+                    <div class="quest-buttons">
+                        <button type="submit" class="knight-button">Begin Quest!</button>
+                        <button type="button" class="knight-button mage-button">Divine Path!</button>
+                    </div>
+                </form>
+            </div>
+            
+            <div class="tome-of-wisdom">
+                <div class="quest-steps">
+                    <div class="quest-step">
+                        <div class="quest-medallion">I</div>
+                        <div class="quest-info">
+                            <h3>Receive the Prophecy</h3>
+                            <p>Hark! The ancient scrolls reveal the riddle and the nature of thy AI adversary</p>
+                        </div>
+                    </div>
+                    <div class="quest-step">
+                        <div class="quest-medallion">II</div>
+                        <div class="quest-info">
+                            <h3>Forge the Deception</h3>
+                            <p>Craft thy words as the AI would speak, to deceive thy fellow adventurers</p>
+                        </div>
+                    </div>
+                    <div class="quest-step">
+                        <div class="quest-medallion">III</div>
+                        <div class="quest-info">
+                            <h3>Unmask the Enchantment</h3>
+                            <p>Use thy wisdom to discern the true AI magic from mortal imitations</p>
+                        </div>
+                    </div>
+                    <div class="quest-step">
+                        <div class="quest-medallion">IV</div>
+                        <div class="quest-info">
+                            <h3>Claim thy Reward</h3>
+                            <p>Earn golden coins for successful trickery and keen detection of truth</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Medieval sound effects
+            const medievalSounds = ['HUZZAH!', 'BY MY SWORD!', 'HARK!', 'VERILY!', 'FOR HONOR!', 'EN GARDE!'];
+            
+            document.querySelectorAll('.knight-button').forEach(button => {
+                button.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    
+                    // Create floating medieval sound effect
+                    const soundEffect = document.createElement('div');
+                    soundEffect.textContent = medievalSounds[Math.floor(Math.random() * medievalSounds.length)];
+                    soundEffect.style.cssText = `
+                        position: fixed;
+                        left: ${e.clientX}px;
+                        top: ${e.clientY}px;
+                        font-family: 'MedievalSharp', cursive;
+                        font-size: 20px;
+                        color: #ffd700;
+                        pointer-events: none;
+                        z-index: 9999;
+                        text-shadow: 2px 2px 0 #8b4513, 0 0 15px #ffd700;
+                        background: rgba(139, 69, 19, 0.9);
+                        padding: 8px 15px;
+                        border-radius: 20px;
+                        border: 3px solid #ffd700;
+                        animation: medievalPop 2.2s ease-out forwards;
+                    `;
+                    
+                    // Add animation if it doesn't exist
+                    if (!document.querySelector('#medieval-animations')) {
+                        const style = document.createElement('style');
+                        style.id = 'medieval-animations';
+                        style.textContent = `
+                            @keyframes medievalPop {
+                                0% { 
+                                    transform: translate(-50%, -50%) scale(0) rotate(0deg);
+                                    opacity: 1;
+                                }
+                                20% { 
+                                    transform: translate(-50%, -50%) scale(1.3) rotate(-10deg);
+                                    opacity: 1;
+                                }
+                                40% { 
+                                    transform: translate(-50%, -50%) scale(0.9) rotate(5deg);
+                                    opacity: 1;
+                                }
+                                60% { 
+                                    transform: translate(-50%, -50%) scale(1.1) rotate(-3deg);
+                                    opacity: 0.8;
+                                }
+                                100% { 
+                                    transform: translate(-50%, -50%) scale(0.3) rotate(0deg);
+                                    opacity: 0;
+                                }
+                            }
+                        `;
+                        document.head.appendChild(style);
+                    }
+                    
+                    document.body.appendChild(soundEffect);
+                    
+                    setTimeout(() => {
+                        if (document.body.contains(soundEffect)) {
+                            document.body.removeChild(soundEffect);
+                        }
+                    }, 2200);
+                });
+            });
+
+            // Enchanted input effects
+            document.querySelectorAll('.enchanted-input').forEach(input => {
+                input.addEventListener('input', function() {
+                    if (Math.random() < 0.25) { // 25% chance
+                        // Magic sparkle effect
+                        this.style.background = 'linear-gradient(145deg, rgba(255, 215, 0, 0.95), rgba(244, 208, 63, 0.95))';
+                        this.style.boxShadow = `
+                            inset 0 0 30px rgba(255, 215, 0, 0.4),
+                            0 0 40px rgba(255, 215, 0, 0.7)
+                        `;
+                        setTimeout(() => {
+                            if (this === document.activeElement) {
+                                this.style.background = 'linear-gradient(145deg, rgba(255, 215, 0, 0.9), rgba(244, 208, 63, 0.9))';
+                                this.style.boxShadow = `
+                                    inset 0 0 30px rgba(255, 215, 0, 0.3),
+                                    0 0 25px rgba(255, 215, 0, 0.5)
+                                `;
+                            } else {
+                                this.style.background = 'linear-gradient(145deg, rgba(244, 208, 63, 0.9), rgba(212, 172, 13, 0.9))';
+                                this.style.boxShadow = `
+                                    inset 0 0 20px rgba(139, 69, 19, 0.2),
+                                    0 5px 15px rgba(0, 0, 0, 0.3)
+                                `;
+                            }
+                        }, 400);
+                    }
+                });
+
+                // Castle tremor effect when typing
+                input.addEventListener('keypress', function() {
+                    const scroll = document.querySelector('.grand-scroll');
+                    scroll.style.transform = 'rotate(0.3deg)';
+                    setTimeout(() => {
+                        scroll.style.transform = 'rotate(-0.2deg)';
+                    }, 150);
+                    setTimeout(() => {
+                        scroll.style.transform = 'rotate(0deg)';
+                    }, 300);
+                });
+            });
+
+            // Random castle ambiance
+            setInterval(() => {
+                if (Math.random() < 0.07) { // 7% chance
+                    const hall = document.querySelector('.castle-hall');
+                    hall.style.filter = 'brightness(1.1) sepia(0.1)';
+                    setTimeout(() => {
+                        hall.style.filter = 'brightness(1) sepia(0)';
+                    }, 500);
+                }
+            }, 4000);
+
+            // Magical aura effects
+            setInterval(() => {
+                if (Math.random() < 0.12) { // 12% chance
+                    const symbols = document.querySelectorAll('.magic-symbol');
+                    const randomSymbol = symbols[Math.floor(Math.random() * symbols.length)];
+                    randomSymbol.style.filter = 'brightness(2) drop-shadow(0 0 15px currentColor)';
+                    randomSymbol.style.transform = 'scale(1.3)';
+                    setTimeout(() => {
+                        randomSymbol.style.filter = 'brightness(1)';
+                        randomSymbol.style.transform = 'scale(1)';
+                    }, 700);
+                }
+            }, 3000);
+
+            // Torch flicker effect
+            setInterval(() => {
+                if (Math.random() < 0.2) { // 20% chance
+                    const torches = document.querySelectorAll('.guild-hall::after');
+                    document.querySelector('.guild-hall').style.boxShadow = `
+                        inset 0 0 35px rgba(244, 208, 63, 0.15),
+                        0 10px 30px rgba(0, 0, 0, 0.5)
+                    `;
+                    setTimeout(() => {
+                        document.querySelector('.guild-hall').style.boxShadow = `
+                            inset 0 0 30px rgba(244, 208, 63, 0.1),
+                            0 10px 30px rgba(0, 0, 0, 0.5)
+                        `;
+                    }, 200);
+                }
+            }, 2000);
+
+            // Sword clash effect on button press
+            document.querySelectorAll('.knight-button').forEach(button => {
+                button.addEventListener('mousedown', function() {
+                    document.body.style.filter = 'brightness(1.2) contrast(1.1)';
+                    setTimeout(() => {
+                        document.body.style.filter = 'brightness(1) contrast(1)';
+                    }, 100);
+                });
+            });
+        });
+    </script>
+</body>
+</html>

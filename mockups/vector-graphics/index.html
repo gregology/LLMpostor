@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LLMposter - Vector Graphics</title>
+    <style>
+        body {
+            background-color: #000;
+            color: #fff;
+            font-family: "Vector-Battle", sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 2rem 0;
+        }
+        .container {
+            text-align: center;
+        }
+        h1, h3 {
+            font-size: 5rem;
+            font-weight: normal;
+            color: #0f0;
+            text-shadow: 0 0 10px #0f0;
+            margin-bottom: 2rem;
+        }
+        .form-group {
+            margin-bottom: 1rem;
+        }
+        input {
+            background: transparent;
+            border: 2px solid #f00;
+            color: #fff;
+            padding: 0.5rem 1rem;
+            font-family: inherit;
+            text-align: center;
+        }
+        button {
+            background: transparent;
+            border: 2px solid #00f;
+            color: #fff;
+            padding: 0.5rem 1rem;
+            font-family: inherit;
+            cursor: pointer;
+            margin: 0.5rem;
+        }
+        .how-to-play {
+            margin-top: 3rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>LLMPOSTER</h1>
+        <div class="form-group">
+            <input type="text" id="playerName" placeholder="-ENTER YOUR NAME-" required maxlength="20">
+        </div>
+        <div class="form-group">
+            <input type="text" id="roomInput" placeholder="-ENTER ROOM NAME-" required maxlength="30">
+        </div>
+        <button type="submit">START</button>
+        <div class="quick-join">
+            <p>-OR-</p>
+            <button id="quickJoinBtn">RANDOM GAME</button>
+        </div>
+
+        <div class="how-to-play">
+            <h3>HOW TO PLAY</h3>
+            <p>1. GET PROMPT</p>
+            <p>2. WRITE RESPONSE</p>
+            <p>3. GUESS AI</p>
+            <p>4. SCORE POINTS</p>
+        </div>
+    </div>
+</body>
+</html>

@@ -1,0 +1,488 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LLMpostor - Cyberpunk Protocol</title>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Courier+New&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Orbitron', monospace;
+            background: #0a0a0a;
+            color: #00ffff;
+            min-height: 100vh;
+            background-image: 
+                radial-gradient(circle at 20% 80%, rgba(0, 255, 255, 0.1) 0%, transparent 50%),
+                radial-gradient(circle at 80% 20%, rgba(255, 0, 255, 0.1) 0%, transparent 50%);
+            position: relative;
+            overflow-x: hidden;
+        }
+
+        body::before {
+            content: "";
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: 
+                repeating-linear-gradient(
+                    90deg,
+                    transparent,
+                    transparent 98px,
+                    rgba(0, 255, 255, 0.03) 100px
+                );
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        .matrix-rain {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 0;
+            opacity: 0.1;
+        }
+
+        .terminal-window {
+            max-width: 900px;
+            margin: 20px auto;
+            background: rgba(0, 0, 0, 0.9);
+            border: 2px solid #00ffff;
+            border-radius: 10px;
+            box-shadow: 
+                0 0 50px rgba(0, 255, 255, 0.3),
+                inset 0 0 50px rgba(0, 255, 255, 0.05);
+            position: relative;
+            z-index: 2;
+        }
+
+        .terminal-header {
+            background: linear-gradient(90deg, #001122, #002244);
+            border-bottom: 1px solid #00ffff;
+            padding: 10px 20px;
+            border-radius: 8px 8px 0 0;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .terminal-buttons {
+            display: flex;
+            gap: 5px;
+        }
+
+        .terminal-button {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            border: 1px solid;
+        }
+
+        .terminal-button:nth-child(1) { background: #ff5f56; border-color: #e0443e; }
+        .terminal-button:nth-child(2) { background: #ffbd2e; border-color: #dea123; }
+        .terminal-button:nth-child(3) { background: #27ca3f; border-color: #1aab29; }
+
+        .terminal-title {
+            font-weight: 700;
+            color: #00ffff;
+            text-shadow: 0 0 10px #00ffff;
+        }
+
+        .terminal-body {
+            padding: 30px;
+        }
+
+        .system-header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .system-header h1 {
+            font-size: 32px;
+            font-weight: 900;
+            background: linear-gradient(45deg, #00ffff, #ff00ff);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            text-shadow: 0 0 30px rgba(0, 255, 255, 0.5);
+            margin-bottom: 10px;
+        }
+
+        .system-status {
+            color: #00ff00;
+            font-size: 14px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        .protocol-section {
+            background: rgba(0, 255, 255, 0.05);
+            border: 1px solid #00ffff;
+            border-left: 4px solid #00ffff;
+            padding: 25px;
+            margin-bottom: 30px;
+            position: relative;
+        }
+
+        .protocol-section::before {
+            content: "▶";
+            position: absolute;
+            left: -2px;
+            top: 10px;
+            color: #00ffff;
+            font-size: 20px;
+            animation: blink 2s infinite;
+        }
+
+        @keyframes blink {
+            0%, 50% { opacity: 1; }
+            51%, 100% { opacity: 0; }
+        }
+
+        .section-header {
+            font-size: 18px;
+            font-weight: 700;
+            margin-bottom: 20px;
+            color: #ff00ff;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .input-group {
+            margin-bottom: 20px;
+        }
+
+        .input-label {
+            display: block;
+            font-size: 14px;
+            margin-bottom: 8px;
+            color: #00ffff;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .cyber-input {
+            width: 100%;
+            padding: 15px 20px;
+            background: rgba(0, 0, 0, 0.8);
+            border: 1px solid #00ffff;
+            color: #00ffff;
+            font-family: 'Orbitron', monospace;
+            font-size: 16px;
+            border-radius: 5px;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        .cyber-input:focus {
+            outline: none;
+            border-color: #ff00ff;
+            box-shadow: 
+                0 0 20px rgba(255, 0, 255, 0.3),
+                inset 0 0 20px rgba(0, 255, 255, 0.1);
+        }
+
+        .cyber-button {
+            background: linear-gradient(45deg, #001122, #002244);
+            border: 2px solid #00ffff;
+            color: #00ffff;
+            padding: 15px 30px;
+            font-family: 'Orbitron', monospace;
+            font-size: 14px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+            margin: 10px 5px;
+        }
+
+        .cyber-button::before {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(0, 255, 255, 0.2), transparent);
+            transition: left 0.5s;
+        }
+
+        .cyber-button:hover::before {
+            left: 100%;
+        }
+
+        .cyber-button:hover {
+            border-color: #ff00ff;
+            box-shadow: 0 0 25px rgba(255, 0, 255, 0.5);
+            text-shadow: 0 0 10px #ff00ff;
+        }
+
+        .secondary-btn {
+            border-color: #ff00ff;
+            background: linear-gradient(45deg, #220011, #440022);
+        }
+
+        .instructions-grid {
+            display: grid;
+            gap: 20px;
+        }
+
+        .instruction-node {
+            background: rgba(0, 0, 0, 0.7);
+            border: 1px solid #00ffff;
+            padding: 20px;
+            position: relative;
+            transition: all 0.3s ease;
+        }
+
+        .instruction-node::before {
+            content: "";
+            position: absolute;
+            top: -1px;
+            left: -1px;
+            right: -1px;
+            bottom: -1px;
+            background: linear-gradient(45deg, #00ffff, #ff00ff, #00ffff);
+            z-index: -1;
+            border-radius: inherit;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .instruction-node:hover::before {
+            opacity: 1;
+            animation: rotate-border 2s linear infinite;
+        }
+
+        @keyframes rotate-border {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .node-id {
+            font-weight: 700;
+            background: linear-gradient(45deg, #ff00ff, #00ffff);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            font-size: 20px;
+            margin-bottom: 10px;
+        }
+
+        .node-title {
+            font-size: 16px;
+            font-weight: 700;
+            margin-bottom: 8px;
+            color: #00ff00;
+            text-transform: uppercase;
+        }
+
+        .node-desc {
+            font-size: 14px;
+            color: #cccccc;
+            line-height: 1.6;
+        }
+
+        .status-bar {
+            background: rgba(0, 255, 255, 0.1);
+            border-top: 1px solid #00ffff;
+            padding: 15px 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .status-left {
+            color: #00ff00;
+        }
+
+        .status-right {
+            color: #ff00ff;
+        }
+
+        @media (max-width: 768px) {
+            .terminal-window {
+                margin: 10px;
+            }
+            
+            .terminal-body {
+                padding: 20px;
+            }
+            
+            .system-header h1 {
+                font-size: 24px;
+            }
+            
+            .cyber-button {
+                font-size: 12px;
+                padding: 12px 24px;
+            }
+        }
+
+        .glitch {
+            animation: glitch 0.3s, blur 0.3s, hue 0.3s;
+            animation-iteration-count: infinite;
+            animation-direction: alternate-reverse;
+        }
+
+        @keyframes glitch {
+            0% { transform: translate(0); }
+            20% { transform: translate(-2px, 2px); }
+            40% { transform: translate(-2px, -2px); }
+            60% { transform: translate(2px, 2px); }
+            80% { transform: translate(2px, -2px); }
+            100% { transform: translate(0); }
+        }
+
+        @keyframes blur {
+            0% { text-shadow: 0 0 0 #00ffff, 0 0 0 #ff00ff; }
+            50% { text-shadow: 2px 0 0 #00ffff, -2px 0 0 #ff00ff; }
+            100% { text-shadow: 0 0 0 #00ffff, 0 0 0 #ff00ff; }
+        }
+
+        @keyframes hue {
+            0% { filter: hue-rotate(0deg); }
+            100% { filter: hue-rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="matrix-rain"></div>
+    
+    <div class="terminal-window">
+        <div class="terminal-header">
+            <div class="terminal-buttons">
+                <div class="terminal-button"></div>
+                <div class="terminal-button"></div>
+                <div class="terminal-button"></div>
+            </div>
+            <div class="terminal-title">NEURAL_NET_INTERFACE.exe</div>
+        </div>
+        
+        <div class="terminal-body">
+            <div class="system-header">
+                <h1 class="glitch">LLMpostor</h1>
+                <div class="system-status">CYBERPUNK PROTOCOL ACTIVE</div>
+            </div>
+            
+            <div class="protocol-section">
+                <div class="section-header">User Authentication</div>
+                <form>
+                    <div class="input-group">
+                        <label class="input-label">Agent Codename</label>
+                        <input type="text" class="cyber-input" placeholder="Enter neural ID..." maxlength="20">
+                    </div>
+                    
+                    <div class="input-group">
+                        <label class="input-label">Server Node</label>
+                        <input type="text" class="cyber-input" placeholder="Input connection string..." maxlength="30">
+                    </div>
+                    
+                    <center>
+                        <button type="submit" class="cyber-button">INITIATE PROTOCOL</button>
+                        <button type="button" class="cyber-button secondary-btn">RANDOM NODE</button>
+                    </center>
+                </form>
+            </div>
+            
+            <div class="protocol-section">
+                <div class="section-header">Mission Parameters</div>
+                <div class="instructions-grid">
+                    <div class="instruction-node">
+                        <div class="node-id">01</div>
+                        <div class="node-title">Receive Data Stream</div>
+                        <div class="node-desc">Download prompt and target AI neural pattern</div>
+                    </div>
+                    <div class="instruction-node">
+                        <div class="node-id">02</div>
+                        <div class="node-title">Mimic Protocol</div>
+                        <div class="node-desc">Generate response matching AI behavioral pattern</div>
+                    </div>
+                    <div class="instruction-node">
+                        <div class="node-id">03</div>
+                        <div class="node-title">AI Detection</div>
+                        <div class="node-desc">Identify authentic AI response among decoys</div>
+                    </div>
+                    <div class="instruction-node">
+                        <div class="node-id">04</div>
+                        <div class="node-title">Score Matrix</div>
+                        <div class="node-desc">Accumulate points through deception and detection</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="status-bar">
+            <div class="status-left">System Status: ONLINE</div>
+            <div class="status-right">Neural Network: ACTIVE</div>
+        </div>
+    </div>
+
+    <script>
+        // Add matrix rain effect
+        function createMatrixRain() {
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+            canvas.className = 'matrix-rain';
+            document.body.appendChild(canvas);
+
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+
+            const chars = '01アイウエオカキクケコサシスセソタチツテトナニヌネノハヒフヘホマミムメモヤユヨラリルレロワヲン';
+            const charArray = chars.split('');
+
+            const fontSize = 10;
+            const columns = canvas.width / fontSize;
+
+            const drops = [];
+            for (let i = 0; i < columns; i++) {
+                drops[i] = 1;
+            }
+
+            function draw() {
+                ctx.fillStyle = 'rgba(10, 10, 10, 0.05)';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+                ctx.fillStyle = '#00ffff';
+                ctx.font = fontSize + 'px monospace';
+
+                for (let i = 0; i < drops.length; i++) {
+                    const text = charArray[Math.floor(Math.random() * charArray.length)];
+                    ctx.fillText(text, i * fontSize, drops[i] * fontSize);
+
+                    if (drops[i] * fontSize > canvas.height && Math.random() > 0.975) {
+                        drops[i] = 0;
+                    }
+                    drops[i]++;
+                }
+            }
+
+            setInterval(draw, 35);
+
+            window.addEventListener('resize', () => {
+                canvas.width = window.innerWidth;
+                canvas.height = window.innerHeight;
+            });
+        }
+
+        createMatrixRain();
+    </script>
+</body>
+</html>

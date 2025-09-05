@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LLMpostor - Retro Gaming Edition</title>
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323:wght@400&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'VT323', monospace;
+            background: #000;
+            color: #00ff00;
+            min-height: 100vh;
+            background-image: 
+                radial-gradient(circle at 25% 25%, #1a1a1a 0%, transparent 50%),
+                radial-gradient(circle at 75% 75%, #0a0a0a 0%, transparent 50%);
+            background-size: 100px 100px;
+            animation: scanlines 0.1s linear infinite;
+        }
+
+        @keyframes scanlines {
+            0% { background-position: 0 0; }
+            100% { background-position: 0 2px; }
+        }
+
+        .crt-overlay::before {
+            content: "";
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: repeating-linear-gradient(
+                transparent,
+                transparent 2px,
+                rgba(0, 255, 0, 0.03) 2px,
+                rgba(0, 255, 0, 0.03) 4px
+            );
+            pointer-events: none;
+            z-index: 1000;
+        }
+
+        .arcade-cabinet {
+            max-width: 800px;
+            margin: 20px auto;
+            background: linear-gradient(145deg, #2a2a2a, #1a1a1a);
+            border-radius: 20px 20px 10px 10px;
+            padding: 30px;
+            box-shadow: 
+                0 0 50px rgba(0, 255, 0, 0.2),
+                inset 0 0 20px rgba(0, 255, 0, 0.1);
+            border: 2px solid #00ff00;
+        }
+
+        .screen {
+            background: #000;
+            border: 8px solid #333;
+            border-radius: 15px;
+            padding: 30px;
+            margin-bottom: 30px;
+            box-shadow: inset 0 0 20px rgba(0, 255, 0, 0.2);
+        }
+
+        h1 {
+            font-family: 'Press Start 2P', cursive;
+            text-align: center;
+            font-size: 24px;
+            margin-bottom: 20px;
+            text-shadow: 0 0 10px #00ff00;
+            animation: glow 2s ease-in-out infinite alternate;
+        }
+
+        @keyframes glow {
+            from { text-shadow: 0 0 10px #00ff00, 0 0 20px #00ff00; }
+            to { text-shadow: 0 0 20px #00ff00, 0 0 30px #00ff00, 0 0 40px #00ff00; }
+        }
+
+        .join-section {
+            background: rgba(0, 255, 0, 0.1);
+            border: 2px solid #00ff00;
+            padding: 25px;
+            margin-bottom: 30px;
+            border-radius: 10px;
+        }
+
+        .join-section h2 {
+            font-family: 'Press Start 2P', cursive;
+            font-size: 16px;
+            margin-bottom: 20px;
+            color: #ffff00;
+            text-shadow: 0 0 5px #ffff00;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            font-size: 18px;
+            margin-bottom: 8px;
+            color: #00ffff;
+        }
+
+        input[type="text"] {
+            width: 100%;
+            padding: 12px;
+            background: #000;
+            border: 2px solid #00ff00;
+            color: #00ff00;
+            font-family: 'VT323', monospace;
+            font-size: 20px;
+            border-radius: 5px;
+            box-shadow: inset 0 0 10px rgba(0, 255, 0, 0.2);
+        }
+
+        input[type="text"]:focus {
+            outline: none;
+            box-shadow: 0 0 15px rgba(0, 255, 0, 0.5);
+            animation: input-glow 1s ease-in-out infinite alternate;
+        }
+
+        @keyframes input-glow {
+            from { border-color: #00ff00; }
+            to { border-color: #ffff00; }
+        }
+
+        .arcade-button {
+            background: linear-gradient(145deg, #ff0066, #cc0044);
+            border: 3px solid #fff;
+            color: #fff;
+            padding: 15px 30px;
+            font-family: 'Press Start 2P', cursive;
+            font-size: 14px;
+            border-radius: 50px;
+            cursor: pointer;
+            text-shadow: 0 0 5px #fff;
+            box-shadow: 
+                0 5px 0 #990033,
+                0 0 20px rgba(255, 0, 102, 0.5);
+            transition: all 0.1s;
+            margin: 10px 5px;
+        }
+
+        .arcade-button:hover {
+            transform: translateY(2px);
+            box-shadow: 
+                0 3px 0 #990033,
+                0 0 30px rgba(255, 0, 102, 0.8);
+        }
+
+        .arcade-button:active {
+            transform: translateY(5px);
+            box-shadow: 
+                0 0 0 #990033,
+                0 0 20px rgba(255, 0, 102, 0.5);
+        }
+
+        .secondary-button {
+            background: linear-gradient(145deg, #0066ff, #0044cc);
+            box-shadow: 
+                0 5px 0 #003399,
+                0 0 20px rgba(0, 102, 255, 0.5);
+        }
+
+        .secondary-button:hover {
+            box-shadow: 
+                0 3px 0 #003399,
+                0 0 30px rgba(0, 102, 255, 0.8);
+        }
+
+        .how-to-play {
+            background: rgba(255, 255, 0, 0.1);
+            border: 2px solid #ffff00;
+            padding: 25px;
+            border-radius: 10px;
+        }
+
+        .how-to-play h2 {
+            font-family: 'Press Start 2P', cursive;
+            font-size: 16px;
+            margin-bottom: 20px;
+            color: #ffff00;
+            text-shadow: 0 0 5px #ffff00;
+        }
+
+        .steps {
+            display: grid;
+            gap: 20px;
+        }
+
+        .step {
+            display: flex;
+            align-items: center;
+            background: rgba(0, 0, 0, 0.5);
+            border: 1px solid #00ff00;
+            padding: 15px;
+            border-radius: 8px;
+        }
+
+        .step-number {
+            font-family: 'Press Start 2P', cursive;
+            background: #ff0066;
+            color: #fff;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            margin-right: 20px;
+            font-size: 14px;
+            box-shadow: 0 0 10px rgba(255, 0, 102, 0.5);
+        }
+
+        .step-content h3 {
+            font-size: 20px;
+            margin-bottom: 5px;
+            color: #00ffff;
+        }
+
+        .step-content p {
+            font-size: 18px;
+            color: #00ff00;
+        }
+
+        .pixel-border {
+            background: 
+                linear-gradient(90deg, #00ff00 50%, transparent 50%),
+                linear-gradient(#00ff00 50%, transparent 50%);
+            background-size: 10px 10px;
+        }
+
+        .credits {
+            text-align: center;
+            margin-top: 30px;
+            font-size: 16px;
+            color: #666;
+        }
+
+        @media (max-width: 768px) {
+            .arcade-cabinet {
+                margin: 10px;
+                padding: 20px;
+            }
+            
+            h1 {
+                font-size: 18px;
+            }
+            
+            .arcade-button {
+                font-size: 12px;
+                padding: 12px 24px;
+            }
+        }
+    </style>
+</head>
+<body class="crt-overlay">
+    <div class="arcade-cabinet">
+        <div class="screen">
+            <h1>LLMpostor</h1>
+            <div class="credits">RETRO GAMING EDITION</div>
+            
+            <div class="join-section">
+                <h2>Player Setup</h2>
+                <form>
+                    <div class="form-group">
+                        <label>Player Name</label>
+                        <input type="text" placeholder="Enter your handle" maxlength="20">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Room Code</label>
+                        <input type="text" placeholder="Enter room name" maxlength="30">
+                    </div>
+                    
+                    <center>
+                        <button type="submit" class="arcade-button">JOIN GAME</button>
+                        <button type="button" class="arcade-button secondary-button">RANDOM ROOM</button>
+                    </center>
+                </form>
+            </div>
+            
+            <div class="how-to-play">
+                <h2>Game Rules</h2>
+                <div class="steps">
+                    <div class="step">
+                        <div class="step-number">1</div>
+                        <div class="step-content">
+                            <h3>Get Mission</h3>
+                            <p>Receive prompt and target AI model</p>
+                        </div>
+                    </div>
+                    <div class="step">
+                        <div class="step-number">2</div>
+                        <div class="step-content">
+                            <h3>Write Response</h3>
+                            <p>Mimic the AI's writing style</p>
+                        </div>
+                    </div>
+                    <div class="step">
+                        <div class="step-number">3</div>
+                        <div class="step-content">
+                            <h3>Identify AI</h3>
+                            <p>Spot the real AI response</p>
+                        </div>
+                    </div>
+                    <div class="step">
+                        <div class="step-number">4</div>
+                        <div class="step-content">
+                            <h3>Score Points</h3>
+                            <p>Earn points for deception and detection</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Add some retro sound effects simulation
+        document.querySelectorAll('input').forEach(input => {
+            input.addEventListener('keypress', () => {
+                // Simulate typing sound
+            });
+        });
+
+        document.querySelectorAll('.arcade-button').forEach(button => {
+            button.addEventListener('click', (e) => {
+                e.preventDefault();
+                // Simulate button press sound
+            });
+        });
+    </script>
+</body>
+</html>

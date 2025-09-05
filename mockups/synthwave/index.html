@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LLMposter - Synthwave</title>
+    <style>
+        body {
+            background: #000;
+            color: #fff;
+            font-family: "Audiowide", cursive;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            background-image: linear-gradient(to top, #f0f, #0ff);
+            padding: 2rem 0;
+        }
+        .container {
+            text-align: center;
+        }
+        h1, h3 {
+            font-size: 5rem;
+            color: #fff;
+            text-shadow: 0 0 10px #fff, 0 0 20px #f0f, 0 0 30px #f0f, 0 0 40px #f0f, 0 0 50px #f0f, 0 0 60px #f0f, 0 0 70px #f0f;
+            margin-bottom: 2rem;
+        }
+        .form-group {
+            margin-bottom: 1rem;
+        }
+        input {
+            background: rgba(0, 0, 0, 0.5);
+            border: 2px solid #0ff;
+            color: #fff;
+            padding: 0.5rem 1rem;
+            font-family: inherit;
+            box-shadow: 0 0 10px #0ff;
+        }
+        button {
+            background: transparent;
+            border: 2px solid #f0f;
+            color: #fff;
+            padding: 0.5rem 1rem;
+            font-family: inherit;
+            cursor: pointer;
+            text-shadow: 0 0 5px #f0f;
+            box-shadow: 0 0 10px #f0f;
+            margin: 0.5rem;
+        }
+        .how-to-play {
+            margin-top: 3rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>LLMposter</h1>
+        <div class="form-group">
+            <input type="text" id="playerName" placeholder="Enter Your Handle" required maxlength="20">
+        </div>
+        <div class="form-group">
+            <input type="text" id="roomInput" placeholder="Enter Grid Sector" required maxlength="30">
+        </div>
+        <button type="submit">Connect</button>
+        <div class="quick-join">
+            <p>Or connect to a random grid:</p>
+            <button id="quickJoinBtn">Random Connection</button>
+        </div>
+
+        <div class="how-to-play">
+            <h3>How to Play</h3>
+            <p>1. Get a prompt</p>
+            <p>2. Write your response</p>
+            <p>3. Guess the AI</p>
+            <p>4. Score points</p>
+        </div>
+    </div>
+</body>
+</html>

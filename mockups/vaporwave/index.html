@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>L L M p o s t e r</title>
+    <style>
+        body {
+            background: linear-gradient(to bottom, #ff69b4, #00ffff);
+            color: #fff;
+            font-family: "Times New Roman", Times, serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 2rem 0;
+        }
+        .container {
+            text-align: center;
+            background: rgba(255, 255, 255, 0.2);
+            padding: 2rem;
+            border: 1px solid #fff;
+        }
+        h1, h3 {
+            font-size: 4rem;
+            font-weight: normal;
+            text-shadow: 2px 2px #000;
+            margin-bottom: 1rem;
+        }
+        p {
+            font-size: 1.2rem;
+            margin-bottom: 2rem;
+            font-style: italic;
+        }
+        .form-group {
+            margin-bottom: 1rem;
+        }
+        input {
+            background: #fff;
+            border: 1px solid #000;
+            padding: 0.5rem;
+            font-family: inherit;
+        }
+        button {
+            background: #fff;
+            border: 1px solid #000;
+            padding: 0.5rem 1rem;
+            font-family: inherit;
+            cursor: pointer;
+            margin: 0.5rem;
+        }
+        .japanese-text {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            color: #fff;
+            font-size: 1.5rem;
+            writing-mode: vertical-rl;
+        }
+        .how-to-play {
+            margin-top: 3rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="japanese-text">ゲームを始める</div>
+    <div class="container">
+        <h1>L L M p o s t e r</h1>
+        <p>A E S T H E T I C S</p>
+        <div class="form-group">
+            <input type="text" id="playerName" placeholder="E n t e r  Y o u r  N a m e" required maxlength="20">
+        </div>
+        <div class="form-group">
+            <input type="text" id="roomInput" placeholder="E n t e r  R o o m  N a m e" required maxlength="30">
+        </div>
+        <button type="submit">E N T E R</button>
+        <div class="quick-join">
+            <p>Or join a random game:</p>
+            <button id="quickJoinBtn">R A N D O M</button>
+        </div>
+
+        <div class="how-to-play">
+            <h3>H O W  T O  P L A Y</h3>
+            <p>1. Get a prompt</p>
+            <p>2. Write your response</p>
+            <p>3. Guess the AI</p>
+            <p>4. Score points</p>
+        </div>
+    </div>
+</body>
+</html>

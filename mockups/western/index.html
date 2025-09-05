@@ -1,0 +1,917 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-case=1.0">
+    <title>LLMpostor - Wild West Saloon</title>
+    <link href="https://fonts.googleapis.com/css2?family=Rye&family=Creepster&family=Fredericka+the+Great&family=Butcherman&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Fredericka the Great', cursive;
+            background: linear-gradient(135deg, #d2691e 0%, #a0522d 50%, #8b4513 100%);
+            color: #f4e4bc;
+            min-height: 100vh;
+            position: relative;
+            overflow-x: hidden;
+            background-image: 
+                radial-gradient(circle at 30% 20%, rgba(255, 215, 0, 0.1) 0%, transparent 50%),
+                radial-gradient(circle at 70% 80%, rgba(139, 69, 19, 0.3) 0%, transparent 50%);
+        }
+
+        /* Dust particles floating */
+        body::before {
+            content: "";
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: 
+                radial-gradient(1px 1px at 30px 40px, #daa520, transparent),
+                radial-gradient(2px 2px at 80px 20px, #cd853f, transparent),
+                radial-gradient(1px 1px at 120px 70px, #d2691e, transparent),
+                radial-gradient(1px 1px at 60px 90px, #8b4513, transparent),
+                radial-gradient(2px 2px at 140px 50px, #daa520, transparent);
+            background-repeat: repeat;
+            background-size: 200px 150px;
+            animation: dustStorm 60s linear infinite;
+            pointer-events: none;
+            z-index: 1;
+            opacity: 0.4;
+        }
+
+        @keyframes dustStorm {
+            0% { background-position: 0 0; }
+            100% { background-position: -200px -150px; }
+        }
+
+        /* Wooden plank texture */
+        body::after {
+            content: "";
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: 
+                repeating-linear-gradient(
+                    90deg,
+                    rgba(139, 69, 19, 0.1) 0px,
+                    rgba(139, 69, 19, 0.1) 8px,
+                    rgba(160, 82, 45, 0.1) 8px,
+                    rgba(160, 82, 45, 0.1) 10px
+                );
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        .saloon {
+            max-width: 1000px;
+            margin: 30px auto;
+            position: relative;
+            z-index: 2;
+            padding: 20px;
+        }
+
+        .saloon-front {
+            background: linear-gradient(145deg, #8b4513, #654321);
+            border: 8px solid #2f1b14;
+            border-radius: 15px 15px 0 0;
+            padding: 40px;
+            position: relative;
+            box-shadow: 
+                0 20px 40px rgba(0, 0, 0, 0.5),
+                inset 0 0 30px rgba(218, 165, 32, 0.1);
+            background-image: 
+                repeating-linear-gradient(
+                    0deg,
+                    rgba(139, 69, 19, 0.3) 0px,
+                    rgba(139, 69, 19, 0.3) 15px,
+                    rgba(101, 67, 33, 0.3) 15px,
+                    rgba(101, 67, 33, 0.3) 30px
+                );
+        }
+
+        /* Saloon swing doors */
+        .saloon-front::before {
+            content: "🚪";
+            position: absolute;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 35px;
+            animation: swingDoors 6s ease-in-out infinite;
+        }
+
+        @keyframes swingDoors {
+            0%, 100% { transform: translateX(-50%) rotate(0deg); }
+            25% { transform: translateX(-50%) rotate(5deg); }
+            75% { transform: translateX(-50%) rotate(-5deg); }
+        }
+
+        /* Sheriff's star */
+        .saloon-front::after {
+            content: "⭐";
+            position: absolute;
+            top: 20px;
+            right: 30px;
+            font-size: 25px;
+            color: #ffd700;
+            animation: starTwinkle 4s ease-in-out infinite;
+        }
+
+        @keyframes starTwinkle {
+            0%, 100% { 
+                filter: drop-shadow(0 0 5px #ffd700); 
+                transform: rotate(0deg);
+            }
+            50% { 
+                filter: drop-shadow(0 0 15px #ffd700); 
+                transform: rotate(72deg);
+            }
+        }
+
+        .wanted-poster {
+            text-align: center;
+            margin-bottom: 40px;
+            background: linear-gradient(145deg, #f4e4bc, #e6d7a3);
+            border: 8px solid #8b4513;
+            border-radius: 10px;
+            padding: 30px;
+            position: relative;
+            box-shadow: 
+                inset 0 0 30px rgba(139, 69, 19, 0.2),
+                0 10px 20px rgba(0, 0, 0, 0.4);
+            background-image: 
+                radial-gradient(circle at 80% 20%, rgba(139, 69, 19, 0.1) 3px, transparent 3px),
+                radial-gradient(circle at 20% 80%, rgba(139, 69, 19, 0.1) 2px, transparent 2px);
+            background-size: 50px 50px, 30px 30px;
+            transform: rotate(-1deg);
+        }
+
+        /* Bullet holes */
+        .wanted-poster::before {
+            content: "●";
+            position: absolute;
+            top: 15px;
+            left: 20px;
+            color: #2f1b14;
+            font-size: 12px;
+            text-shadow: 
+                30px 10px 0 #2f1b14,
+                -10px 40px 0 #2f1b14;
+        }
+
+        /* Nail holding poster */
+        .wanted-poster::after {
+            content: "📌";
+            position: absolute;
+            top: -5px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 20px;
+            animation: posterSway 4s ease-in-out infinite;
+        }
+
+        @keyframes posterSway {
+            0%, 100% { transform: translateX(-50%) rotate(0deg); }
+            50% { transform: translateX(-50%) rotate(3deg); }
+        }
+
+        .outlaw-title {
+            font-family: 'Rye', cursive;
+            font-size: 42px;
+            color: #8b0000;
+            text-shadow: 
+                3px 3px 0 #2f1b14,
+                6px 6px 0 rgba(47, 27, 20, 0.3);
+            margin-bottom: 10px;
+            transform: rotate(1deg);
+        }
+
+        .bounty-banner {
+            background: linear-gradient(45deg, #dc143c, #8b0000);
+            color: #ffd700;
+            padding: 10px 25px;
+            border-radius: 0;
+            font-family: 'Butcherman', cursive;
+            font-size: 16px;
+            display: inline-block;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            border: 4px solid #2f1b14;
+            box-shadow: 
+                0 0 20px rgba(220, 20, 60, 0.4),
+                inset 0 0 10px rgba(255, 215, 0, 0.2);
+            position: relative;
+            clip-path: polygon(10% 0%, 100% 0%, 90% 100%, 0% 100%);
+        }
+
+        .bounty-banner::before {
+            content: "🤠";
+            position: absolute;
+            left: -25px;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 24px;
+            animation: hatTip 5s ease-in-out infinite;
+        }
+
+        @keyframes hatTip {
+            0%, 100% { transform: translateY(-50%) rotate(0deg); }
+            20% { transform: translateY(-50%) rotate(-10deg); }
+            40% { transform: translateY(-50%) rotate(5deg); }
+        }
+
+        .sheriff-office {
+            background: linear-gradient(145deg, #2f1b14, #1a0f0b);
+            border: 6px solid #8b4513;
+            border-radius: 10px;
+            padding: 30px;
+            margin-bottom: 30px;
+            position: relative;
+            box-shadow: 
+                inset 0 0 30px rgba(218, 165, 32, 0.1),
+                0 10px 30px rgba(0, 0, 0, 0.5);
+        }
+
+        .sheriff-office::before {
+            content: "SHERIFF'S OFFICE";
+            position: absolute;
+            top: -15px;
+            left: 30px;
+            background: #dc143c;
+            color: #ffd700;
+            padding: 8px 16px;
+            border-radius: 0;
+            font-family: 'Butcherman', cursive;
+            font-size: 14px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            border: 3px solid #2f1b14;
+            box-shadow: 0 0 15px rgba(220, 20, 60, 0.4);
+            clip-path: polygon(5% 0%, 100% 0%, 95% 100%, 0% 100%);
+        }
+
+        /* Oil lamp */
+        .sheriff-office::after {
+            content: "🏮";
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            font-size: 24px;
+            animation: lampFlicker 3s ease-in-out infinite;
+        }
+
+        @keyframes lampFlicker {
+            0%, 100% { 
+                opacity: 1; 
+                filter: sepia(0.3) brightness(1);
+            }
+            25% { 
+                opacity: 0.8; 
+                filter: sepia(0.5) brightness(1.2);
+            }
+            75% { 
+                opacity: 0.9; 
+                filter: sepia(0.4) brightness(0.9);
+            }
+        }
+
+        .deputy-section {
+            margin-bottom: 25px;
+        }
+
+        .western-label {
+            display: block;
+            font-family: 'Butcherman', cursive;
+            font-size: 16px;
+            font-weight: 700;
+            margin-bottom: 10px;
+            color: #daa520;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            text-shadow: 0 0 10px rgba(218, 165, 32, 0.3);
+        }
+
+        .frontier-input {
+            width: 100%;
+            padding: 16px 24px;
+            background: linear-gradient(145deg, rgba(244, 228, 188, 0.95), rgba(230, 215, 163, 0.95));
+            border: 4px solid #8b4513;
+            border-radius: 0;
+            color: #2f1b14;
+            font-family: 'Fredericka the Great', cursive;
+            font-size: 18px;
+            font-weight: 400;
+            transition: all 0.3s ease;
+            box-shadow: 
+                inset 0 0 20px rgba(139, 69, 19, 0.2),
+                0 5px 15px rgba(0, 0, 0, 0.3);
+            border-style: solid;
+        }
+
+        .frontier-input:focus {
+            outline: none;
+            border-color: #daa520;
+            background: linear-gradient(145deg, rgba(218, 165, 32, 0.3), rgba(255, 215, 0, 0.2));
+            box-shadow: 
+                inset 0 0 30px rgba(218, 165, 32, 0.3),
+                0 0 25px rgba(218, 165, 32, 0.5);
+            animation: goldRush 1.5s ease-in-out infinite;
+        }
+
+        @keyframes goldRush {
+            0%, 100% { text-shadow: 0 0 5px #2f1b14; }
+            50% { text-shadow: 0 0 15px #8b4513, 0 0 25px #daa520; }
+        }
+
+        .frontier-input::placeholder {
+            color: rgba(47, 27, 20, 0.7);
+            font-style: italic;
+        }
+
+        .showdown-buttons {
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+            margin-top: 30px;
+            flex-wrap: wrap;
+        }
+
+        .cowboy-button {
+            background: linear-gradient(145deg, #dc143c, #8b0000);
+            border: 6px solid #daa520;
+            border-radius: 0;
+            color: #daa520;
+            padding: 18px 35px;
+            font-family: 'Butcherman', cursive;
+            font-size: 18px;
+            font-weight: 700;
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            transition: all 0.3s ease;
+            box-shadow: 
+                0 8px 0 #660000,
+                0 0 30px rgba(220, 20, 60, 0.4),
+                inset 0 0 20px rgba(218, 165, 32, 0.1);
+            clip-path: polygon(8% 0%, 100% 0%, 92% 100%, 0% 100%);
+        }
+
+        .cowboy-button::before {
+            content: "";
+            position: absolute;
+            top: 5px;
+            left: 10px;
+            right: 10px;
+            height: 4px;
+            background: linear-gradient(90deg, #daa520, rgba(218, 165, 32, 0.3), #daa520);
+            animation: gunpowderSpark 3s linear infinite;
+        }
+
+        @keyframes gunpowderSpark {
+            0% { opacity: 0.5; transform: scaleX(1); }
+            50% { opacity: 1; transform: scaleX(1.3); }
+            100% { opacity: 0.5; transform: scaleX(1); }
+        }
+
+        .cowboy-button::after {
+            content: "🔫";
+            position: absolute;
+            top: 8px;
+            right: 15px;
+            font-size: 16px;
+            animation: gunSpin 5s linear infinite;
+        }
+
+        @keyframes gunSpin {
+            0%, 80% { transform: rotate(0deg); }
+            90% { transform: rotate(360deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .cowboy-button:hover {
+            transform: translateY(-4px);
+            box-shadow: 
+                0 12px 0 #660000,
+                0 0 40px rgba(220, 20, 60, 0.6),
+                inset 0 0 30px rgba(218, 165, 32, 0.2);
+        }
+
+        .cowboy-button:active {
+            transform: translateY(4px);
+            box-shadow: 
+                0 4px 0 #660000,
+                0 0 20px rgba(220, 20, 60, 0.3),
+                inset 0 0 10px rgba(218, 165, 32, 0.1);
+        }
+
+        .outlaw-button {
+            background: linear-gradient(145deg, #8b4513, #654321);
+            border-color: #cd853f;
+            color: #cd853f;
+            box-shadow: 
+                0 8px 0 #4a2511,
+                0 0 30px rgba(139, 69, 19, 0.4),
+                inset 0 0 20px rgba(205, 133, 63, 0.1);
+        }
+
+        .outlaw-button:hover {
+            box-shadow: 
+                0 12px 0 #4a2511,
+                0 0 40px rgba(139, 69, 19, 0.6),
+                inset 0 0 30px rgba(205, 133, 63, 0.2);
+        }
+
+        .outlaw-button:active {
+            box-shadow: 
+                0 4px 0 #4a2511,
+                0 0 20px rgba(139, 69, 19, 0.3),
+                inset 0 0 10px rgba(205, 133, 63, 0.1);
+        }
+
+        .outlaw-button::after {
+            content: "🐎";
+        }
+
+        .bounty-board {
+            background: linear-gradient(145deg, #8b4513, #654321);
+            border: 6px solid #daa520;
+            border-radius: 10px;
+            padding: 30px;
+            position: relative;
+            box-shadow: 
+                inset 0 0 30px rgba(218, 165, 32, 0.2),
+                0 10px 30px rgba(0, 0, 0, 0.5);
+            background-image: 
+                radial-gradient(circle at 70% 30%, rgba(218, 165, 32, 0.2) 3px, transparent 3px),
+                radial-gradient(circle at 30% 70%, rgba(218, 165, 32, 0.1) 4px, transparent 4px);
+            background-size: 50px 50px, 35px 35px;
+        }
+
+        .bounty-board::before {
+            content: "BOUNTY BOARD";
+            position: absolute;
+            top: -15px;
+            left: 30px;
+            background: #8b4513;
+            color: #daa520;
+            padding: 8px 16px;
+            border-radius: 0;
+            font-family: 'Butcherman', cursive;
+            font-size: 14px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            border: 3px solid #daa520;
+            box-shadow: 0 0 15px rgba(218, 165, 32, 0.4);
+            clip-path: polygon(5% 0%, 100% 0%, 95% 100%, 0% 100%);
+        }
+
+        .mission-list {
+            display: grid;
+            gap: 25px;
+            margin-top: 30px;
+        }
+
+        .mission-wanted {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            background: rgba(218, 165, 32, 0.1);
+            border: 4px solid #8b4513;
+            border-radius: 5px;
+            padding: 25px;
+            transition: all 0.3s ease;
+            position: relative;
+            transform: rotate(-0.5deg);
+        }
+
+        .mission-wanted:nth-child(even) {
+            transform: rotate(0.5deg);
+        }
+
+        .mission-wanted::before {
+            content: "💰";
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            font-size: 18px;
+            animation: coinFlip 4s infinite;
+        }
+
+        @keyframes coinFlip {
+            0%, 80% { transform: rotateY(0deg); opacity: 1; }
+            10% { transform: rotateY(90deg); opacity: 0.7; }
+            20% { transform: rotateY(180deg); opacity: 1; }
+            30% { transform: rotateY(270deg); opacity: 0.7; }
+            40% { transform: rotateY(360deg); opacity: 1; }
+        }
+
+        .mission-wanted:hover {
+            background: rgba(218, 165, 32, 0.2);
+            transform: scale(1.02) rotate(0deg);
+            box-shadow: 0 15px 30px rgba(139, 69, 19, 0.3);
+        }
+
+        .reward-badge {
+            min-width: 80px;
+            height: 80px;
+            background: linear-gradient(145deg, #daa520, #b8860b);
+            border: 4px solid #8b4513;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: 'Rye', cursive;
+            font-size: 20px;
+            font-weight: 700;
+            color: #2f1b14;
+            text-shadow: 2px 2px 0 rgba(244, 228, 188, 0.5);
+            position: relative;
+            box-shadow: 
+                0 0 20px rgba(218, 165, 32, 0.5),
+                inset 0 0 15px rgba(255, 255, 255, 0.2);
+            animation: badgeShine 8s ease-in-out infinite;
+        }
+
+        @keyframes badgeShine {
+            0%, 100% { 
+                box-shadow: 0 0 20px rgba(218, 165, 32, 0.5), inset 0 0 15px rgba(255, 255, 255, 0.2); 
+                transform: rotate(0deg);
+            }
+            25% { 
+                box-shadow: 0 0 30px rgba(218, 165, 32, 0.8), inset 0 0 25px rgba(255, 255, 255, 0.3); 
+                transform: rotate(5deg);
+            }
+            75% { 
+                box-shadow: 0 0 25px rgba(218, 165, 32, 0.6), inset 0 0 20px rgba(255, 255, 255, 0.25); 
+                transform: rotate(-3deg);
+            }
+        }
+
+        .reward-badge::after {
+            content: "🏅";
+            position: absolute;
+            top: -10px;
+            right: -10px;
+            font-size: 16px;
+            animation: medalSway 3s ease-in-out infinite;
+        }
+
+        @keyframes medalSway {
+            0%, 100% { transform: rotate(0deg); }
+            50% { transform: rotate(20deg); }
+        }
+
+        .mission-details h3 {
+            font-family: 'Butcherman', cursive;
+            font-size: 20px;
+            font-weight: 700;
+            margin-bottom: 8px;
+            color: #daa520;
+            text-transform: uppercase;
+            text-shadow: 0 0 10px rgba(218, 165, 32, 0.3);
+        }
+
+        .mission-details p {
+            font-size: 16px;
+            color: #f4e4bc;
+            line-height: 1.6;
+            font-weight: 400;
+        }
+
+        .tumbleweed-effects {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            top: 0;
+            left: 0;
+            pointer-events: none;
+            z-index: -1;
+        }
+
+        .tumbleweed {
+            position: absolute;
+            font-size: 30px;
+            opacity: 0.6;
+            animation: rollTumbleweed 20s linear infinite;
+        }
+
+        .tumbleweed:nth-child(1) { 
+            top: 15%; 
+            animation-delay: 0s; 
+        }
+        .tumbleweed:nth-child(2) { 
+            top: 40%; 
+            animation-delay: 7s; 
+        }
+        .tumbleweed:nth-child(3) { 
+            top: 70%; 
+            animation-delay: 14s; 
+        }
+
+        @keyframes rollTumbleweed {
+            0% { 
+                left: -50px; 
+                transform: rotate(0deg) scale(1);
+                opacity: 0;
+            }
+            10% { 
+                opacity: 0.6;
+            }
+            90% { 
+                opacity: 0.6;
+            }
+            100% { 
+                left: calc(100% + 50px); 
+                transform: rotate(720deg) scale(0.8);
+                opacity: 0;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .saloon {
+                margin: 15px;
+                padding: 15px;
+            }
+            
+            .saloon-front {
+                padding: 25px;
+            }
+            
+            .outlaw-title {
+                font-size: 32px;
+            }
+            
+            .showdown-buttons {
+                flex-direction: column;
+                align-items: center;
+            }
+            
+            .cowboy-button {
+                width: 100%;
+                max-width: 300px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="tumbleweed-effects">
+        <div class="tumbleweed">🌾</div>
+        <div class="tumbleweed">🌾</div>
+        <div class="tumbleweed">🌾</div>
+    </div>
+
+    <div class="saloon">
+        <div class="saloon-front">
+            <div class="wanted-poster">
+                <div class="outlaw-title">LLMpostor</div>
+                <div class="bounty-banner">Wild West Showdown!</div>
+            </div>
+            
+            <div class="sheriff-office">
+                <form>
+                    <div class="deputy-section">
+                        <label class="western-label">Outlaw Name</label>
+                        <input type="text" class="frontier-input" placeholder="What do they call ya, partner..." maxlength="20">
+                    </div>
+                    
+                    <div class="deputy-section">
+                        <label class="western-label">Frontier Town</label>
+                        <input type="text" class="frontier-input" placeholder="Which town ya ridin' into..." maxlength="30">
+                    </div>
+                    
+                    <div class="showdown-buttons">
+                        <button type="submit" class="cowboy-button">Draw Partner!</button>
+                        <button type="button" class="cowboy-button outlaw-button">Ride The Trail!</button>
+                    </div>
+                </form>
+            </div>
+            
+            <div class="bounty-board">
+                <div class="mission-list">
+                    <div class="mission-wanted">
+                        <div class="reward-badge">I</div>
+                        <div class="mission-details">
+                            <h3>Get the Bounty</h3>
+                            <p>Pardner, you'll get the wanted poster and learn about yer AI varmint target</p>
+                        </div>
+                    </div>
+                    <div class="mission-wanted">
+                        <div class="reward-badge">II</div>
+                        <div class="mission-details">
+                            <h3>Write Like the AI</h3>
+                            <p>Rustle up some words that sound just like that there AI critter would say</p>
+                        </div>
+                    </div>
+                    <div class="mission-wanted">
+                        <div class="reward-badge">III</div>
+                        <div class="mission-details">
+                            <h3>Spot the Varmint</h3>
+                            <p>Use yer keen eye to identify the real AI snake among the decoy responses</p>
+                        </div>
+                    </div>
+                    <div class="mission-wanted">
+                        <div class="reward-badge">IV</div>
+                        <div class="mission-details">
+                            <h3>Claim the Gold</h3>
+                            <p>Earn yerself some gold nuggets for good trickin' and sharp shootin' detection</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Western sound effects
+            const westernSounds = ['YEEHAW!', 'HOWDY PARTNER!', 'GIDDY UP!', 'DRAW!', 'VARMINT!', 'TARNATION!'];
+            
+            document.querySelectorAll('.cowboy-button').forEach(button => {
+                button.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    
+                    // Create floating western sound effect
+                    const soundEffect = document.createElement('div');
+                    soundEffect.textContent = westernSounds[Math.floor(Math.random() * westernSounds.length)];
+                    soundEffect.style.cssText = `
+                        position: fixed;
+                        left: ${e.clientX}px;
+                        top: ${e.clientY}px;
+                        font-family: 'Butcherman', cursive;
+                        font-size: 18px;
+                        color: #daa520;
+                        pointer-events: none;
+                        z-index: 9999;
+                        text-shadow: 2px 2px 0 #8b4513, 0 0 15px #daa520;
+                        background: rgba(139, 69, 19, 0.9);
+                        padding: 8px 15px;
+                        border-radius: 0;
+                        border: 3px solid #daa520;
+                        clip-path: polygon(5% 0%, 100% 0%, 95% 100%, 0% 100%);
+                        animation: westernPop 2.3s ease-out forwards;
+                    `;
+                    
+                    // Add animation if it doesn't exist
+                    if (!document.querySelector('#western-animations')) {
+                        const style = document.createElement('style');
+                        style.id = 'western-animations';
+                        style.textContent = `
+                            @keyframes westernPop {
+                                0% { 
+                                    transform: translate(-50%, -50%) scale(0) rotate(0deg);
+                                    opacity: 1;
+                                }
+                                20% { 
+                                    transform: translate(-50%, -50%) scale(1.3) rotate(-8deg);
+                                    opacity: 1;
+                                }
+                                40% { 
+                                    transform: translate(-50%, -50%) scale(0.9) rotate(4deg);
+                                    opacity: 1;
+                                }
+                                60% { 
+                                    transform: translate(-50%, -50%) scale(1.1) rotate(-2deg);
+                                    opacity: 0.8;
+                                }
+                                100% { 
+                                    transform: translate(-50%, -50%) scale(0.3) rotate(0deg);
+                                    opacity: 0;
+                                }
+                            }
+                        `;
+                        document.head.appendChild(style);
+                    }
+                    
+                    document.body.appendChild(soundEffect);
+                    
+                    setTimeout(() => {
+                        if (document.body.contains(soundEffect)) {
+                            document.body.removeChild(soundEffect);
+                        }
+                    }, 2300);
+                });
+            });
+
+            // Frontier input effects
+            document.querySelectorAll('.frontier-input').forEach(input => {
+                input.addEventListener('input', function() {
+                    if (Math.random() < 0.2) { // 20% chance
+                        // Gold nugget effect
+                        this.style.background = 'linear-gradient(145deg, rgba(218, 165, 32, 0.5), rgba(255, 215, 0, 0.4))';
+                        this.style.boxShadow = `
+                            inset 0 0 30px rgba(218, 165, 32, 0.4),
+                            0 0 40px rgba(218, 165, 32, 0.6)
+                        `;
+                        setTimeout(() => {
+                            if (this === document.activeElement) {
+                                this.style.background = 'linear-gradient(145deg, rgba(218, 165, 32, 0.3), rgba(255, 215, 0, 0.2))';
+                                this.style.boxShadow = `
+                                    inset 0 0 30px rgba(218, 165, 32, 0.3),
+                                    0 0 25px rgba(218, 165, 32, 0.5)
+                                `;
+                            } else {
+                                this.style.background = 'linear-gradient(145deg, rgba(244, 228, 188, 0.95), rgba(230, 215, 163, 0.95))';
+                                this.style.boxShadow = `
+                                    inset 0 0 20px rgba(139, 69, 19, 0.2),
+                                    0 5px 15px rgba(0, 0, 0, 0.3)
+                                `;
+                            }
+                        }, 300);
+                    }
+                });
+
+                // Saloon shake when typing
+                input.addEventListener('keypress', function() {
+                    const saloon = document.querySelector('.saloon-front');
+                    saloon.style.transform = 'translateX(1px) rotate(0.2deg)';
+                    setTimeout(() => {
+                        saloon.style.transform = 'translateX(-0.5px) rotate(-0.1deg)';
+                    }, 100);
+                    setTimeout(() => {
+                        saloon.style.transform = 'translateX(0) rotate(0deg)';
+                    }, 200);
+                });
+            });
+
+            // Random wind gusts
+            setInterval(() => {
+                if (Math.random() < 0.08) { // 8% chance
+                    const saloon = document.querySelector('.saloon-front');
+                    saloon.style.transform = 'rotate(0.5deg)';
+                    document.body.style.filter = 'sepia(0.1) brightness(1.1)';
+                    setTimeout(() => {
+                        saloon.style.transform = 'rotate(-0.3deg)';
+                        document.body.style.filter = 'sepia(0.05) brightness(1.05)';
+                    }, 300);
+                    setTimeout(() => {
+                        saloon.style.transform = 'rotate(0deg)';
+                        document.body.style.filter = 'sepia(0) brightness(1)';
+                    }, 600);
+                }
+            }, 5000);
+
+            // Tumbleweeds occasionally speed up
+            setInterval(() => {
+                if (Math.random() < 0.15) { // 15% chance
+                    const tumbleweeds = document.querySelectorAll('.tumbleweed');
+                    tumbleweeds.forEach(weed => {
+                        weed.style.animationDuration = '8s';
+                        setTimeout(() => {
+                            weed.style.animationDuration = '20s';
+                        }, 8000);
+                    });
+                }
+            }, 12000);
+
+            // Gunshot effect on button press
+            document.querySelectorAll('.cowboy-button').forEach(button => {
+                button.addEventListener('mousedown', function() {
+                    document.body.style.filter = 'brightness(1.3) contrast(1.2) sepia(0.2)';
+                    setTimeout(() => {
+                        document.body.style.filter = 'brightness(1) contrast(1) sepia(0)';
+                    }, 150);
+                });
+            });
+
+            // Sheriff badge glint
+            setInterval(() => {
+                if (Math.random() < 0.1) { // 10% chance
+                    const badges = document.querySelectorAll('.reward-badge');
+                    const randomBadge = badges[Math.floor(Math.random() * badges.length)];
+                    randomBadge.style.filter = 'brightness(1.5) drop-shadow(0 0 20px #daa520)';
+                    setTimeout(() => {
+                        randomBadge.style.filter = 'brightness(1)';
+                    }, 600);
+                }
+            }, 4000);
+
+            // Wanted poster flutter in wind
+            setInterval(() => {
+                if (Math.random() < 0.12) { // 12% chance
+                    const poster = document.querySelector('.wanted-poster');
+                    poster.style.transform = 'rotate(-2deg)';
+                    setTimeout(() => {
+                        poster.style.transform = 'rotate(1deg)';
+                    }, 200);
+                    setTimeout(() => {
+                        poster.style.transform = 'rotate(-1deg)';
+                    }, 400);
+                }
+            }, 3000);
+        });
+    </script>
+</body>
+</html>

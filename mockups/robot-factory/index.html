@@ -1,0 +1,901 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LLMpostor - Robot Factory Assembly Line</title>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Share+Tech+Mono:wght@400;700&family=Audiowide&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Share Tech Mono', monospace;
+            background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 50%, #1a1a1a 100%);
+            color: #00ff00;
+            min-height: 100vh;
+            position: relative;
+            overflow-x: hidden;
+            background-image: 
+                linear-gradient(90deg, rgba(0, 255, 0, 0.03) 1px, transparent 1px),
+                linear-gradient(rgba(0, 255, 0, 0.03) 1px, transparent 1px);
+            background-size: 50px 50px;
+        }
+
+        /* Conveyor belt animation */
+        body::before {
+            content: "";
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 60px;
+            background: 
+                linear-gradient(90deg, #333 0%, #444 50%, #333 100%),
+                repeating-linear-gradient(
+                    90deg,
+                    #222 0px,
+                    #222 20px,
+                    #333 20px,
+                    #333 40px
+                );
+            background-size: 100% 100%, 80px 100%;
+            animation: conveyorBelt 3s linear infinite;
+            border-top: 3px solid #666;
+            z-index: 1;
+        }
+
+        @keyframes conveyorBelt {
+            0% { background-position: 0 0, 0 0; }
+            100% { background-position: 0 0, 80px 0; }
+        }
+
+        /* Factory machinery background */
+        body::after {
+            content: "";
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: 
+                radial-gradient(circle at 10% 20%, rgba(255, 69, 0, 0.1) 0%, transparent 50%),
+                radial-gradient(circle at 90% 80%, rgba(0, 255, 255, 0.1) 0%, transparent 50%);
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        .factory-floor {
+            max-width: 1100px;
+            margin: 30px auto;
+            position: relative;
+            z-index: 2;
+            padding: 20px;
+        }
+
+        .assembly-station {
+            background: linear-gradient(145deg, #2a2a2a, #1f1f1f);
+            border: 4px solid #00ff00;
+            border-radius: 20px;
+            padding: 40px;
+            position: relative;
+            box-shadow: 
+                0 20px 40px rgba(0, 0, 0, 0.6),
+                inset 0 0 30px rgba(0, 255, 0, 0.1),
+                0 0 50px rgba(0, 255, 0, 0.2);
+            background-image: 
+                repeating-linear-gradient(
+                    45deg,
+                    transparent 0px,
+                    transparent 10px,
+                    rgba(0, 255, 0, 0.05) 10px,
+                    rgba(0, 255, 0, 0.05) 20px
+                );
+        }
+
+        /* Factory warning lights */
+        .assembly-station::before {
+            content: "";
+            position: absolute;
+            top: 20px;
+            right: 30px;
+            width: 12px;
+            height: 12px;
+            background: #ff4500;
+            border-radius: 50%;
+            box-shadow: 
+                0 0 15px #ff4500,
+                -25px 0 0 0 #00ff00,
+                -25px 0 15px 0 #00ff00,
+                -50px 0 0 0 #ffff00,
+                -50px 0 15px 0 #ffff00;
+            animation: factoryLights 2s infinite;
+        }
+
+        @keyframes factoryLights {
+            0%, 33% { 
+                background: #ff4500;
+                box-shadow: 
+                    0 0 15px #ff4500,
+                    -25px 0 0 0 rgba(0, 255, 0, 0.3),
+                    -25px 0 15px 0 rgba(0, 255, 0, 0.1),
+                    -50px 0 0 0 rgba(255, 255, 0, 0.3),
+                    -50px 0 15px 0 rgba(255, 255, 0, 0.1);
+            }
+            34%, 66% { 
+                background: rgba(255, 69, 0, 0.3);
+                box-shadow: 
+                    0 0 5px rgba(255, 69, 0, 0.1),
+                    -25px 0 0 0 #00ff00,
+                    -25px 0 15px 0 #00ff00,
+                    -50px 0 0 0 rgba(255, 255, 0, 0.3),
+                    -50px 0 15px 0 rgba(255, 255, 0, 0.1);
+            }
+            67%, 100% { 
+                background: rgba(255, 69, 0, 0.3);
+                box-shadow: 
+                    0 0 5px rgba(255, 69, 0, 0.1),
+                    -25px 0 0 0 rgba(0, 255, 0, 0.3),
+                    -25px 0 15px 0 rgba(0, 255, 0, 0.1),
+                    -50px 0 0 0 #ffff00,
+                    -50px 0 15px 0 #ffff00;
+            }
+        }
+
+        /* Robotic arm decoration */
+        .assembly-station::after {
+            content: "🦾";
+            position: absolute;
+            top: 25px;
+            left: 30px;
+            font-size: 30px;
+            animation: roboticArm 4s ease-in-out infinite;
+        }
+
+        @keyframes roboticArm {
+            0%, 100% { transform: rotate(0deg) scale(1); }
+            25% { transform: rotate(-15deg) scale(1.1); }
+            50% { transform: rotate(0deg) scale(1); }
+            75% { transform: rotate(15deg) scale(1.1); }
+        }
+
+        .control-panel {
+            text-align: center;
+            margin-bottom: 40px;
+            background: linear-gradient(145deg, #1f1f1f, #2a2a2a);
+            border: 3px solid #ff4500;
+            border-radius: 15px;
+            padding: 30px;
+            position: relative;
+            box-shadow: 
+                inset 0 0 30px rgba(255, 69, 0, 0.2),
+                0 10px 20px rgba(0, 0, 0, 0.4);
+        }
+
+        .control-panel::before {
+            content: "";
+            position: absolute;
+            top: -2px;
+            left: -2px;
+            right: -2px;
+            bottom: -2px;
+            background: linear-gradient(45deg, #ff4500, #00ff00, #ff4500);
+            border-radius: 17px;
+            z-index: -1;
+            animation: panelGlow 3s linear infinite;
+        }
+
+        @keyframes panelGlow {
+            0% { opacity: 0.6; }
+            50% { opacity: 1; }
+            100% { opacity: 0.6; }
+        }
+
+        .factory-title {
+            font-family: 'Audiowide', cursive;
+            font-size: 38px;
+            font-weight: 900;
+            background: linear-gradient(45deg, #00ff00, #ff4500, #00ffff);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 15px;
+            text-shadow: 0 0 30px rgba(0, 255, 0, 0.5);
+            animation: titleFlicker 2s ease-in-out infinite;
+        }
+
+        @keyframes titleFlicker {
+            0%, 100% { filter: brightness(1); }
+            50% { filter: brightness(1.2); }
+            75% { filter: brightness(0.9); }
+        }
+
+        .production-badge {
+            background: linear-gradient(45deg, #ff4500, #ff8c00);
+            color: #000000;
+            padding: 10px 25px;
+            border-radius: 25px;
+            font-family: 'Orbitron', monospace;
+            font-size: 14px;
+            font-weight: 700;
+            display: inline-block;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            border: 3px solid #000000;
+            box-shadow: 
+                0 0 20px rgba(255, 69, 0, 0.5),
+                inset 0 0 10px rgba(255, 255, 255, 0.2);
+            position: relative;
+        }
+
+        .production-badge::before {
+            content: "⚡";
+            position: absolute;
+            left: -15px;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 18px;
+            color: #ffff00;
+            animation: powerSurge 1.5s linear infinite;
+        }
+
+        @keyframes powerSurge {
+            0%, 80% { opacity: 0.7; }
+            10%, 30% { opacity: 1; transform: translateY(-50%) scale(1.2); }
+            20% { opacity: 0.5; transform: translateY(-50%) scale(1); }
+        }
+
+        .manufacturing-unit {
+            background: linear-gradient(145deg, #1a1a1a, #2d2d2d);
+            border: 3px solid #00ff00;
+            border-radius: 15px;
+            padding: 30px;
+            margin-bottom: 30px;
+            position: relative;
+            box-shadow: 
+                inset 0 0 30px rgba(0, 255, 0, 0.1),
+                0 10px 30px rgba(0, 0, 0, 0.5);
+        }
+
+        .manufacturing-unit::before {
+            content: "PRODUCTION LINE ACTIVE";
+            position: absolute;
+            top: -15px;
+            left: 30px;
+            background: #ff4500;
+            color: #000000;
+            padding: 6px 12px;
+            border-radius: 12px;
+            font-family: 'Orbitron', monospace;
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            border: 2px solid #000000;
+            box-shadow: 0 0 15px rgba(255, 69, 0, 0.4);
+            animation: productionBlink 1.5s infinite;
+        }
+
+        @keyframes productionBlink {
+            0%, 50% { opacity: 1; }
+            51%, 100% { opacity: 0.6; }
+        }
+
+        .input-bay {
+            margin-bottom: 25px;
+        }
+
+        .factory-label {
+            display: block;
+            font-family: 'Orbitron', monospace;
+            font-size: 14px;
+            font-weight: 700;
+            margin-bottom: 10px;
+            color: #00ff00;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            text-shadow: 0 0 10px rgba(0, 255, 0, 0.5);
+        }
+
+        .assembly-input {
+            width: 100%;
+            padding: 16px 24px;
+            background: linear-gradient(145deg, rgba(26, 26, 26, 0.9), rgba(45, 45, 45, 0.9));
+            border: 3px solid #00ff00;
+            border-radius: 10px;
+            color: #00ff00;
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 16px;
+            font-weight: 700;
+            transition: all 0.3s ease;
+            box-shadow: 
+                inset 0 0 20px rgba(0, 255, 0, 0.2),
+                0 5px 15px rgba(0, 0, 0, 0.4);
+            backdrop-filter: blur(5px);
+        }
+
+        .assembly-input:focus {
+            outline: none;
+            border-color: #ff4500;
+            color: #ff4500;
+            box-shadow: 
+                inset 0 0 30px rgba(255, 69, 0, 0.2),
+                0 0 25px rgba(255, 69, 0, 0.4);
+            animation: assemblyPulse 1s ease-in-out infinite;
+        }
+
+        @keyframes assemblyPulse {
+            0%, 100% { 
+                text-shadow: 0 0 5px currentColor; 
+                transform: scale(1);
+            }
+            50% { 
+                text-shadow: 0 0 20px currentColor, 0 0 30px currentColor; 
+                transform: scale(1.01);
+            }
+        }
+
+        .assembly-input::placeholder {
+            color: rgba(0, 255, 0, 0.5);
+            font-style: italic;
+        }
+
+        .production-controls {
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+            margin-top: 30px;
+            flex-wrap: wrap;
+        }
+
+        .factory-button {
+            background: linear-gradient(145deg, #ff4500, #ff8c00);
+            border: 4px solid #000000;
+            border-radius: 15px;
+            color: #000000;
+            padding: 18px 35px;
+            font-family: 'Orbitron', monospace;
+            font-size: 16px;
+            font-weight: 700;
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            transition: all 0.3s ease;
+            box-shadow: 
+                0 8px 0 #cc3300,
+                0 0 30px rgba(255, 69, 0, 0.4),
+                inset 0 0 20px rgba(255, 255, 255, 0.2);
+        }
+
+        .factory-button::before {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4), transparent);
+            transition: left 0.5s;
+        }
+
+        .factory-button::after {
+            content: "⚙️";
+            position: absolute;
+            top: 8px;
+            right: 12px;
+            font-size: 16px;
+            animation: gearRotate 3s linear infinite;
+        }
+
+        @keyframes gearRotate {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .factory-button:hover {
+            transform: translateY(-4px);
+            box-shadow: 
+                0 12px 0 #cc3300,
+                0 0 40px rgba(255, 69, 0, 0.6),
+                inset 0 0 30px rgba(255, 255, 255, 0.3);
+        }
+
+        .factory-button:hover::before {
+            left: 100%;
+        }
+
+        .factory-button:active {
+            transform: translateY(4px);
+            box-shadow: 
+                0 4px 0 #cc3300,
+                0 0 20px rgba(255, 69, 0, 0.3),
+                inset 0 0 10px rgba(255, 255, 255, 0.1);
+        }
+
+        .automation-button {
+            background: linear-gradient(145deg, #00ff00, #32cd32);
+            box-shadow: 
+                0 8px 0 #00cc00,
+                0 0 30px rgba(0, 255, 0, 0.4),
+                inset 0 0 20px rgba(255, 255, 255, 0.2);
+        }
+
+        .automation-button:hover {
+            box-shadow: 
+                0 12px 0 #00cc00,
+                0 0 40px rgba(0, 255, 0, 0.6),
+                inset 0 0 30px rgba(255, 255, 255, 0.3);
+        }
+
+        .automation-button:active {
+            box-shadow: 
+                0 4px 0 #00cc00,
+                0 0 20px rgba(0, 255, 0, 0.3),
+                inset 0 0 10px rgba(255, 255, 255, 0.1);
+        }
+
+        .automation-button::after {
+            content: "🤖";
+        }
+
+        .assembly-instructions {
+            background: linear-gradient(145deg, #2d2d2d, #1a1a1a);
+            border: 3px solid #ff4500;
+            border-radius: 15px;
+            padding: 30px;
+            position: relative;
+            box-shadow: 
+                inset 0 0 30px rgba(255, 69, 0, 0.1),
+                0 10px 30px rgba(0, 0, 0, 0.5);
+        }
+
+        .assembly-instructions::before {
+            content: "ASSEMBLY PROTOCOL";
+            position: absolute;
+            top: -15px;
+            left: 30px;
+            background: #00ff00;
+            color: #000000;
+            padding: 6px 12px;
+            border-radius: 12px;
+            font-family: 'Orbitron', monospace;
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            border: 2px solid #000000;
+            box-shadow: 0 0 15px rgba(0, 255, 0, 0.4);
+        }
+
+        .process-steps {
+            display: grid;
+            gap: 25px;
+            margin-top: 30px;
+        }
+
+        .process-step {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            background: rgba(0, 255, 0, 0.1);
+            border: 3px solid #00ff00;
+            border-radius: 15px;
+            padding: 25px;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        .process-step::before {
+            content: "";
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            width: 10px;
+            height: 10px;
+            background: #ff4500;
+            border-radius: 50%;
+            box-shadow: 0 0 15px #ff4500;
+            animation: processIndicator 3s infinite;
+        }
+
+        @keyframes processIndicator {
+            0%, 70% { opacity: 0.5; transform: scale(1); }
+            10% { opacity: 1; transform: scale(1.5); }
+            20% { opacity: 0.7; transform: scale(1.2); }
+        }
+
+        .process-step:hover {
+            background: rgba(0, 255, 0, 0.2);
+            transform: scale(1.02);
+            box-shadow: 0 15px 30px rgba(0, 255, 0, 0.3);
+            border-color: #ff4500;
+        }
+
+        .step-module {
+            min-width: 70px;
+            height: 70px;
+            background: linear-gradient(145deg, #ff4500, #ff8c00);
+            border: 3px solid #000000;
+            border-radius: 15px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: 'Audiowide', cursive;
+            font-size: 24px;
+            font-weight: 900;
+            color: #000000;
+            position: relative;
+            box-shadow: 
+                0 0 20px rgba(255, 69, 0, 0.5),
+                inset 0 0 15px rgba(255, 255, 255, 0.2);
+            animation: moduleHum 4s ease-in-out infinite;
+        }
+
+        @keyframes moduleHum {
+            0%, 100% { 
+                box-shadow: 0 0 20px rgba(255, 69, 0, 0.5), inset 0 0 15px rgba(255, 255, 255, 0.2); 
+                transform: rotate(0deg);
+            }
+            50% { 
+                box-shadow: 0 0 30px rgba(255, 69, 0, 0.8), inset 0 0 25px rgba(255, 255, 255, 0.3); 
+                transform: rotate(2deg);
+            }
+        }
+
+        .step-module::after {
+            content: "";
+            position: absolute;
+            bottom: 5px;
+            left: 5px;
+            right: 5px;
+            height: 3px;
+            background: linear-gradient(90deg, #00ff00, transparent, #00ff00);
+            animation: dataTransfer 2s linear infinite;
+        }
+
+        @keyframes dataTransfer {
+            0% { opacity: 0.3; transform: scaleX(1); }
+            50% { opacity: 1; transform: scaleX(1.3); }
+            100% { opacity: 0.3; transform: scaleX(1); }
+        }
+
+        .step-details h3 {
+            font-family: 'Orbitron', monospace;
+            font-size: 18px;
+            font-weight: 700;
+            margin-bottom: 8px;
+            color: #ff4500;
+            text-transform: uppercase;
+            text-shadow: 0 0 10px rgba(255, 69, 0, 0.3);
+        }
+
+        .step-details p {
+            font-size: 16px;
+            color: #00ff00;
+            line-height: 1.6;
+        }
+
+        .mechanical-parts {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            top: 0;
+            left: 0;
+            pointer-events: none;
+            z-index: -1;
+        }
+
+        .mechanical-part {
+            position: absolute;
+            font-size: 20px;
+            opacity: 0.6;
+            animation: mechanicalFloat 12s ease-in-out infinite;
+        }
+
+        .mechanical-part:nth-child(1) { 
+            top: 15%; 
+            left: 10%; 
+            animation-delay: 0s; 
+        }
+        .mechanical-part:nth-child(2) { 
+            top: 25%; 
+            right: 15%; 
+            animation-delay: 4s; 
+        }
+        .mechanical-part:nth-child(3) { 
+            bottom: 40%; 
+            left: 20%; 
+            animation-delay: 8s; 
+        }
+        .mechanical-part:nth-child(4) { 
+            bottom: 20%; 
+            right: 10%; 
+            animation-delay: 6s; 
+        }
+
+        @keyframes mechanicalFloat {
+            0%, 100% { 
+                transform: translateY(0) rotate(0deg) scale(1);
+                opacity: 0.4;
+            }
+            25% { 
+                transform: translateY(-30px) rotate(90deg) scale(1.1);
+                opacity: 0.8;
+            }
+            50% { 
+                transform: translateY(-15px) rotate(180deg) scale(0.9);
+                opacity: 0.6;
+            }
+            75% { 
+                transform: translateY(-25px) rotate(270deg) scale(1.05);
+                opacity: 0.7;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .factory-floor {
+                margin: 15px;
+                padding: 15px;
+            }
+            
+            .assembly-station {
+                padding: 25px;
+            }
+            
+            .factory-title {
+                font-size: 28px;
+            }
+            
+            .production-controls {
+                flex-direction: column;
+                align-items: center;
+            }
+            
+            .factory-button {
+                width: 100%;
+                max-width: 300px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="mechanical-parts">
+        <div class="mechanical-part">⚙️</div>
+        <div class="mechanical-part">🔧</div>
+        <div class="mechanical-part">🔩</div>
+        <div class="mechanical-part">⚡</div>
+    </div>
+
+    <div class="factory-floor">
+        <div class="assembly-station">
+            <div class="control-panel">
+                <div class="factory-title">LLMpostor</div>
+                <div class="production-badge">Robot Factory Assembly Line</div>
+            </div>
+            
+            <div class="manufacturing-unit">
+                <form>
+                    <div class="input-bay">
+                        <label class="factory-label">Unit Designation</label>
+                        <input type="text" class="assembly-input" placeholder="ENTER_ROBOT_MODEL_NAME..." maxlength="20">
+                    </div>
+                    
+                    <div class="input-bay">
+                        <label class="factory-label">Production Line</label>
+                        <input type="text" class="assembly-input" placeholder="SELECT_ASSEMBLY_STATION..." maxlength="30">
+                    </div>
+                    
+                    <div class="production-controls">
+                        <button type="submit" class="factory-button">Initialize Production!</button>
+                        <button type="button" class="factory-button automation-button">Auto Assembly!</button>
+                    </div>
+                </form>
+            </div>
+            
+            <div class="assembly-instructions">
+                <div class="process-steps">
+                    <div class="process-step">
+                        <div class="step-module">01</div>
+                        <div class="step-details">
+                            <h3>Data Input Module</h3>
+                            <p>Upload prompt specifications and target AI behavioral patterns to central processor</p>
+                        </div>
+                    </div>
+                    <div class="process-step">
+                        <div class="step-module">02</div>
+                        <div class="step-details">
+                            <h3>Response Fabrication</h3>
+                            <p>Assemble synthetic responses using AI pattern recognition and mimicry protocols</p>
+                        </div>
+                    </div>
+                    <div class="process-step">
+                        <div class="step-module">03</div>
+                        <div class="step-details">
+                            <h3>Quality Control Scan</h3>
+                            <p>Analyze output patterns to identify authentic AI units among manufactured responses</p>
+                        </div>
+                    </div>
+                    <div class="process-step">
+                        <div class="step-module">04</div>
+                        <div class="step-details">
+                            <h3>Performance Metrics</h3>
+                            <p>Calculate efficiency ratings and award production bonuses for optimal performance</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Factory sound effects
+            const factorySounds = ['WHIRR!', 'CLANK!', 'BEEP BOOP!', 'PROCESSING!', 'ASSEMBLY COMPLETE!', 'SYSTEMS ONLINE!'];
+            
+            document.querySelectorAll('.factory-button').forEach(button => {
+                button.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    
+                    // Create floating factory sound effect
+                    const soundEffect = document.createElement('div');
+                    soundEffect.textContent = factorySounds[Math.floor(Math.random() * factorySounds.length)];
+                    soundEffect.style.cssText = `
+                        position: fixed;
+                        left: ${e.clientX}px;
+                        top: ${e.clientY}px;
+                        font-family: 'Orbitron', monospace;
+                        font-size: 16px;
+                        color: #ff4500;
+                        pointer-events: none;
+                        z-index: 9999;
+                        text-shadow: 0 0 15px #ff4500, 0 0 30px #00ff00;
+                        background: rgba(45, 45, 45, 0.95);
+                        padding: 8px 15px;
+                        border-radius: 15px;
+                        border: 2px solid #00ff00;
+                        animation: factoryPop 2s ease-out forwards;
+                    `;
+                    
+                    // Add animation if it doesn't exist
+                    if (!document.querySelector('#factory-animations')) {
+                        const style = document.createElement('style');
+                        style.id = 'factory-animations';
+                        style.textContent = `
+                            @keyframes factoryPop {
+                                0% { 
+                                    transform: translate(-50%, -50%) scale(0) rotate(0deg);
+                                    opacity: 1;
+                                }
+                                20% { 
+                                    transform: translate(-50%, -50%) scale(1.3) rotate(-10deg);
+                                    opacity: 1;
+                                }
+                                40% { 
+                                    transform: translate(-50%, -50%) scale(0.9) rotate(5deg);
+                                    opacity: 1;
+                                }
+                                100% { 
+                                    transform: translate(-50%, -50%) scale(0.2) rotate(0deg);
+                                    opacity: 0;
+                                }
+                            }
+                        `;
+                        document.head.appendChild(style);
+                    }
+                    
+                    document.body.appendChild(soundEffect);
+                    
+                    setTimeout(() => {
+                        if (document.body.contains(soundEffect)) {
+                            document.body.removeChild(soundEffect);
+                        }
+                    }, 2000);
+                });
+            });
+
+            // Assembly line input effects
+            document.querySelectorAll('.assembly-input').forEach(input => {
+                input.addEventListener('input', function() {
+                    if (Math.random() < 0.3) { // 30% chance
+                        // Processing indicator
+                        this.style.background = 'linear-gradient(145deg, rgba(255, 69, 0, 0.2), rgba(0, 255, 0, 0.2))';
+                        this.style.boxShadow = `
+                            inset 0 0 30px rgba(255, 69, 0, 0.3),
+                            0 0 40px rgba(0, 255, 0, 0.4)
+                        `;
+                        setTimeout(() => {
+                            if (this === document.activeElement) {
+                                this.style.background = 'linear-gradient(145deg, rgba(26, 26, 26, 0.9), rgba(45, 45, 45, 0.9))';
+                                this.style.boxShadow = `
+                                    inset 0 0 30px rgba(255, 69, 0, 0.2),
+                                    0 0 25px rgba(255, 69, 0, 0.4)
+                                `;
+                            } else {
+                                this.style.background = 'linear-gradient(145deg, rgba(26, 26, 26, 0.9), rgba(45, 45, 45, 0.9))';
+                                this.style.boxShadow = `
+                                    inset 0 0 20px rgba(0, 255, 0, 0.2),
+                                    0 5px 15px rgba(0, 0, 0, 0.4)
+                                `;
+                            }
+                        }, 300);
+                    }
+                });
+
+                // Factory vibration when typing
+                input.addEventListener('keypress', function() {
+                    const station = document.querySelector('.assembly-station');
+                    station.style.transform = 'translateX(1px) rotate(0.1deg)';
+                    setTimeout(() => {
+                        station.style.transform = 'translateX(-0.5px) rotate(-0.05deg)';
+                    }, 100);
+                    setTimeout(() => {
+                        station.style.transform = 'translateX(0) rotate(0deg)';
+                    }, 200);
+                });
+            });
+
+            // Random factory operations
+            setInterval(() => {
+                if (Math.random() < 0.1) { // 10% chance
+                    const station = document.querySelector('.assembly-station');
+                    station.style.boxShadow = `
+                        0 20px 40px rgba(0, 0, 0, 0.6),
+                        inset 0 0 40px rgba(0, 255, 0, 0.2),
+                        0 0 60px rgba(0, 255, 0, 0.4)
+                    `;
+                    setTimeout(() => {
+                        station.style.boxShadow = `
+                            0 20px 40px rgba(0, 0, 0, 0.6),
+                            inset 0 0 30px rgba(0, 255, 0, 0.1),
+                            0 0 50px rgba(0, 255, 0, 0.2)
+                        `;
+                    }, 500);
+                }
+            }, 4000);
+
+            // Mechanical parts interaction
+            setInterval(() => {
+                if (Math.random() < 0.15) { // 15% chance
+                    const parts = document.querySelectorAll('.mechanical-part');
+                    const randomPart = parts[Math.floor(Math.random() * parts.length)];
+                    randomPart.style.filter = 'brightness(2) drop-shadow(0 0 15px currentColor)';
+                    randomPart.style.transform = 'scale(1.3) rotate(45deg)';
+                    setTimeout(() => {
+                        randomPart.style.filter = 'brightness(1)';
+                        randomPart.style.transform = 'scale(1) rotate(0deg)';
+                    }, 600);
+                }
+            }, 3000);
+
+            // Assembly line efficiency boost
+            document.querySelectorAll('.factory-button').forEach(button => {
+                button.addEventListener('mousedown', function() {
+                    // System surge effect
+                    document.body.style.filter = 'brightness(1.2) contrast(1.1) saturate(1.2)';
+                    setTimeout(() => {
+                        document.body.style.filter = 'brightness(1) contrast(1) saturate(1)';
+                    }, 200);
+                });
+            });
+
+            // Production line status updates
+            setInterval(() => {
+                if (Math.random() < 0.08) { // 8% chance
+                    const steps = document.querySelectorAll('.process-step');
+                    steps.forEach(step => {
+                        step.style.borderColor = '#ff4500';
+                        setTimeout(() => {
+                            step.style.borderColor = '#00ff00';
+                        }, 400);
+                    });
+                }
+            }, 6000);
+        });
+    </script>
+</body>
+</html>

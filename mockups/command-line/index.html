@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LLMposter - Command Line</title>
+    <style>
+        body {
+            background-color: #000;
+            color: #fff;
+            font-family: "Courier New", Courier, monospace;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 2rem 0;
+        }
+        .container {
+            width: 600px;
+            text-align: left;
+        }
+        .line {
+            margin-bottom: 0.5rem;
+        }
+        .prompt {
+            color: #0f0;
+        }
+        .cursor {
+            display: inline-block;
+            width: 10px;
+            height: 1.2rem;
+            background-color: #fff;
+            animation: blink 1s step-end infinite;
+        }
+        @keyframes blink {
+            from, to { background-color: transparent }
+            50% { background-color: #fff; }
+        }
+        input {
+            background-color: transparent;
+            color: #fff;
+            border: none;
+            font-family: inherit;
+            font-size: 1rem;
+            width: 200px;
+        }
+        input:focus {
+            outline: none;
+        }
+        button {
+            background-color: #333;
+            color: #fff;
+            border: 1px solid #fff;
+            padding: 0.2rem 0.5rem;
+            font-family: inherit;
+            cursor: pointer;
+            margin-left: 1rem;
+        }
+        .how-to-play {
+            margin-top: 2rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="line">LLMposter v1.0.0</div>
+        <div class="line">Copyright (c) 2023</div>
+        <div class="line"></div>
+        <div class="line">Initializing...</div>
+        <div class="line">Ready.</div>
+        <div class="line"></div>
+        <div class="line">
+            <span class="prompt">> </span>
+            <span>./join-room --player-name </span>
+            <input type="text" id="playerName" placeholder='"your-name"' required maxlength="20">
+        </div>
+        <div class="line">
+            <span class="prompt">> </span>
+            <span>./join-room --room-name </span>
+            <input type="text" id="roomInput" placeholder='"room-name"' required maxlength="30">
+            <button type="submit">execute</button>
+        </div>
+        <div class="line">
+            <span class="prompt">> </span>
+            <span>./join-random-room</span>
+            <button id="quickJoinBtn">execute</button>
+        </div>
+
+        <div class="how-to-play">
+            <div class="line"></div>
+            <div class="line"><span class="prompt">> </span>cat how-to-play.txt</div>
+            <div class="line">1. Get a prompt</div>
+            <div class="line">2. Write your response</div>
+            <div class="line">3. Guess the AI</div>
+            <div class="line">4. Score points</div>
+        </div>
+    </div>
+</body>
+</html>

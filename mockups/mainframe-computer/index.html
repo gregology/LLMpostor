@@ -1,0 +1,911 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LLMpostor - Vintage Mainframe</title>
+    <link href="https://fonts.googleapis.com/css2?family=Courier+Prime:wght@400;700&family=IBM+Plex+Mono:wght@400;700&family=Share+Tech+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'IBM Plex Mono', monospace;
+            background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 50%, #1a1a1a 100%);
+            color: #00ff00;
+            min-height: 100vh;
+            position: relative;
+            overflow-x: hidden;
+            background-image: 
+                repeating-linear-gradient(
+                    0deg,
+                    rgba(255, 255, 255, 0.01) 0px,
+                    rgba(255, 255, 255, 0.01) 1px,
+                    transparent 1px,
+                    transparent 3px
+                );
+        }
+
+        /* Vintage phosphor screen effect */
+        body::before {
+            content: "";
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: 
+                radial-gradient(ellipse at center, 
+                rgba(0, 255, 0, 0.05) 0%, 
+                transparent 70%);
+            pointer-events: none;
+            z-index: 1;
+            animation: phosphorGlow 4s ease-in-out infinite alternate;
+        }
+
+        @keyframes phosphorGlow {
+            0% { opacity: 0.6; }
+            100% { opacity: 1; }
+        }
+
+        /* Mainframe room lighting */
+        body::after {
+            content: "";
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: 
+                linear-gradient(
+                    180deg,
+                    rgba(0, 100, 200, 0.05) 0%,
+                    transparent 30%,
+                    transparent 70%,
+                    rgba(255, 100, 0, 0.03) 100%
+                );
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        .mainframe-room {
+            max-width: 1200px;
+            margin: 20px auto;
+            position: relative;
+            z-index: 2;
+            padding: 20px;
+        }
+
+        .computer-console {
+            background: linear-gradient(145deg, #333333, #1a1a1a);
+            border: 8px solid #666666;
+            border-radius: 12px;
+            padding: 0;
+            position: relative;
+            box-shadow: 
+                0 20px 40px rgba(0, 0, 0, 0.8),
+                inset 0 0 30px rgba(102, 102, 102, 0.1);
+            background-image: 
+                repeating-linear-gradient(
+                    90deg,
+                    rgba(102, 102, 102, 0.1) 0px,
+                    rgba(102, 102, 102, 0.1) 1px,
+                    transparent 1px,
+                    transparent 20px
+                ),
+                repeating-linear-gradient(
+                    0deg,
+                    rgba(102, 102, 102, 0.05) 0px,
+                    rgba(102, 102, 102, 0.05) 1px,
+                    transparent 1px,
+                    transparent 15px
+                );
+        }
+
+        /* Vintage computer ventilation grilles */
+        .computer-console::before {
+            content: "";
+            position: absolute;
+            top: 15px;
+            left: 20px;
+            width: 120px;
+            height: 25px;
+            background: 
+                repeating-linear-gradient(
+                    90deg,
+                    #444444 0px,
+                    #444444 3px,
+                    #222222 3px,
+                    #222222 6px
+                );
+            border-radius: 3px;
+            box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.5);
+        }
+
+        .computer-console::after {
+            content: "";
+            position: absolute;
+            top: 15px;
+            right: 20px;
+            width: 120px;
+            height: 25px;
+            background: 
+                repeating-linear-gradient(
+                    90deg,
+                    #444444 0px,
+                    #444444 3px,
+                    #222222 3px,
+                    #222222 6px
+                );
+            border-radius: 3px;
+            box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.5);
+        }
+
+        .monitor-section {
+            background: linear-gradient(145deg, #0a0a0a, #1a1a1a);
+            border: 6px solid #444444;
+            border-radius: 8px;
+            margin: 20px;
+            padding: 30px;
+            position: relative;
+            box-shadow: 
+                inset 0 0 40px rgba(0, 255, 0, 0.1),
+                0 0 30px rgba(0, 0, 0, 0.5);
+            background-image: 
+                radial-gradient(circle at 50% 50%, 
+                rgba(0, 255, 0, 0.02) 0%, 
+                transparent 60%);
+        }
+
+        /* CRT monitor bezel */
+        .monitor-section::before {
+            content: "";
+            position: absolute;
+            top: -3px;
+            left: -3px;
+            right: -3px;
+            bottom: -3px;
+            background: linear-gradient(145deg, #555555, #333333);
+            border-radius: 11px;
+            z-index: -1;
+        }
+
+        .system-header {
+            text-align: center;
+            margin-bottom: 30px;
+            background: rgba(0, 255, 0, 0.05);
+            border: 2px solid #00ff00;
+            border-radius: 5px;
+            padding: 20px;
+            position: relative;
+        }
+
+        .mainframe-title {
+            font-family: 'Courier Prime', monospace;
+            font-size: 28px;
+            font-weight: 700;
+            color: #00ff00;
+            text-shadow: 
+                0 0 5px #00ff00,
+                0 0 10px #00ff00;
+            margin-bottom: 8px;
+            letter-spacing: 3px;
+            animation: titleBlink 3s ease-in-out infinite;
+        }
+
+        @keyframes titleBlink {
+            0%, 85% { opacity: 1; }
+            90%, 95% { opacity: 0.7; }
+            100% { opacity: 1; }
+        }
+
+        .computer-model {
+            background: linear-gradient(45deg, #0064ff, #0080ff);
+            color: #ffffff;
+            padding: 8px 20px;
+            border-radius: 4px;
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 14px;
+            font-weight: 700;
+            display: inline-block;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            border: 2px solid #ffffff;
+            box-shadow: 
+                0 0 15px rgba(0, 100, 255, 0.5),
+                inset 0 0 10px rgba(255, 255, 255, 0.2);
+            position: relative;
+        }
+
+        .computer-model::before {
+            content: "●";
+            position: absolute;
+            left: -12px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #ff0000;
+            font-size: 16px;
+            animation: powerLight 2s infinite;
+        }
+
+        @keyframes powerLight {
+            0%, 50% { opacity: 1; }
+            51%, 100% { opacity: 0.3; }
+        }
+
+        .input-terminal {
+            background: linear-gradient(145deg, #1a1a1a, #2d2d2d);
+            border: 3px solid #00ff00;
+            border-radius: 5px;
+            padding: 25px;
+            margin-bottom: 25px;
+            position: relative;
+            box-shadow: 
+                inset 0 0 20px rgba(0, 255, 0, 0.1),
+                0 5px 15px rgba(0, 0, 0, 0.5);
+        }
+
+        .input-terminal::before {
+            content: "SYSTEM TERMINAL v1.2.7";
+            position: absolute;
+            top: -10px;
+            left: 20px;
+            background: #0064ff;
+            color: #ffffff;
+            padding: 4px 12px;
+            border-radius: 3px;
+            font-family: 'Courier Prime', monospace;
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            border: 1px solid #ffffff;
+            box-shadow: 0 0 10px rgba(0, 100, 255, 0.4);
+        }
+
+        /* Vintage indicator lights */
+        .input-terminal::after {
+            content: "";
+            position: absolute;
+            top: 15px;
+            right: 20px;
+            width: 8px;
+            height: 8px;
+            background: #00ff00;
+            border-radius: 50%;
+            box-shadow: 
+                0 0 10px #00ff00,
+                15px 0 0 0 #ffaa00,
+                15px 0 10px 0 #ffaa00,
+                30px 0 0 0 #ff0000,
+                30px 0 10px 0 #ff0000;
+            animation: statusLights 3s infinite;
+        }
+
+        @keyframes statusLights {
+            0%, 33% { 
+                background: #00ff00;
+                box-shadow: 
+                    0 0 10px #00ff00,
+                    15px 0 0 0 rgba(255, 170, 0, 0.3),
+                    15px 0 5px 0 rgba(255, 170, 0, 0.1),
+                    30px 0 0 0 rgba(255, 0, 0, 0.3),
+                    30px 0 5px 0 rgba(255, 0, 0, 0.1);
+            }
+            34%, 66% { 
+                background: rgba(0, 255, 0, 0.3);
+                box-shadow: 
+                    0 0 5px rgba(0, 255, 0, 0.1),
+                    15px 0 0 0 #ffaa00,
+                    15px 0 10px 0 #ffaa00,
+                    30px 0 0 0 rgba(255, 0, 0, 0.3),
+                    30px 0 5px 0 rgba(255, 0, 0, 0.1);
+            }
+            67%, 100% { 
+                background: rgba(0, 255, 0, 0.3);
+                box-shadow: 
+                    0 0 5px rgba(0, 255, 0, 0.1),
+                    15px 0 0 0 rgba(255, 170, 0, 0.3),
+                    15px 0 5px 0 rgba(255, 170, 0, 0.1),
+                    30px 0 0 0 #ff0000,
+                    30px 0 10px 0 #ff0000;
+            }
+        }
+
+        .operator-section {
+            margin-bottom: 20px;
+        }
+
+        .terminal-label {
+            display: block;
+            font-family: 'Courier Prime', monospace;
+            font-size: 13px;
+            font-weight: 700;
+            margin-bottom: 8px;
+            color: #00ff00;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            text-shadow: 0 0 5px rgba(0, 255, 0, 0.5);
+        }
+
+        .mainframe-input {
+            width: 100%;
+            padding: 12px 16px;
+            background: rgba(0, 0, 0, 0.8);
+            border: 2px solid #00ff00;
+            border-radius: 3px;
+            color: #00ff00;
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 16px;
+            font-weight: 400;
+            transition: all 0.3s ease;
+            box-shadow: 
+                inset 0 0 10px rgba(0, 255, 0, 0.2),
+                0 0 5px rgba(0, 255, 0, 0.3);
+        }
+
+        .mainframe-input:focus {
+            outline: none;
+            border-color: #ffffff;
+            color: #ffffff;
+            background: rgba(0, 255, 0, 0.05);
+            box-shadow: 
+                inset 0 0 15px rgba(255, 255, 255, 0.2),
+                0 0 15px rgba(255, 255, 255, 0.5);
+            animation: terminalFocus 1s ease-in-out infinite;
+        }
+
+        @keyframes terminalFocus {
+            0%, 100% { 
+                text-shadow: 0 0 3px currentColor;
+            }
+            50% { 
+                text-shadow: 0 0 8px currentColor, 0 0 12px currentColor;
+            }
+        }
+
+        .mainframe-input::placeholder {
+            color: rgba(0, 255, 0, 0.5);
+            font-style: italic;
+        }
+
+        .command-buttons {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            margin: 25px 0;
+            flex-wrap: wrap;
+        }
+
+        .mainframe-button {
+            background: linear-gradient(145deg, #004400, #002200);
+            border: 3px solid #00ff00;
+            border-radius: 5px;
+            color: #00ff00;
+            padding: 14px 25px;
+            font-family: 'Courier Prime', monospace;
+            font-size: 13px;
+            font-weight: 700;
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            transition: all 0.3s ease;
+            min-width: 120px;
+            box-shadow: 
+                0 4px 0 #001100,
+                0 0 15px rgba(0, 255, 0, 0.3);
+        }
+
+        .mainframe-button::before {
+            content: "";
+            position: absolute;
+            top: 2px;
+            left: 2px;
+            right: 2px;
+            height: 2px;
+            background: linear-gradient(90deg, rgba(255, 255, 255, 0.3), transparent, rgba(255, 255, 255, 0.3));
+        }
+
+        .mainframe-button::after {
+            content: "▶";
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            font-size: 12px;
+            animation: processingIndicator 2s linear infinite;
+        }
+
+        @keyframes processingIndicator {
+            0% { transform: rotate(0deg); opacity: 0.7; }
+            50% { transform: rotate(180deg); opacity: 1; }
+            100% { transform: rotate(360deg); opacity: 0.7; }
+        }
+
+        .mainframe-button:hover {
+            transform: translateY(-2px);
+            color: #ffffff;
+            background: linear-gradient(145deg, #00ff00, #00cc00);
+            border-color: #ffffff;
+            box-shadow: 
+                0 6px 0 #001100,
+                0 0 20px rgba(0, 255, 0, 0.5);
+            text-shadow: 0 0 5px rgba(255, 255, 255, 0.8);
+        }
+
+        .mainframe-button:active {
+            transform: translateY(2px);
+            box-shadow: 
+                0 2px 0 #001100,
+                0 0 10px rgba(0, 255, 0, 0.3);
+        }
+
+        .compute-button {
+            border-color: #0064ff;
+            color: #0064ff;
+            background: linear-gradient(145deg, #001144, #000022);
+            box-shadow: 
+                0 4px 0 #000011,
+                0 0 15px rgba(0, 100, 255, 0.3);
+        }
+
+        .compute-button:hover {
+            background: linear-gradient(145deg, #0064ff, #0050cc);
+            border-color: #ffffff;
+            color: #ffffff;
+            box-shadow: 
+                0 6px 0 #000011,
+                0 0 20px rgba(0, 100, 255, 0.5);
+        }
+
+        .compute-button::after {
+            content: "◉";
+        }
+
+        .data-processing {
+            background: rgba(0, 0, 0, 0.9);
+            border: 2px solid #ffaa00;
+            border-radius: 5px;
+            padding: 25px;
+            position: relative;
+            box-shadow: 
+                inset 0 0 20px rgba(255, 170, 0, 0.1),
+                0 0 15px rgba(255, 170, 0, 0.3);
+        }
+
+        .data-processing::before {
+            content: "DATA PROCESSING CENTER";
+            position: absolute;
+            top: -10px;
+            left: 20px;
+            background: #ffaa00;
+            color: #000000;
+            padding: 4px 12px;
+            border-radius: 3px;
+            font-family: 'Courier Prime', monospace;
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            border: 1px solid #000000;
+            box-shadow: 0 0 10px rgba(255, 170, 0, 0.4);
+        }
+
+        .process-queue {
+            display: grid;
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .process-item {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            background: rgba(0, 255, 0, 0.05);
+            border: 2px solid #004400;
+            border-radius: 3px;
+            padding: 15px;
+            transition: all 0.3s ease;
+        }
+
+        .process-item:hover {
+            background: rgba(0, 255, 0, 0.1);
+            transform: translateX(5px);
+            border-color: #00ff00;
+        }
+
+        .job-number {
+            min-width: 50px;
+            height: 35px;
+            background: linear-gradient(145deg, #ffaa00, #cc8800);
+            color: #000000;
+            border: 2px solid #000000;
+            border-radius: 3px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: 'Courier Prime', monospace;
+            font-size: 14px;
+            font-weight: 700;
+            box-shadow: 
+                0 0 10px rgba(255, 170, 0, 0.5),
+                inset 0 0 5px rgba(255, 255, 255, 0.3);
+            animation: jobPulse 4s ease-in-out infinite;
+        }
+
+        @keyframes jobPulse {
+            0%, 100% { 
+                background: linear-gradient(145deg, #ffaa00, #cc8800);
+            }
+            50% { 
+                background: linear-gradient(145deg, #ffcc00, #ffaa00);
+            }
+        }
+
+        .job-description {
+            flex: 1;
+            color: #00ff00;
+            font-size: 14px;
+        }
+
+        .job-description strong {
+            color: #ffffff;
+            text-shadow: 0 0 3px rgba(255, 255, 255, 0.5);
+        }
+
+        .tape-drives {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            top: 0;
+            left: 0;
+            pointer-events: none;
+            z-index: -1;
+        }
+
+        .tape-reel {
+            position: absolute;
+            width: 20px;
+            height: 20px;
+            border: 2px solid #666666;
+            border-radius: 50%;
+            background: radial-gradient(circle, #333333, #1a1a1a);
+            animation: tapeRotate 8s linear infinite;
+        }
+
+        .tape-reel:nth-child(1) { top: 15%; left: 5%; animation-delay: 0s; }
+        .tape-reel:nth-child(2) { top: 25%; right: 8%; animation-delay: 2s; }
+        .tape-reel:nth-child(3) { bottom: 30%; left: 10%; animation-delay: 4s; }
+        .tape-reel:nth-child(4) { bottom: 20%; right: 5%; animation-delay: 6s; }
+
+        @keyframes tapeRotate {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        @media (max-width: 768px) {
+            .mainframe-room {
+                margin: 10px;
+                padding: 10px;
+            }
+            
+            .computer-console {
+                border-width: 4px;
+            }
+            
+            .monitor-section {
+                margin: 10px;
+                padding: 20px;
+            }
+            
+            .mainframe-title {
+                font-size: 22px;
+            }
+            
+            .command-buttons {
+                flex-direction: column;
+                align-items: center;
+            }
+            
+            .mainframe-button {
+                width: 100%;
+                max-width: 250px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="tape-drives">
+        <div class="tape-reel"></div>
+        <div class="tape-reel"></div>
+        <div class="tape-reel"></div>
+        <div class="tape-reel"></div>
+    </div>
+
+    <div class="mainframe-room">
+        <div class="computer-console">
+            <div class="monitor-section">
+                <div class="system-header">
+                    <div class="mainframe-title">LLMpostor</div>
+                    <div class="computer-model">IBM System/370 Model 158</div>
+                </div>
+                
+                <div class="input-terminal">
+                    <form>
+                        <div class="operator-section">
+                            <label class="terminal-label">Operator ID</label>
+                            <input type="text" class="mainframe-input" placeholder="ENTER OPERATOR IDENTIFICATION..." maxlength="20">
+                        </div>
+                        
+                        <div class="operator-section">
+                            <label class="terminal-label">Job Queue</label>
+                            <input type="text" class="mainframe-input" placeholder="SELECT BATCH PROCESSING QUEUE..." maxlength="30">
+                        </div>
+                        
+                        <div class="command-buttons">
+                            <button type="submit" class="mainframe-button">Execute Job</button>
+                            <button type="button" class="mainframe-button compute-button">Auto Batch</button>
+                        </div>
+                    </form>
+                </div>
+                
+                <div class="data-processing">
+                    <div class="process-queue">
+                        <div class="process-item">
+                            <div class="job-number">01</div>
+                            <div class="job-description">
+                                <strong>INPUT:</strong> Load target AI behavioral patterns from magnetic tape storage
+                            </div>
+                        </div>
+                        <div class="process-item">
+                            <div class="job-number">02</div>
+                            <div class="job-description">
+                                <strong>PROCESS:</strong> Generate mimetic responses using pattern matching algorithms
+                            </div>
+                        </div>
+                        <div class="process-item">
+                            <div class="job-number">03</div>
+                            <div class="job-description">
+                                <strong>ANALYZE:</strong> Compare response signatures to identify authentic AI output
+                            </div>
+                        </div>
+                        <div class="process-item">
+                            <div class="job-number">04</div>
+                            <div class="job-description">
+                                <strong>OUTPUT:</strong> Calculate performance metrics and update operator statistics
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Mainframe sound effects
+            const mainframeSounds = ['PROCESSING...', 'JOB SUBMITTED', 'COMPUTE CYCLE', 'BATCH COMPLETE', 'SYSTEM READY', 'DATA LOADED'];
+            
+            document.querySelectorAll('.mainframe-button').forEach(button => {
+                button.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    
+                    // Create floating mainframe sound effect
+                    const soundEffect = document.createElement('div');
+                    soundEffect.textContent = mainframeSounds[Math.floor(Math.random() * mainframeSounds.length)];
+                    soundEffect.style.cssText = `
+                        position: fixed;
+                        left: ${e.clientX}px;
+                        top: ${e.clientY}px;
+                        font-family: 'Courier Prime', monospace;
+                        font-size: 12px;
+                        color: #00ff00;
+                        pointer-events: none;
+                        z-index: 9999;
+                        text-shadow: 0 0 8px #00ff00, 0 0 16px #00ff00;
+                        background: rgba(26, 26, 26, 0.95);
+                        padding: 6px 12px;
+                        border-radius: 3px;
+                        border: 1px solid #00ff00;
+                        animation: mainframePop 2.5s ease-out forwards;
+                    `;
+                    
+                    // Add animation if it doesn't exist
+                    if (!document.querySelector('#mainframe-animations')) {
+                        const style = document.createElement('style');
+                        style.id = 'mainframe-animations';
+                        style.textContent = `
+                            @keyframes mainframePop {
+                                0% { 
+                                    transform: translate(-50%, -50%) scale(0);
+                                    opacity: 1;
+                                }
+                                20% { 
+                                    transform: translate(-50%, -50%) scale(1.1);
+                                    opacity: 1;
+                                }
+                                40% { 
+                                    transform: translate(-50%, -50%) scale(0.95);
+                                    opacity: 1;
+                                }
+                                60% { 
+                                    transform: translate(-50%, -50%) scale(1.05);
+                                    opacity: 0.8;
+                                }
+                                100% { 
+                                    transform: translate(-50%, -50%) scale(0.2);
+                                    opacity: 0;
+                                }
+                            }
+                        `;
+                        document.head.appendChild(style);
+                    }
+                    
+                    document.body.appendChild(soundEffect);
+                    
+                    setTimeout(() => {
+                        if (document.body.contains(soundEffect)) {
+                            document.body.removeChild(soundEffect);
+                        }
+                    }, 2500);
+                });
+            });
+
+            // Mainframe input effects
+            document.querySelectorAll('.mainframe-input').forEach(input => {
+                input.addEventListener('input', function() {
+                    if (Math.random() < 0.25) { // 25% chance
+                        // Processing indicator effect
+                        this.style.background = 'rgba(0, 255, 0, 0.1)';
+                        this.style.boxShadow = `
+                            inset 0 0 15px rgba(255, 255, 255, 0.3),
+                            0 0 20px rgba(255, 255, 255, 0.5)
+                        `;
+                        setTimeout(() => {
+                            if (this === document.activeElement) {
+                                this.style.background = 'rgba(0, 255, 0, 0.05)';
+                                this.style.boxShadow = `
+                                    inset 0 0 15px rgba(255, 255, 255, 0.2),
+                                    0 0 15px rgba(255, 255, 255, 0.5)
+                                `;
+                            } else {
+                                this.style.background = 'rgba(0, 0, 0, 0.8)';
+                                this.style.boxShadow = `
+                                    inset 0 0 10px rgba(0, 255, 0, 0.2),
+                                    0 0 5px rgba(0, 255, 0, 0.3)
+                                `;
+                            }
+                        }, 400);
+                    }
+                });
+
+                // Computer console vibration when typing
+                input.addEventListener('keypress', function() {
+                    const console = document.querySelector('.computer-console');
+                    console.style.transform = 'translateY(0.5px)';
+                    setTimeout(() => {
+                        console.style.transform = 'translateY(-0.3px)';
+                    }, 100);
+                    setTimeout(() => {
+                        console.style.transform = 'translateY(0)';
+                    }, 200);
+                });
+            });
+
+            // Random mainframe operations
+            setInterval(() => {
+                if (Math.random() < 0.08) { // 8% chance
+                    const console = document.querySelector('.computer-console');
+                    console.style.boxShadow = `
+                        0 20px 40px rgba(0, 0, 0, 0.8),
+                        inset 0 0 40px rgba(102, 102, 102, 0.2)
+                    `;
+                    setTimeout(() => {
+                        console.style.boxShadow = `
+                            0 20px 40px rgba(0, 0, 0, 0.8),
+                            inset 0 0 30px rgba(102, 102, 102, 0.1)
+                        `;
+                    }, 800);
+                }
+            }, 5000);
+
+            // Tape drive interactions
+            setInterval(() => {
+                if (Math.random() < 0.2) { // 20% chance
+                    const tapes = document.querySelectorAll('.tape-reel');
+                    const randomTape = tapes[Math.floor(Math.random() * tapes.length)];
+                    randomTape.style.borderColor = '#00ff00';
+                    randomTape.style.boxShadow = '0 0 10px #00ff00';
+                    setTimeout(() => {
+                        randomTape.style.borderColor = '#666666';
+                        randomTape.style.boxShadow = 'none';
+                    }, 600);
+                }
+            }, 3000);
+
+            // System processing effect
+            document.querySelectorAll('.mainframe-button').forEach(button => {
+                button.addEventListener('mousedown', function() {
+                    // Monitor phosphor surge
+                    const monitor = document.querySelector('.monitor-section');
+                    monitor.style.background = 'linear-gradient(145deg, #0a1a0a, #1a2a1a)';
+                    setTimeout(() => {
+                        monitor.style.background = 'linear-gradient(145deg, #0a0a0a, #1a1a1a)';
+                    }, 200);
+                });
+            });
+
+            // Process queue interactions
+            document.querySelectorAll('.process-item').forEach((item, index) => {
+                item.addEventListener('mouseenter', function() {
+                    setTimeout(() => {
+                        this.style.borderColor = '#ffaa00';
+                        this.style.boxShadow = '0 0 15px rgba(255, 170, 0, 0.3)';
+                        const jobNumber = this.querySelector('.job-number');
+                        jobNumber.style.background = 'linear-gradient(145deg, #00ff00, #00cc00)';
+                        jobNumber.style.color = '#000000';
+                    }, index * 100);
+                });
+
+                item.addEventListener('mouseleave', function() {
+                    this.style.borderColor = '#004400';
+                    this.style.boxShadow = 'none';
+                    const jobNumber = this.querySelector('.job-number');
+                    jobNumber.style.background = 'linear-gradient(145deg, #ffaa00, #cc8800)';
+                    jobNumber.style.color = '#000000';
+                });
+            });
+
+            // Batch processing simulation
+            setInterval(() => {
+                if (Math.random() < 0.12) { // 12% chance
+                    const processItems = document.querySelectorAll('.process-item');
+                    processItems.forEach((item, index) => {
+                        setTimeout(() => {
+                            item.style.background = 'rgba(0, 255, 0, 0.15)';
+                            item.style.transform = 'translateX(8px)';
+                            setTimeout(() => {
+                                item.style.background = 'rgba(0, 255, 0, 0.05)';
+                                item.style.transform = 'translateX(0)';
+                            }, 400);
+                        }, index * 200);
+                    });
+                }
+            }, 6000);
+
+            // System status blinking
+            setInterval(() => {
+                if (Math.random() < 0.15) { // 15% chance
+                    const header = document.querySelector('.system-header');
+                    header.style.borderColor = '#ffffff';
+                    header.style.boxShadow = '0 0 20px rgba(255, 255, 255, 0.3)';
+                    setTimeout(() => {
+                        header.style.borderColor = '#00ff00';
+                        header.style.boxShadow = 'none';
+                    }, 600);
+                }
+            }, 4000);
+
+            // Job number updates
+            setInterval(() => {
+                if (Math.random() < 0.1) { // 10% chance
+                    const jobNumbers = document.querySelectorAll('.job-number');
+                    const randomJob = jobNumbers[Math.floor(Math.random() * jobNumbers.length)];
+                    randomJob.style.background = 'linear-gradient(145deg, #ffffff, #cccccc)';
+                    randomJob.style.color = '#000000';
+                    randomJob.style.transform = 'scale(1.1)';
+                    setTimeout(() => {
+                        randomJob.style.background = 'linear-gradient(145deg, #ffaa00, #cc8800)';
+                        randomJob.style.color = '#000000';
+                        randomJob.style.transform = 'scale(1)';
+                    }, 500);
+                }
+            }, 7000);
+        });
+    </script>
+</body>
+</html>

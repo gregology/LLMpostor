@@ -1,0 +1,785 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LLMpostor - Robot Costume Mode</title>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Fredoka+One&family=Courier+Prime:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Courier Prime', monospace;
+            background: linear-gradient(135deg, #e8e8e8, #d0d0d0);
+            color: #333;
+            min-height: 100vh;
+            position: relative;
+            overflow-x: hidden;
+            background-image: 
+                repeating-linear-gradient(45deg, transparent, transparent 10px, rgba(0,0,0,0.02) 10px, rgba(0,0,0,0.02) 20px);
+        }
+
+        /* Cardboard texture overlay */
+        body::before {
+            content: "";
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: 
+                url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100"><rect width="100" height="100" fill="%23f5f5f5"/><circle cx="20" cy="20" r="1" fill="%23ddd"/><circle cx="80" cy="30" r="0.5" fill="%23ccc"/><circle cx="45" cy="70" r="1.5" fill="%23ddd"/><circle cx="70" cy="80" r="0.8" fill="%23ccc"/></svg>');
+            opacity: 0.3;
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        .robot-workshop {
+            max-width: 900px;
+            margin: 30px auto;
+            position: relative;
+            z-index: 2;
+            padding: 20px;
+        }
+
+        .cardboard-robot {
+            background: linear-gradient(145deg, #d4af37, #b8860b);
+            border: 8px solid #8b7355;
+            border-radius: 15px;
+            padding: 40px;
+            position: relative;
+            box-shadow: 
+                0 20px 40px rgba(0, 0, 0, 0.3),
+                inset 0 0 30px rgba(255, 255, 255, 0.2);
+            background-image: 
+                radial-gradient(circle at 30% 40%, rgba(255, 255, 255, 0.3) 2px, transparent 2px),
+                radial-gradient(circle at 70% 80%, rgba(0, 0, 0, 0.1) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255, 255, 255, 0.1) 1px, transparent 1px);
+            background-size: 50px 50px, 30px 30px, 20px 20px;
+        }
+
+        /* Robot "LED" lights */
+        .cardboard-robot::before {
+            content: "";
+            position: absolute;
+            top: 15px;
+            left: 15px;
+            width: 12px;
+            height: 12px;
+            background: #00ff00;
+            border-radius: 50%;
+            box-shadow: 
+                0 0 15px #00ff00,
+                25px 0 0 0 #ff0000,
+                25px 0 15px 0 #ff0000,
+                50px 0 0 0 #0080ff,
+                50px 0 15px 0 #0080ff;
+            animation: robotLights 2s infinite;
+        }
+
+        @keyframes robotLights {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.3; }
+        }
+
+        /* Cardboard tape details */
+        .cardboard-robot::after {
+            content: "";
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            width: 60px;
+            height: 20px;
+            background: 
+                linear-gradient(45deg, #c4a000 25%, transparent 25%),
+                linear-gradient(-45deg, #c4a000 25%, transparent 25%),
+                linear-gradient(45deg, transparent 75%, #c4a000 75%),
+                linear-gradient(-45deg, transparent 75%, #c4a000 75%);
+            background-size: 6px 6px;
+            border: 2px solid #8b7355;
+            border-radius: 3px;
+            opacity: 0.6;
+        }
+
+        .robot-head {
+            text-align: center;
+            margin-bottom: 40px;
+            position: relative;
+            background: linear-gradient(145deg, #c0c0c0, #a0a0a0);
+            border: 6px solid #808080;
+            border-radius: 20px 20px 10px 10px;
+            padding: 30px;
+            box-shadow: 
+                inset 0 0 20px rgba(255, 255, 255, 0.3),
+                0 10px 20px rgba(0, 0, 0, 0.2);
+        }
+
+        .robot-head::before {
+            content: "⚡";
+            position: absolute;
+            top: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 20px;
+            color: #ffd700;
+            animation: antennaGlow 3s ease-in-out infinite;
+        }
+
+        @keyframes antennaGlow {
+            0%, 100% { opacity: 0.5; transform: translateX(-50%) scale(1); }
+            50% { opacity: 1; transform: translateX(-50%) scale(1.2); }
+        }
+
+        .robot-title {
+            font-family: 'Orbitron', monospace;
+            font-size: 36px;
+            font-weight: 900;
+            color: #333;
+            text-shadow: 
+                2px 2px 0 #fff,
+                4px 4px 0 #999;
+            margin-bottom: 15px;
+            animation: robotTitleBlink 4s ease-in-out infinite;
+        }
+
+        @keyframes robotTitleBlink {
+            0%, 90%, 100% { opacity: 1; }
+            95% { opacity: 0.7; }
+        }
+
+        .robot-subtitle {
+            background: #ff6b35;
+            color: white;
+            padding: 10px 25px;
+            border-radius: 25px;
+            font-family: 'Fredoka One', cursive;
+            font-size: 16px;
+            display: inline-block;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            border: 4px solid #333;
+            box-shadow: 
+                0 5px 0 #d63447,
+                0 0 20px rgba(255, 107, 53, 0.4);
+            position: relative;
+        }
+
+        .robot-subtitle::before {
+            content: "🤖";
+            position: absolute;
+            left: -15px;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 20px;
+        }
+
+        .control-panel {
+            background: linear-gradient(145deg, #2c3e50, #34495e);
+            border: 8px solid #1a252f;
+            border-radius: 15px;
+            padding: 30px;
+            margin-bottom: 30px;
+            position: relative;
+            box-shadow: 
+                inset 0 0 30px rgba(0, 0, 0, 0.3),
+                0 10px 30px rgba(0, 0, 0, 0.2);
+        }
+
+        .control-panel::before {
+            content: "ROBOT CONTROL PANEL";
+            position: absolute;
+            top: -15px;
+            left: 30px;
+            background: #e74c3c;
+            color: white;
+            padding: 8px 15px;
+            border-radius: 10px;
+            font-family: 'Orbitron', monospace;
+            font-size: 12px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            border: 3px solid #333;
+        }
+
+        .robot-section {
+            margin-bottom: 25px;
+        }
+
+        .robot-label {
+            display: block;
+            font-family: 'Orbitron', monospace;
+            font-size: 14px;
+            font-weight: 700;
+            margin-bottom: 10px;
+            color: #ecf0f1;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        .robot-input {
+            width: 100%;
+            padding: 15px 20px;
+            background: #000;
+            border: 4px solid #27ae60;
+            border-radius: 8px;
+            color: #27ae60;
+            font-family: 'Courier Prime', monospace;
+            font-size: 16px;
+            font-weight: 700;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            box-shadow: 
+                inset 0 0 10px rgba(39, 174, 96, 0.2),
+                0 0 20px rgba(39, 174, 96, 0.1);
+        }
+
+        .robot-input:focus {
+            outline: none;
+            border-color: #f39c12;
+            color: #f39c12;
+            box-shadow: 
+                inset 0 0 20px rgba(243, 156, 18, 0.2),
+                0 0 30px rgba(243, 156, 18, 0.3);
+            animation: inputBeep 0.5s ease;
+        }
+
+        @keyframes inputBeep {
+            0%, 100% { background-color: #000; }
+            50% { background-color: rgba(243, 156, 18, 0.1); }
+        }
+
+        .robot-input::placeholder {
+            color: rgba(39, 174, 96, 0.5);
+            text-transform: none;
+        }
+
+        .button-array {
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+            margin-top: 30px;
+            flex-wrap: wrap;
+        }
+
+        .robot-button {
+            background: linear-gradient(145deg, #e74c3c, #c0392b);
+            border: 6px solid #333;
+            border-radius: 12px;
+            color: white;
+            padding: 20px 35px;
+            font-family: 'Orbitron', monospace;
+            font-size: 16px;
+            font-weight: 700;
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            transition: all 0.3s ease;
+            box-shadow: 
+                0 8px 0 #a93226,
+                0 0 25px rgba(231, 76, 60, 0.3),
+                inset 0 0 20px rgba(255, 255, 255, 0.1);
+        }
+
+        .robot-button::before {
+            content: "";
+            position: absolute;
+            top: 5px;
+            left: 5px;
+            right: 5px;
+            height: 3px;
+            background: rgba(255, 255, 255, 0.6);
+            border-radius: 2px;
+        }
+
+        .robot-button::after {
+            content: "●";
+            position: absolute;
+            top: 5px;
+            right: 10px;
+            color: #00ff00;
+            font-size: 12px;
+            animation: buttonLED 2s infinite;
+        }
+
+        @keyframes buttonLED {
+            0%, 50% { opacity: 1; }
+            51%, 100% { opacity: 0.3; }
+        }
+
+        .robot-button:hover {
+            transform: translateY(-4px);
+            box-shadow: 
+                0 12px 0 #a93226,
+                0 0 35px rgba(231, 76, 60, 0.5),
+                inset 0 0 30px rgba(255, 255, 255, 0.2);
+        }
+
+        .robot-button:active {
+            transform: translateY(4px);
+            box-shadow: 
+                0 4px 0 #a93226,
+                0 0 15px rgba(231, 76, 60, 0.2),
+                inset 0 0 10px rgba(255, 255, 255, 0.1);
+        }
+
+        .secondary-bot {
+            background: linear-gradient(145deg, #3498db, #2980b9);
+            box-shadow: 
+                0 8px 0 #2471a3,
+                0 0 25px rgba(52, 152, 219, 0.3),
+                inset 0 0 20px rgba(255, 255, 255, 0.1);
+        }
+
+        .secondary-bot:hover {
+            box-shadow: 
+                0 12px 0 #2471a3,
+                0 0 35px rgba(52, 152, 219, 0.5),
+                inset 0 0 30px rgba(255, 255, 255, 0.2);
+        }
+
+        .secondary-bot:active {
+            box-shadow: 
+                0 4px 0 #2471a3,
+                0 0 15px rgba(52, 152, 219, 0.2),
+                inset 0 0 10px rgba(255, 255, 255, 0.1);
+        }
+
+        .instructions-box {
+            background: linear-gradient(145deg, #f39c12, #e67e22);
+            border: 8px solid #d68910;
+            border-radius: 15px;
+            padding: 30px;
+            position: relative;
+            box-shadow: 
+                inset 0 0 30px rgba(255, 255, 255, 0.2),
+                0 10px 30px rgba(243, 156, 18, 0.3);
+            background-image: 
+                radial-gradient(circle at 80% 20%, rgba(255, 255, 255, 0.3) 2px, transparent 2px),
+                radial-gradient(circle at 20% 90%, rgba(0, 0, 0, 0.1) 1px, transparent 1px);
+            background-size: 40px 40px, 25px 25px;
+        }
+
+        .instructions-box::before {
+            content: "INSTRUCTION MANUAL";
+            position: absolute;
+            top: -15px;
+            left: 30px;
+            background: #8e44ad;
+            color: white;
+            padding: 8px 15px;
+            border-radius: 10px;
+            font-family: 'Orbitron', monospace;
+            font-size: 12px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            border: 3px solid #333;
+        }
+
+        .manual-steps {
+            display: grid;
+            gap: 25px;
+            margin-top: 20px;
+        }
+
+        .manual-step {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            background: rgba(255, 255, 255, 0.2);
+            border: 4px solid #d68910;
+            border-radius: 15px;
+            padding: 25px;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        .manual-step::before {
+            content: "";
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            width: 8px;
+            height: 8px;
+            background: #27ae60;
+            border-radius: 50%;
+            box-shadow: 0 0 10px #27ae60;
+            animation: statusLight 3s infinite;
+        }
+
+        @keyframes statusLight {
+            0%, 90% { opacity: 1; }
+            95% { opacity: 0.3; }
+        }
+
+        .manual-step:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: scale(1.02);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+        }
+
+        .step-circuit {
+            min-width: 70px;
+            height: 70px;
+            background: linear-gradient(145deg, #2c3e50, #34495e);
+            border: 4px solid #1a252f;
+            border-radius: 15px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: 'Orbitron', monospace;
+            font-size: 24px;
+            font-weight: 900;
+            color: #00ff00;
+            text-shadow: 0 0 10px #00ff00;
+            position: relative;
+            box-shadow: 
+                inset 0 0 15px rgba(0, 255, 0, 0.2),
+                0 5px 15px rgba(0, 0, 0, 0.3);
+        }
+
+        .step-circuit::after {
+            content: "";
+            position: absolute;
+            bottom: 5px;
+            left: 5px;
+            right: 5px;
+            height: 2px;
+            background: linear-gradient(90deg, #00ff00, transparent, #00ff00);
+            animation: circuitFlow 2s infinite;
+        }
+
+        @keyframes circuitFlow {
+            0% { opacity: 0.3; }
+            50% { opacity: 1; }
+            100% { opacity: 0.3; }
+        }
+
+        .step-info h3 {
+            font-family: 'Orbitron', monospace;
+            font-size: 18px;
+            font-weight: 700;
+            margin-bottom: 8px;
+            color: #2c3e50;
+            text-transform: uppercase;
+        }
+
+        .step-info p {
+            font-size: 14px;
+            color: #34495e;
+            line-height: 1.6;
+            font-weight: 700;
+        }
+
+        .robot-sounds {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            top: 0;
+            left: 0;
+            pointer-events: none;
+            z-index: -1;
+        }
+
+        .sound-bubble {
+            position: absolute;
+            font-family: 'Fredoka One', cursive;
+            font-size: 18px;
+            color: #e74c3c;
+            text-shadow: 2px 2px 0 #fff;
+            opacity: 0.7;
+            animation: robotSoundFloat 10s ease-in-out infinite;
+            background: rgba(255, 255, 255, 0.8);
+            padding: 5px 10px;
+            border-radius: 15px;
+            border: 2px solid #333;
+        }
+
+        .sound-bubble:nth-child(1) { 
+            top: 10%; 
+            left: 10%; 
+            animation-delay: 0s; 
+        }
+        .sound-bubble:nth-child(2) { 
+            top: 30%; 
+            right: 15%; 
+            animation-delay: 3s; 
+        }
+        .sound-bubble:nth-child(3) { 
+            bottom: 40%; 
+            left: 20%; 
+            animation-delay: 6s; 
+        }
+        .sound-bubble:nth-child(4) { 
+            bottom: 20%; 
+            right: 10%; 
+            animation-delay: 9s; 
+        }
+
+        @keyframes robotSoundFloat {
+            0%, 80%, 100% { 
+                transform: translateY(0) rotate(0deg) scale(0.8);
+                opacity: 0.3;
+            }
+            10% { 
+                transform: translateY(-20px) rotate(5deg) scale(1);
+                opacity: 0.8;
+            }
+            20% { 
+                transform: translateY(-10px) rotate(-3deg) scale(1.1);
+                opacity: 0.6;
+            }
+            30% { 
+                transform: translateY(-15px) rotate(2deg) scale(0.9);
+                opacity: 0.4;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .robot-workshop {
+                margin: 15px;
+                padding: 15px;
+            }
+            
+            .cardboard-robot {
+                padding: 25px;
+            }
+            
+            .robot-title {
+                font-size: 28px;
+            }
+            
+            .button-array {
+                flex-direction: column;
+                align-items: center;
+            }
+            
+            .robot-button {
+                width: 100%;
+                max-width: 300px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="robot-sounds">
+        <div class="sound-bubble">BEEP!</div>
+        <div class="sound-bubble">BOOP!</div>
+        <div class="sound-bubble">WHIRR!</div>
+        <div class="sound-bubble">BZZT!</div>
+    </div>
+
+    <div class="robot-workshop">
+        <div class="cardboard-robot">
+            <div class="robot-head">
+                <div class="robot-title">LLMpostor</div>
+                <div class="robot-subtitle">Robot Costume Mode</div>
+            </div>
+            
+            <div class="control-panel">
+                <form>
+                    <div class="robot-section">
+                        <label class="robot-label">Robot Name</label>
+                        <input type="text" class="robot-input" placeholder="ENTER_ROBOT_NAME.EXE" maxlength="20">
+                    </div>
+                    
+                    <div class="robot-section">
+                        <label class="robot-label">Server Location</label>
+                        <input type="text" class="robot-input" placeholder="CONNECT_TO_ROBOT_HQ.COM" maxlength="30">
+                    </div>
+                    
+                    <div class="button-array">
+                        <button type="submit" class="robot-button">Activate Robot!</button>
+                        <button type="button" class="robot-button secondary-bot">Auto Connect!</button>
+                    </div>
+                </form>
+            </div>
+            
+            <div class="instructions-box">
+                <div class="manual-steps">
+                    <div class="manual-step">
+                        <div class="step-circuit">01</div>
+                        <div class="step-info">
+                            <h3>Download Instructions</h3>
+                            <p>BEEP! Robot receives mission data and target bot specifications</p>
+                        </div>
+                    </div>
+                    <div class="manual-step">
+                        <div class="step-circuit">02</div>
+                        <div class="step-info">
+                            <h3>Generate Response</h3>
+                            <p>BOOP! Robot calculates fake responses to fool other robots</p>
+                        </div>
+                    </div>
+                    <div class="manual-step">
+                        <div class="step-circuit">03</div>
+                        <div class="step-info">
+                            <h3>Identify Real Bot</h3>
+                            <p>WHIRR! Robot scans responses to find authentic AI unit</p>
+                        </div>
+                    </div>
+                    <div class="manual-step">
+                        <div class="step-circuit">04</div>
+                        <div class="step-info">
+                            <h3>Calculate Score</h3>
+                            <p>BZZT! Robot updates score database with performance metrics</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Robot sound effects
+            const robotSounds = ['BEEP!', 'BOOP!', 'WHIRR!', 'BZZT!', 'CLICK!', 'PING!'];
+            
+            document.querySelectorAll('.robot-button').forEach(button => {
+                button.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    
+                    // Create floating robot sound effect
+                    const soundEffect = document.createElement('div');
+                    soundEffect.textContent = robotSounds[Math.floor(Math.random() * robotSounds.length)];
+                    soundEffect.style.cssText = `
+                        position: fixed;
+                        left: ${e.clientX}px;
+                        top: ${e.clientY}px;
+                        font-family: 'Fredoka One', cursive;
+                        font-size: 20px;
+                        color: #e74c3c;
+                        pointer-events: none;
+                        z-index: 9999;
+                        text-shadow: 2px 2px 0px #fff;
+                        background: rgba(255, 255, 255, 0.9);
+                        padding: 5px 12px;
+                        border-radius: 15px;
+                        border: 2px solid #333;
+                        animation: robotPop 1.8s ease-out forwards;
+                    `;
+                    
+                    // Add animation if it doesn't exist
+                    if (!document.querySelector('#robot-animations')) {
+                        const style = document.createElement('style');
+                        style.id = 'robot-animations';
+                        style.textContent = `
+                            @keyframes robotPop {
+                                0% { 
+                                    transform: translate(-50%, -50%) scale(0) rotate(0deg);
+                                    opacity: 1;
+                                }
+                                20% { 
+                                    transform: translate(-50%, -50%) scale(1.2) rotate(-10deg);
+                                    opacity: 1;
+                                }
+                                40% { 
+                                    transform: translate(-50%, -50%) scale(0.9) rotate(5deg);
+                                    opacity: 1;
+                                }
+                                60% { 
+                                    transform: translate(-50%, -50%) scale(1.1) rotate(-5deg);
+                                    opacity: 0.8;
+                                }
+                                100% { 
+                                    transform: translate(-50%, -50%) scale(0.3) rotate(0deg);
+                                    opacity: 0;
+                                }
+                            }
+                        `;
+                        document.head.appendChild(style);
+                    }
+                    
+                    document.body.appendChild(soundEffect);
+                    
+                    setTimeout(() => {
+                        if (document.body.contains(soundEffect)) {
+                            document.body.removeChild(soundEffect);
+                        }
+                    }, 1800);
+                });
+            });
+
+            // Robot input effects
+            document.querySelectorAll('.robot-input').forEach(input => {
+                input.addEventListener('input', function(e) {
+                    if (Math.random() < 0.3) { // 30% chance
+                        // Brief LED flash effect
+                        this.style.boxShadow = `
+                            inset 0 0 20px rgba(243, 156, 18, 0.4),
+                            0 0 40px rgba(243, 156, 18, 0.6)
+                        `;
+                        setTimeout(() => {
+                            if (this === document.activeElement) {
+                                this.style.boxShadow = `
+                                    inset 0 0 20px rgba(243, 156, 18, 0.2),
+                                    0 0 30px rgba(243, 156, 18, 0.3)
+                                `;
+                            } else {
+                                this.style.boxShadow = `
+                                    inset 0 0 10px rgba(39, 174, 96, 0.2),
+                                    0 0 20px rgba(39, 174, 96, 0.1)
+                                `;
+                            }
+                        }, 200);
+                    }
+                    
+                    // Auto-uppercase
+                    this.value = this.value.toUpperCase();
+                });
+
+                input.addEventListener('keypress', function(e) {
+                    // Make typing sound visual effect
+                    const cardboard = document.querySelector('.cardboard-robot');
+                    cardboard.style.filter = 'brightness(1.1)';
+                    setTimeout(() => {
+                        cardboard.style.filter = 'brightness(1)';
+                    }, 100);
+                });
+            });
+
+            // Random robot malfunction
+            setInterval(() => {
+                if (Math.random() < 0.05) { // 5% chance
+                    const robot = document.querySelector('.cardboard-robot');
+                    robot.style.transform = 'translateX(3px) rotate(0.5deg)';
+                    setTimeout(() => {
+                        robot.style.transform = 'translateX(-2px) rotate(-0.3deg)';
+                    }, 100);
+                    setTimeout(() => {
+                        robot.style.transform = 'translateX(0) rotate(0deg)';
+                    }, 200);
+                }
+            }, 2000);
+
+            // LED light patterns
+            setInterval(() => {
+                const lights = document.querySelector('.cardboard-robot::before');
+                // This would normally control the LED animation, but CSS handles it
+            }, 1000);
+
+            // Random sound bubble appearances
+            setInterval(() => {
+                if (Math.random() < 0.1) { // 10% chance
+                    const sounds = document.querySelectorAll('.sound-bubble');
+                    const randomSound = sounds[Math.floor(Math.random() * sounds.length)];
+                    randomSound.style.opacity = '1';
+                    randomSound.style.transform = 'scale(1.2)';
+                    setTimeout(() => {
+                        randomSound.style.opacity = '0.7';
+                        randomSound.style.transform = 'scale(1)';
+                    }, 500);
+                }
+            }, 3000);
+        });
+    </script>
+</body>
+</html>

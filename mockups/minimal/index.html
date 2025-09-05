@@ -1,0 +1,515 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LLMpostor - Pure</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary: #2563eb;
+            --primary-light: #60a5fa;
+            --primary-dark: #1d4ed8;
+            --secondary: #64748b;
+            --text-primary: #1e293b;
+            --text-secondary: #64748b;
+            --text-tertiary: #94a3b8;
+            --surface: #ffffff;
+            --surface-elevated: #f8fafc;
+            --border: #e2e8f0;
+            --border-focus: #3b82f6;
+            --success: #10b981;
+            --radius: 12px;
+            --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+            --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+            --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%);
+            color: var(--text-primary);
+            line-height: 1.6;
+            font-feature-settings: 'cv11', 'ss01';
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 480px;
+            margin: 40px 20px;
+            position: relative;
+        }
+
+        .card {
+            background: var(--surface);
+            border-radius: var(--radius);
+            box-shadow: var(--shadow-xl);
+            border: 1px solid var(--border);
+            overflow: hidden;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .card:hover {
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.15);
+            transform: translateY(-2px);
+        }
+
+        .header {
+            padding: 48px 32px 24px 32px;
+            text-align: center;
+            background: linear-gradient(180deg, var(--surface) 0%, var(--surface-elevated) 100%);
+            border-bottom: 1px solid var(--border);
+        }
+
+        .logo {
+            font-size: 32px;
+            font-weight: 700;
+            letter-spacing: -0.02em;
+            color: var(--text-primary);
+            margin-bottom: 8px;
+            position: relative;
+        }
+
+        .tagline {
+            font-size: 16px;
+            color: var(--text-secondary);
+            font-weight: 400;
+        }
+
+        .form-container {
+            padding: 32px;
+        }
+
+        .form-section {
+            margin-bottom: 32px;
+        }
+
+        .form-section:last-child {
+            margin-bottom: 0;
+        }
+
+        .section-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 24px;
+            letter-spacing: -0.01em;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group:last-child {
+            margin-bottom: 0;
+        }
+
+        .label {
+            display: block;
+            font-size: 14px;
+            font-weight: 500;
+            color: var(--text-primary);
+            margin-bottom: 8px;
+        }
+
+        .input {
+            width: 100%;
+            padding: 12px 16px;
+            font-size: 16px;
+            color: var(--text-primary);
+            background: var(--surface);
+            border: 1.5px solid var(--border);
+            border-radius: 8px;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            font-family: inherit;
+        }
+
+        .input:focus {
+            outline: none;
+            border-color: var(--border-focus);
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+
+        .input::placeholder {
+            color: var(--text-tertiary);
+        }
+
+        .button-group {
+            display: flex;
+            gap: 12px;
+            margin-top: 24px;
+        }
+
+        .button {
+            flex: 1;
+            padding: 12px 24px;
+            font-size: 15px;
+            font-weight: 500;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            font-family: inherit;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .button:focus {
+            outline: none;
+        }
+
+        .button-primary {
+            background: var(--primary);
+            color: white;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .button-primary:hover {
+            background: var(--primary-dark);
+            box-shadow: var(--shadow-md);
+            transform: translateY(-1px);
+        }
+
+        .button-primary:active {
+            transform: translateY(0);
+            box-shadow: var(--shadow-sm);
+        }
+
+        .button-secondary {
+            background: var(--surface);
+            color: var(--text-secondary);
+            border: 1.5px solid var(--border);
+        }
+
+        .button-secondary:hover {
+            background: var(--surface-elevated);
+            color: var(--text-primary);
+            border-color: var(--text-tertiary);
+            transform: translateY(-1px);
+        }
+
+        .button-secondary:active {
+            transform: translateY(0);
+        }
+
+        .divider {
+            height: 1px;
+            background: var(--border);
+            margin: 32px 0;
+            position: relative;
+        }
+
+        .divider::after {
+            content: "or";
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: var(--surface);
+            color: var(--text-tertiary);
+            padding: 0 16px;
+            font-size: 14px;
+        }
+
+        .instructions {
+            background: var(--surface-elevated);
+            border-radius: var(--radius);
+            padding: 24px;
+            margin-top: 24px;
+            border: 1px solid var(--border);
+        }
+
+        .instructions-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 16px;
+            letter-spacing: -0.01em;
+        }
+
+        .steps {
+            display: grid;
+            gap: 16px;
+        }
+
+        .step {
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+        }
+
+        .step-number {
+            min-width: 24px;
+            height: 24px;
+            background: var(--primary);
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            font-weight: 600;
+            margin-top: 2px;
+        }
+
+        .step-content {
+            flex: 1;
+        }
+
+        .step-title {
+            font-size: 15px;
+            font-weight: 500;
+            color: var(--text-primary);
+            margin-bottom: 4px;
+        }
+
+        .step-description {
+            font-size: 14px;
+            color: var(--text-secondary);
+            line-height: 1.5;
+        }
+
+        .footer {
+            text-align: center;
+            margin-top: 32px;
+            padding: 0 32px;
+        }
+
+        .footer-text {
+            font-size: 13px;
+            color: var(--text-tertiary);
+        }
+
+        @media (max-width: 640px) {
+            .container {
+                margin: 20px 16px;
+            }
+            
+            .header {
+                padding: 32px 24px 20px 24px;
+            }
+            
+            .form-container {
+                padding: 24px;
+            }
+            
+            .logo {
+                font-size: 28px;
+            }
+            
+            .button-group {
+                flex-direction: column;
+            }
+            
+            .button {
+                flex: none;
+            }
+        }
+
+        /* Subtle animations */
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(8px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .card {
+            animation: fadeIn 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .form-group {
+            animation: fadeIn 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .form-group:nth-child(1) { animation-delay: 0.1s; }
+        .form-group:nth-child(2) { animation-delay: 0.2s; }
+        .button-group { animation-delay: 0.3s; }
+        .instructions { animation-delay: 0.4s; }
+
+        /* Focus ring */
+        .button:focus-visible {
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="card">
+            <div class="header">
+                <div class="logo">LLMpostor</div>
+                <div class="tagline">The AI Deception Game</div>
+            </div>
+            
+            <div class="form-container">
+                <div class="form-section">
+                    <div class="section-title">Join Game</div>
+                    <form>
+                        <div class="form-group">
+                            <label class="label" for="playerName">Display Name</label>
+                            <input 
+                                type="text" 
+                                id="playerName" 
+                                class="input" 
+                                placeholder="Enter your name"
+                                maxlength="20"
+                                required
+                            >
+                        </div>
+                        
+                        <div class="form-group">
+                            <label class="label" for="roomName">Room Name</label>
+                            <input 
+                                type="text" 
+                                id="roomName" 
+                                class="input" 
+                                placeholder="Enter room name"
+                                maxlength="30"
+                                required
+                            >
+                        </div>
+                        
+                        <div class="button-group">
+                            <button type="submit" class="button button-primary">
+                                Join Room
+                            </button>
+                        </div>
+                    </form>
+                    
+                    <div class="divider"></div>
+                    
+                    <button type="button" class="button button-secondary" style="width: 100%;">
+                        Quick Match
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <div class="instructions">
+            <div class="instructions-title">How to Play</div>
+            <div class="steps">
+                <div class="step">
+                    <div class="step-number">1</div>
+                    <div class="step-content">
+                        <div class="step-title">Receive Prompt</div>
+                        <div class="step-description">Get a writing prompt and target AI model</div>
+                    </div>
+                </div>
+                <div class="step">
+                    <div class="step-number">2</div>
+                    <div class="step-content">
+                        <div class="step-title">Write Response</div>
+                        <div class="step-description">Craft a response that mimics the AI's style</div>
+                    </div>
+                </div>
+                <div class="step">
+                    <div class="step-number">3</div>
+                    <div class="step-content">
+                        <div class="step-title">Identify AI</div>
+                        <div class="step-description">Guess which response was written by the AI</div>
+                    </div>
+                </div>
+                <div class="step">
+                    <div class="step-number">4</div>
+                    <div class="step-content">
+                        <div class="step-title">Score Points</div>
+                        <div class="step-description">Earn points for deception and correct guesses</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="footer">
+            <div class="footer-text">Clean • Simple • Focused</div>
+        </div>
+    </div>
+
+    <script>
+        // Smooth form interactions
+        document.addEventListener('DOMContentLoaded', function() {
+            const inputs = document.querySelectorAll('.input');
+            const buttons = document.querySelectorAll('.button');
+            
+            inputs.forEach(input => {
+                input.addEventListener('input', function() {
+                    if (this.value.length > 0) {
+                        this.style.borderColor = 'var(--success)';
+                    } else {
+                        this.style.borderColor = 'var(--border)';
+                    }
+                });
+                
+                input.addEventListener('blur', function() {
+                    if (this.value.length === 0) {
+                        this.style.borderColor = 'var(--border)';
+                    }
+                });
+            });
+            
+            // Form submission
+            document.querySelector('form').addEventListener('submit', function(e) {
+                e.preventDefault();
+                const playerName = document.getElementById('playerName').value.trim();
+                const roomName = document.getElementById('roomName').value.trim();
+                
+                if (playerName && roomName) {
+                    // Simulate loading state
+                    const submitBtn = this.querySelector('.button-primary');
+                    const originalText = submitBtn.textContent;
+                    
+                    submitBtn.textContent = 'Joining...';
+                    submitBtn.disabled = true;
+                    submitBtn.style.opacity = '0.7';
+                    
+                    setTimeout(() => {
+                        // In real app, would navigate to room
+                        console.log(`Joining room: ${roomName} as ${playerName}`);
+                        submitBtn.textContent = originalText;
+                        submitBtn.disabled = false;
+                        submitBtn.style.opacity = '1';
+                    }, 1500);
+                }
+            });
+            
+            // Quick match button
+            document.querySelector('.button-secondary').addEventListener('click', function() {
+                const playerName = document.getElementById('playerName').value.trim();
+                
+                if (!playerName) {
+                    document.getElementById('playerName').focus();
+                    return;
+                }
+                
+                const originalText = this.textContent;
+                this.textContent = 'Finding Game...';
+                this.disabled = true;
+                this.style.opacity = '0.7';
+                
+                setTimeout(() => {
+                    console.log(`Quick match for ${playerName}`);
+                    this.textContent = originalText;
+                    this.disabled = false;
+                    this.style.opacity = '1';
+                }, 1500);
+            });
+        });
+    </script>
+</body>
+</html>

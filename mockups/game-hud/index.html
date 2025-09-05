@@ -1,0 +1,638 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LLMpostor - HUD Interface</title>
+    <link href="https://fonts.googleapis.com/css2?family=Exo+2:wght@300;400;500;600;700;800&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Exo 2', sans-serif;
+            background: #0a0f1c;
+            color: #ffffff;
+            min-height: 100vh;
+            position: relative;
+            overflow-x: hidden;
+        }
+
+        /* Animated background with hexagon pattern */
+        body::before {
+            content: "";
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: 
+                radial-gradient(circle at 25% 25%, rgba(0, 150, 255, 0.1) 0%, transparent 50%),
+                radial-gradient(circle at 75% 75%, rgba(255, 100, 0, 0.1) 0%, transparent 50%);
+            z-index: -2;
+        }
+
+        body::after {
+            content: "";
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: 
+                linear-gradient(30deg, rgba(0, 150, 255, 0.02) 12%, transparent 12.5%, transparent 87%, rgba(0, 150, 255, 0.02) 87.5%, rgba(0, 150, 255, 0.02)),
+                linear-gradient(150deg, rgba(0, 150, 255, 0.02) 12%, transparent 12.5%, transparent 87%, rgba(0, 150, 255, 0.02) 87.5%, rgba(0, 150, 255, 0.02)),
+                linear-gradient(30deg, rgba(0, 150, 255, 0.02) 12%, transparent 12.5%, transparent 87%, rgba(0, 150, 255, 0.02) 87.5%, rgba(0, 150, 255, 0.02)),
+                linear-gradient(150deg, rgba(0, 150, 255, 0.02) 12%, transparent 12.5%, transparent 87%, rgba(0, 150, 255, 0.02) 87.5%, rgba(0, 150, 255, 0.02));
+            background-size: 60px 60px;
+            background-position: 0 0, 0 0, 30px 30px, 30px 30px;
+            animation: hexMove 20s linear infinite;
+            z-index: -1;
+        }
+
+        @keyframes hexMove {
+            0% { background-position: 0 0, 0 0, 30px 30px, 30px 30px; }
+            100% { background-position: 60px 60px, 60px 60px, 90px 90px, 90px 90px; }
+        }
+
+        .hud-container {
+            display: grid;
+            grid-template-columns: 1fr 400px 1fr;
+            grid-template-rows: 60px 1fr 80px;
+            min-height: 100vh;
+            gap: 20px;
+            padding: 20px;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .top-bar {
+            grid-column: 1 / -1;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: rgba(0, 150, 255, 0.1);
+            border: 1px solid #0096ff;
+            border-radius: 0 0 20px 20px;
+            padding: 0 30px;
+            box-shadow: 
+                0 0 30px rgba(0, 150, 255, 0.2),
+                inset 0 0 30px rgba(0, 150, 255, 0.05);
+            position: relative;
+        }
+
+        .top-bar::before {
+            content: "";
+            position: absolute;
+            top: -2px;
+            left: -2px;
+            right: -2px;
+            height: 4px;
+            background: linear-gradient(90deg, #0096ff, #ff6400, #0096ff);
+            animation: scanLine 3s linear infinite;
+        }
+
+        @keyframes scanLine {
+            0%, 100% { opacity: 0.5; }
+            50% { opacity: 1; }
+        }
+
+        .game-title {
+            font-size: 24px;
+            font-weight: 800;
+            color: #0096ff;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            text-shadow: 0 0 10px #0096ff;
+        }
+
+        .status-indicators {
+            display: flex;
+            gap: 20px;
+        }
+
+        .status-indicator {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 14px;
+        }
+
+        .status-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: #00ff00;
+            box-shadow: 0 0 10px #00ff00;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.7; transform: scale(1.1); }
+        }
+
+        .left-panel, .right-panel {
+            background: rgba(0, 0, 0, 0.7);
+            border: 1px solid #333;
+            border-radius: 20px;
+            padding: 30px;
+            backdrop-filter: blur(10px);
+            box-shadow: inset 0 0 50px rgba(0, 150, 255, 0.05);
+        }
+
+        .main-interface {
+            grid-column: 2;
+            background: rgba(0, 0, 0, 0.8);
+            border: 2px solid #0096ff;
+            border-radius: 25px;
+            padding: 40px;
+            position: relative;
+            box-shadow: 
+                0 0 50px rgba(0, 150, 255, 0.3),
+                inset 0 0 50px rgba(0, 150, 255, 0.1);
+        }
+
+        .main-interface::before {
+            content: "";
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            right: 20px;
+            bottom: 20px;
+            border: 1px solid rgba(0, 150, 255, 0.3);
+            border-radius: 20px;
+            pointer-events: none;
+        }
+
+        .interface-header {
+            text-align: center;
+            margin-bottom: 40px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .interface-title {
+            font-size: 32px;
+            font-weight: 800;
+            background: linear-gradient(45deg, #0096ff, #ff6400);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            text-transform: uppercase;
+            letter-spacing: 3px;
+            margin-bottom: 10px;
+            text-shadow: 0 0 30px rgba(0, 150, 255, 0.5);
+        }
+
+        .interface-subtitle {
+            font-family: 'Share Tech Mono', monospace;
+            color: #ff6400;
+            font-size: 14px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        .control-panel {
+            background: rgba(0, 150, 255, 0.05);
+            border: 1px solid #0096ff;
+            border-radius: 15px;
+            padding: 30px;
+            margin-bottom: 30px;
+            position: relative;
+        }
+
+        .control-panel::before {
+            content: "CONTROL INTERFACE";
+            position: absolute;
+            top: -10px;
+            left: 20px;
+            background: #0a0f1c;
+            color: #0096ff;
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 12px;
+            padding: 0 10px;
+            letter-spacing: 1px;
+        }
+
+        .input-section {
+            margin-bottom: 25px;
+        }
+
+        .input-label {
+            display: block;
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 10px;
+            color: #0096ff;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-family: 'Share Tech Mono', monospace;
+        }
+
+        .hud-input {
+            width: 100%;
+            padding: 15px 20px;
+            background: rgba(0, 0, 0, 0.6);
+            border: 2px solid #333;
+            border-radius: 10px;
+            color: #ffffff;
+            font-family: 'Exo 2', sans-serif;
+            font-size: 16px;
+            transition: all 0.3s ease;
+            box-shadow: inset 0 0 20px rgba(0, 0, 0, 0.5);
+        }
+
+        .hud-input:focus {
+            outline: none;
+            border-color: #0096ff;
+            box-shadow: 
+                0 0 20px rgba(0, 150, 255, 0.3),
+                inset 0 0 20px rgba(0, 150, 255, 0.1);
+        }
+
+        .hud-input::placeholder {
+            color: rgba(255, 255, 255, 0.5);
+            font-style: italic;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 15px;
+            margin-top: 25px;
+        }
+
+        .hud-button {
+            flex: 1;
+            padding: 15px 25px;
+            background: linear-gradient(135deg, #0096ff, #0074cc);
+            border: 2px solid #0096ff;
+            border-radius: 12px;
+            color: #ffffff;
+            font-family: 'Exo 2', sans-serif;
+            font-size: 14px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+            transition: all 0.3s ease;
+            box-shadow: 
+                0 5px 15px rgba(0, 150, 255, 0.3),
+                inset 0 1px 0 rgba(255, 255, 255, 0.1);
+        }
+
+        .hud-button::before {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+            transition: left 0.5s ease;
+        }
+
+        .hud-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 
+                0 8px 25px rgba(0, 150, 255, 0.4),
+                inset 0 1px 0 rgba(255, 255, 255, 0.1);
+        }
+
+        .hud-button:hover::before {
+            left: 100%;
+        }
+
+        .secondary-button {
+            background: linear-gradient(135deg, #ff6400, #cc5000);
+            border-color: #ff6400;
+            box-shadow: 
+                0 5px 15px rgba(255, 100, 0, 0.3),
+                inset 0 1px 0 rgba(255, 255, 255, 0.1);
+        }
+
+        .secondary-button:hover {
+            box-shadow: 
+                0 8px 25px rgba(255, 100, 0, 0.4),
+                inset 0 1px 0 rgba(255, 255, 255, 0.1);
+        }
+
+        .mission-briefing {
+            background: rgba(255, 100, 0, 0.05);
+            border: 1px solid #ff6400;
+            border-radius: 15px;
+            padding: 25px;
+            position: relative;
+        }
+
+        .mission-briefing::before {
+            content: "MISSION BRIEFING";
+            position: absolute;
+            top: -10px;
+            left: 20px;
+            background: #0a0f1c;
+            color: #ff6400;
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 12px;
+            padding: 0 10px;
+            letter-spacing: 1px;
+        }
+
+        .objectives {
+            display: grid;
+            gap: 20px;
+        }
+
+        .objective {
+            display: flex;
+            align-items: flex-start;
+            gap: 15px;
+            background: rgba(0, 0, 0, 0.4);
+            border: 1px solid #333;
+            border-radius: 10px;
+            padding: 20px;
+            transition: all 0.3s ease;
+        }
+
+        .objective:hover {
+            border-color: #0096ff;
+            box-shadow: 0 0 20px rgba(0, 150, 255, 0.1);
+        }
+
+        .objective-id {
+            min-width: 40px;
+            height: 40px;
+            background: linear-gradient(135deg, #0096ff, #ff6400);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 800;
+            font-size: 16px;
+        }
+
+        .objective-content h3 {
+            font-size: 16px;
+            font-weight: 700;
+            margin-bottom: 8px;
+            color: #0096ff;
+            text-transform: uppercase;
+        }
+
+        .objective-content p {
+            font-size: 14px;
+            color: #cccccc;
+            line-height: 1.5;
+        }
+
+        .bottom-bar {
+            grid-column: 1 / -1;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: rgba(0, 0, 0, 0.8);
+            border: 1px solid #333;
+            border-radius: 20px 20px 0 0;
+            padding: 0 30px;
+            backdrop-filter: blur(10px);
+        }
+
+        .system-info {
+            display: flex;
+            gap: 30px;
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 12px;
+            color: #999;
+        }
+
+        .system-info span {
+            color: #0096ff;
+        }
+
+        .corner-decorations {
+            position: absolute;
+            width: 40px;
+            height: 40px;
+            border: 3px solid #0096ff;
+        }
+
+        .corner-tl {
+            top: 10px;
+            left: 10px;
+            border-right: none;
+            border-bottom: none;
+        }
+
+        .corner-tr {
+            top: 10px;
+            right: 10px;
+            border-left: none;
+            border-bottom: none;
+        }
+
+        .corner-bl {
+            bottom: 10px;
+            left: 10px;
+            border-right: none;
+            border-top: none;
+        }
+
+        .corner-br {
+            bottom: 10px;
+            right: 10px;
+            border-left: none;
+            border-top: none;
+        }
+
+        @media (max-width: 1200px) {
+            .hud-container {
+                grid-template-columns: 1fr;
+                grid-template-rows: auto auto auto auto;
+                gap: 15px;
+                padding: 15px;
+            }
+            
+            .left-panel, .right-panel {
+                display: none;
+            }
+            
+            .main-interface {
+                grid-column: 1;
+            }
+            
+            .action-buttons {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="hud-container">
+        <div class="top-bar">
+            <div class="game-title">LLMpostor</div>
+            <div class="status-indicators">
+                <div class="status-indicator">
+                    <div class="status-dot"></div>
+                    <span>ONLINE</span>
+                </div>
+                <div class="status-indicator">
+                    <div class="status-dot" style="background: #ff6400; box-shadow: 0 0 10px #ff6400;"></div>
+                    <span>READY</span>
+                </div>
+            </div>
+        </div>
+        
+        <div class="left-panel">
+            <div style="color: #0096ff; font-size: 18px; font-weight: 700; margin-bottom: 20px; text-transform: uppercase;">SYSTEM STATUS</div>
+            <div style="font-family: 'Share Tech Mono', monospace; font-size: 14px; line-height: 2;">
+                <div>Neural Network: <span style="color: #00ff00;">ACTIVE</span></div>
+                <div>AI Detection: <span style="color: #00ff00;">ONLINE</span></div>
+                <div>Response Parser: <span style="color: #00ff00;">READY</span></div>
+                <div>Score Matrix: <span style="color: #ff6400;">STANDBY</span></div>
+            </div>
+        </div>
+        
+        <div class="main-interface">
+            <div class="corner-decorations corner-tl"></div>
+            <div class="corner-decorations corner-tr"></div>
+            <div class="corner-decorations corner-bl"></div>
+            <div class="corner-decorations corner-br"></div>
+            
+            <div class="interface-header">
+                <div class="interface-title">LLMpostor</div>
+                <div class="interface-subtitle">HUD Interface v2.0</div>
+            </div>
+            
+            <div class="control-panel">
+                <form>
+                    <div class="input-section">
+                        <label class="input-label">Agent Callsign</label>
+                        <input type="text" class="hud-input" placeholder="Enter your operative name..." maxlength="20">
+                    </div>
+                    
+                    <div class="input-section">
+                        <label class="input-label">Mission Channel</label>
+                        <input type="text" class="hud-input" placeholder="Enter secure channel ID..." maxlength="30">
+                    </div>
+                    
+                    <div class="action-buttons">
+                        <button type="submit" class="hud-button">Deploy</button>
+                        <button type="button" class="hud-button secondary-button">Quick Deploy</button>
+                    </div>
+                </form>
+            </div>
+            
+            <div class="mission-briefing">
+                <div class="objectives">
+                    <div class="objective">
+                        <div class="objective-id">01</div>
+                        <div class="objective-content">
+                            <h3>Data Acquisition</h3>
+                            <p>Receive encrypted prompt and target AI behavioral profile</p>
+                        </div>
+                    </div>
+                    <div class="objective">
+                        <div class="objective-id">02</div>
+                        <div class="objective-content">
+                            <h3>Response Generation</h3>
+                            <p>Synthesize response matching AI writing patterns</p>
+                        </div>
+                    </div>
+                    <div class="objective">
+                        <div class="objective-id">03</div>
+                        <div class="objective-content">
+                            <h3>AI Identification</h3>
+                            <p>Analyze responses to identify authentic AI output</p>
+                        </div>
+                    </div>
+                    <div class="objective">
+                        <div class="objective-id">04</div>
+                        <div class="objective-content">
+                            <h3>Score Calculation</h3>
+                            <p>Accumulate mission points through successful ops</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="right-panel">
+            <div style="color: #ff6400; font-size: 18px; font-weight: 700; margin-bottom: 20px; text-transform: uppercase;">INTEL FEED</div>
+            <div style="font-family: 'Share Tech Mono', monospace; font-size: 12px; color: #999; line-height: 1.8;">
+                <div style="margin-bottom: 15px; padding: 10px; background: rgba(0, 150, 255, 0.1); border-radius: 5px;">
+                    <div style="color: #0096ff;">[12:34:56] SYSTEM</div>
+                    <div>Neural networks initialized</div>
+                </div>
+                <div style="margin-bottom: 15px; padding: 10px; background: rgba(255, 100, 0, 0.1); border-radius: 5px;">
+                    <div style="color: #ff6400;">[12:35:12] WARNING</div>
+                    <div>High difficulty mode detected</div>
+                </div>
+                <div style="margin-bottom: 15px; padding: 10px; background: rgba(0, 255, 0, 0.1); border-radius: 5px;">
+                    <div style="color: #00ff00;">[12:35:23] INFO</div>
+                    <div>Ready for deployment</div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="bottom-bar">
+            <div class="system-info">
+                <div>CPU: <span>34%</span></div>
+                <div>MEM: <span>2.1GB</span></div>
+                <div>NET: <span>842ms</span></div>
+            </div>
+            <div style="font-family: 'Share Tech Mono', monospace; font-size: 12px; color: #666;">
+                LLMpostor HUD v2.0 - Neural Interface Active
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Add HUD-style interactions
+        document.addEventListener('DOMContentLoaded', function() {
+            // Simulate typing effect for inputs
+            document.querySelectorAll('.hud-input').forEach(input => {
+                input.addEventListener('input', function(e) {
+                    if (Math.random() < 0.1) { // 10% chance for glitch effect
+                        this.style.color = '#ff6400';
+                        setTimeout(() => {
+                            this.style.color = '#ffffff';
+                        }, 100);
+                    }
+                });
+            });
+
+            // Add sound simulation for button clicks
+            document.querySelectorAll('.hud-button').forEach(button => {
+                button.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    
+                    // Visual feedback
+                    this.style.transform = 'translateY(0) scale(0.98)';
+                    setTimeout(() => {
+                        this.style.transform = 'translateY(-2px) scale(1)';
+                    }, 100);
+                });
+            });
+
+            // Random status updates
+            setInterval(() => {
+                const indicators = document.querySelectorAll('.status-dot');
+                indicators.forEach(dot => {
+                    if (Math.random() < 0.05) { // 5% chance to flicker
+                        dot.style.opacity = '0.3';
+                        setTimeout(() => {
+                            dot.style.opacity = '1';
+                        }, 200);
+                    }
+                });
+            }, 1000);
+        });
+    </script>
+</body>
+</html>
