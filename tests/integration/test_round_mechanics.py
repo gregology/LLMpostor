@@ -259,8 +259,8 @@ class TestRoundMechanics:
         client.get_received()
         client2.get_received()
         
-        # Submit response that's too long (over 1000 characters)
-        long_response = 'A' * 1001
+        # Submit response that's too long (over 100 characters)
+        long_response = 'A' * 101
         client.emit('submit_response', {
             'response': long_response
         })

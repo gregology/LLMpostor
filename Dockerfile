@@ -9,21 +9,24 @@ RUN apt-get update && apt-get install -y \
 # Install uv for fast dependency management
 COPY --from=ghcr.io/astral-sh/uv:latest /uv /bin/uv
 
-# Set working directory
+# Create non-root user for security first
+RUN useradd --create-home --shell /bin/bash app
+
+# Set working directory and change ownership
 WORKDIR /app
+RUN chown app:app /app
+
+# Switch to app user
+USER app
 
 # Copy dependency files
-COPY pyproject.toml uv.lock ./
+COPY --chown=app:app pyproject.toml uv.lock ./
 
-# Install dependencies using uv
+# Install dependencies using uv as app user
 RUN uv sync --frozen --no-cache
 
 # Copy application code
-COPY . .
-
-# Create non-root user for security
-RUN useradd --create-home --shell /bin/bash app && chown -R app:app /app
-USER app
+COPY --chown=app:app . .
 
 # Expose port
 EXPOSE 8000

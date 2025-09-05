@@ -389,7 +389,7 @@ class LLMposterGameClient {
                 }
                 break;
             case 'RESPONSE_TOO_LONG':
-                this.showToast('Response is too long. Please shorten it to 1000 characters or less.', 'error');
+                this.showToast(`Response is too long. Please shorten it to ${maxResponseLength} characters or less.`, 'error');
                 break;
             case 'EMPTY_RESPONSE':
                 this.showToast('Please enter a response before submitting.', 'warning');
@@ -632,8 +632,8 @@ class LLMposterGameClient {
             return;
         }
         
-        if (responseText.length > 1000) {
-            this.showToast('Response is too long (max 1000 characters)', 'warning');
+        if (responseText.length > maxResponseLength) {
+            this.showToast(`Response is too long (max ${maxResponseLength} characters)`, 'warning');
             return;
         }
         
@@ -1204,10 +1204,10 @@ class LLMposterGameClient {
         const count = this.elements.responseInput.value.length;
         this.elements.charCount.textContent = count;
         
-        // Update character count color
-        if (count > 800) {
+        // Update character count color (80% and 60% thresholds)
+        if (count > maxResponseLength * 0.8) {
             this.elements.charCount.style.color = '#ef4444'; // red
-        } else if (count > 600) {
+        } else if (count > maxResponseLength * 0.6) {
             this.elements.charCount.style.color = '#f59e0b'; // orange
         } else {
             this.elements.charCount.style.color = '#6b7280'; // gray
@@ -1218,7 +1218,7 @@ class LLMposterGameClient {
         if (!this.elements.submitResponseBtn || !this.elements.responseInput) return;
         
         const text = this.elements.responseInput.value.trim();
-        const isValid = text.length > 0 && text.length <= 1000;
+        const isValid = text.length > 0 && text.length <= maxResponseLength;
         
         this.elements.submitResponseBtn.disabled = !isValid;
     }

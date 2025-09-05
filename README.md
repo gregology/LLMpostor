@@ -146,7 +146,6 @@ MAX_PLAYERS_PER_ROOM=8
 MAX_RESPONSE_LENGTH=1000
 
 # Production settings
-WORKERS=2
 LOG_LEVEL=info
 ```
 

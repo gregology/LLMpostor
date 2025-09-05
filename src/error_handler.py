@@ -5,6 +5,7 @@ Provides comprehensive error handling, validation, and error response formatting
 """
 
 import logging
+import os
 from typing import Dict, Any, Optional, Tuple
 from enum import Enum
 from flask_socketio import emit
@@ -80,7 +81,7 @@ class ErrorHandler:
     # Validation constants
     MAX_ROOM_ID_LENGTH = 50
     MAX_PLAYER_NAME_LENGTH = 20
-    MAX_RESPONSE_LENGTH = 1000
+    MAX_RESPONSE_LENGTH = int(os.environ.get('MAX_RESPONSE_LENGTH', 100))
     MIN_RESPONSE_LENGTH = 1
     
     # Room ID pattern: alphanumeric, hyphens, underscores
