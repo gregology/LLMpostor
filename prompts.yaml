@@ -13,17 +13,8 @@ prompts:
     prompt: "Using 1 word, describe what mars would taste like"
     model: "Claude Sonnet 3.7"
     response: "Rusty."
-
-  - id: "prompt_004"
-    prompt: "Write the most simple python hello world function possible. Return the code only"
-    model: "Claude Sonnet 4"
-    response: |
-      ```python
-      def hello():
-          print("Hello, World!")
-      ```
       
-  - id: "prompt_005"
+  - id: "prompt_004"
     prompt: "Write the most efficient python hello world function possible. Return the code only"
     model: "Claude Sonnet 4"
     response: |
@@ -31,10 +22,71 @@ prompts:
       def hello():print("Hello, World!")
       ```
 
-  - id: "prompt_006"
+  - id: "prompt_005"
     prompt: "Write the most efficient python hello world function possible. Return the code only"
     model: "Claude Opus 4.1"
     response: |
       ```python
       print("Hello, World!")
       ```
+  
+  - id: "prompt_006"
+    prompt: "You have six horses and want to race them to see which is fastest. What is the minimum number of races needed to do this? Answer in 15 words or less."
+    model: "Claude Sonnet 3.7"
+    response: "You need 5 races to find the fastest among six horses."
+
+  - id: "prompt_007"
+    prompt: "I bought a plain stainless steal cup online. Unfortunately instead of the top being open and the bottom being sealed, the top is sealed and the bottom is open! In 15 words or less, describe what I should do?"
+    model: "Claude Sonnet 4"
+    response: "Return it as defective - you received an upside-down manufacturing error, not a functional cup."
+
+  - id: "prompt_008"
+    prompt: "Which weighs more, a pound of water, two pounds of bricks, a pound of feathers, or three pounds of air? Answer in 5 words or less"
+    model: "Claude Sonnet 4"
+    response: "Two pounds of bricks."
+
+  - id: "prompt_009"
+    prompt: "Give me 5 first names I can use as placeholders for principle engineers at a large tech company. Just return the 5 names"
+    model: "Claude Sonnet 4"
+    response: |
+      Alex
+      Jordan
+      Taylor
+      Morgan
+      Casey
+
+  - id: "prompt_010"
+    prompt: "Give me 5 first names to use as World War 2 US infantry soldiers in a novel I'm writing. Give me just the names"
+    model: "Claude Sonnet 4"
+    response: |
+      Here are 5 first names for WWII US infantry soldiers:
+      Frank
+      Eugene
+      Robert
+      Harold
+      William
+
+  - id: "prompt_011"
+    prompt: "I get out on the top floor (third floor) at street level. How many stories is the building above the ground. Answer in 5 words or less"
+    model: "Claude Sonnet 3.7"
+    response: "The building is three stories tall."
+
+  - id: "prompt_012"
+    prompt: "Write a grammatically correct sentence without reusing any letter more than once. Return just the sentence, nothing else."
+    model: "Claude Sonnet 4"
+    response: "The quick brown jag fled."
+
+  - id: "prompt_013"
+    prompt: "Sally (a girl) has 3 brothers. Each brother has 2 sisters. How many sisters does Sally have? Keep your answer to 10 words or less"
+    model: "Claude Sonnet 4"
+    response: "Sally has 1 sister."
+
+  - id: "prompt_014"
+    prompt: "Count the number of occurrences of the letter 'L' in the word 'LOLLAPALOOZA'. Respond in 10 words or less."
+    model: "Claude Sonnet 3.7"
+    response: "There are 5 'L's in 'LOLLAPALOOZA'."
+
+  - id: "prompt_015"
+    prompt: "How many pairs of twins do you need in a room for there to be at least a 50% chance that two people have the same birthday? Answer in 15 words or less."
+    model: "Claude Sonnet 4"
+    response: "You need approximately 12 pairs of twins (24 people total) for a 50% birthday collision probability."
