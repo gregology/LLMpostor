@@ -564,3 +564,134 @@ class GameManager:
             return False, f"Cannot start round during {current_phase} phase"
         
         return True, "Ready to start"
+
+    def _handle_player_disconnect_game_impact(self, room_id: str, disconnected_player_id: str):
+        """Handle the impact of player disconnection on game flow."""
+        try:
+            room_state = self.room_manager.get_room_state(room_id)
+            if not room_state:
+                # logger.warning(f"Room {room_id} not found during disconnect handling")
+                return
+            
+            game_state = room_state.get("game_state", {})
+            current_phase = game_state.get("phase", "waiting")
+            
+            try:
+                connected_players = self.room_manager.get_connected_players(room_id)
+            except Exception as e:
+                # logger.error(f"Error getting connected players for room {room_id}: {e}")
+                connected_players = []
+            
+            # logger.info(f"Handling disconnect impact for player {disconnected_player_id} in room {room_id}, "
+            #         f"phase: {current_phase}, remaining players: {len(connected_players)}")
+            
+            # If only one player left, reset to waiting phase
+            if len(connected_players) < 2:
+                if current_phase != "waiting":
+                    # logger.info(f"Resetting room {room_id} to waiting phase due to insufficient players")
+                    # Force reset to waiting phase
+                    room_state["game_state"]["phase"] = "waiting"
+                    room_state["game_state"]["current_prompt"] = None
+                    room_state["game_state"]["responses"] = []
+                    room_state["game_state"]["guesses"] = {}
+                    room_state["game_state"]["phase_start_time"] = None
+                    room_state["game_state"]["phase_duration"] = 0
+                    self.room_manager.update_game_state(room_id, room_state["game_state"])
+                    # self._broadcast_room_state_update(room_id)
+                    
+                    # # Notify remaining players with detailed message
+                    # self.socketio.emit('game_paused', ErrorHandler.create_error_response(
+                    #     ErrorCode.INSUFFICIENT_PLAYERS,
+                    #     'Game paused - need at least 2 players to continue',
+                    #     {
+                    #         'reason': 'player_disconnect',
+                    #         'disconnected_player': disconnected_player_id,
+                    #         'remaining_players': len(connected_players)
+                    #     }
+                    # ), room=room_id)
+                return
+            
+            # Check if we can auto-advance phases due to disconnection
+            if current_phase == "responding":
+                # Check if all remaining connected players have submitted responses
+                responses = game_state.get("responses", [])
+                submitted_players = {r["author_id"] for r in responses if r.get("author_id")}
+                connected_player_ids = {p["player_id"] for p in connected_players if "player_id" in p}
+                
+                # logger.debug(f"Response phase check - submitted: {len(submitted_players)}, "
+                #             f"connected: {len(connected_player_ids)}")
+                
+                if submitted_players.issuperset(connected_player_ids):
+                    # logger.info(f"Auto-advancing room {room_id} to guessing phase after disconnect")
+                    new_phase = self.advance_game_phase(room_id)
+                    # if new_phase == "guessing":
+                    #     self._broadcast_guessing_phase_started(room_id)
+                    # self._broadcast_room_state_update(room_id)
+                    
+                    # # Notify players about auto-advance
+                    # self.socketio.emit('phase_auto_advanced', {
+                    #     'message': 'Moving to guessing phase - all remaining players have responded',
+                    #     'new_phase': new_phase,
+                    #     'reason': 'player_disconnect'
+                    # }, room=room_id)
+            
+            elif current_phase == "guessing":
+                try:
+                    # Check if all remaining connected players have submitted guesses
+                    guesses = game_state.get("guesses", {})
+                    if not isinstance(guesses, dict):
+                        guesses = {}
+                    
+                    connected_player_ids = set()
+                    for p in connected_players:
+                        if isinstance(p, dict) and "player_id" in p:
+                            connected_player_ids.add(p["player_id"])
+                    
+                    # Remove any guesses from the disconnected player
+                    if disconnected_player_id in guesses:
+                        # logger.info(f"Removing guess from disconnected player {disconnected_player_id}")
+                        del guesses[disconnected_player_id]
+                        game_state["guesses"] = guesses
+                        self.room_manager.update_game_state(room_id, game_state)
+                    
+                    guessed_players = set(guesses.keys()) if guesses else set()
+                    
+                    # logger.debug(f"Guessing phase check - guessed: {len(guessed_players)}, "
+                    #             f"connected: {len(connected_player_ids)}")
+                    
+                    if guessed_players.issuperset(connected_player_ids) and len(connected_player_ids) > 0:
+                        # logger.info(f"Auto-advancing room {room_id} to results phase after disconnect")
+                        new_phase = self.advance_game_phase(room_id)
+                        # if new_phase == "results":
+                        #     self._broadcast_results_phase_started(room_id)
+                        # self._broadcast_room_state_update(room_id)
+                        
+                        # # Notify players about auto-advance
+                        # self.socketio.emit('phase_auto_advanced', {
+                        #     'message': 'Moving to results - all remaining players have guessed',
+                        #     'new_phase': new_phase,
+                        #     'reason': 'player_disconnect'
+                        # }, room=room_id)
+                except Exception as e:
+                    # logger.error(f"Error in guessing phase disconnect handling: {e}")
+                    # import traceback
+                    # logger.error(f"Traceback: {traceback.format_exc()}")
+                    # Don't raise to prevent the disconnect from failing completely
+                    pass
+            
+            # # Broadcast player disconnect notification to remaining players
+            # self.socketio.emit('player_disconnected', {
+            #     'message': f'A player has disconnected',
+            #     'remaining_players': len(connected_players),
+            #     'phase': current_phase
+            # }, room=room_id)
+            
+        except Exception as e:
+            # logger.error(f"Error handling player disconnect impact: {e}")
+            # ErrorHandler.log_error_context(
+            #     "Player disconnect handling",
+            #     room_id=room_id,
+            #     disconnected_player_id=disconnected_player_id,
+            #     error=str(e)
+            # )
+            pass
