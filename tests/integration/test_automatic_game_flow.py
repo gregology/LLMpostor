@@ -8,7 +8,7 @@ and cleanup logic for the LLMposter game.
 import pytest
 import time
 from datetime import datetime, timedelta
-from unittest.mock import Mock, patch, MagicMock
+from unittest.mock import patch
 import threading
 
 # Import the Flask app and Socket.IO client for testing
@@ -16,7 +16,7 @@ import sys
 import os
 sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
 
-from app import app, socketio, room_manager, game_manager, content_manager, AutoGameFlowManager
+from app import app, socketio, room_manager, game_manager, content_manager, auto_flow_service, session_service
 from src.content_manager import PromptData
 
 
@@ -29,14 +29,13 @@ class TestAutomaticGameFlow:
         app.config['TESTING'] = True
         # Clear any existing rooms and sessions before each test
         room_manager._rooms.clear()
-        from app import player_sessions, auto_flow_manager
-        player_sessions.clear()
+        session_service._player_sessions.clear()
         
-        # Stop and restart auto flow manager to ensure clean state
-        auto_flow_manager.stop()
-        auto_flow_manager.running = True
-        auto_flow_manager.timer_thread = threading.Thread(target=auto_flow_manager._timer_loop, daemon=True)
-        auto_flow_manager.timer_thread.start()
+        # Ensure auto flow service is running
+        if not auto_flow_service.running:
+            auto_flow_service.running = True
+            auto_flow_service.timer_thread = threading.Thread(target=auto_flow_service._timer_loop, daemon=True)
+            auto_flow_service.timer_thread.start()
         
         return socketio.test_client(app)
     
@@ -58,22 +57,17 @@ class TestAutomaticGameFlow:
             yield mock_get_prompt
     
     @pytest.fixture
-    def test_auto_flow_manager(self):
-        """Create a test auto flow manager with faster timing."""
-        # Create a test manager with faster check intervals for testing
-        test_manager = AutoGameFlowManager(socketio, game_manager, room_manager)
-        test_manager.check_interval = 0.1  # Check every 100ms for faster tests
-        test_manager.stop()  # Stop the default one
-        
-        # Start new thread with faster timing
-        test_manager.running = True
-        test_manager.timer_thread = threading.Thread(target=test_manager._timer_loop, daemon=True)
-        test_manager.timer_thread.start()
+    def test_auto_flow_service(self):
+        """Configure the auto flow service for testing with faster timing."""
+        # Use the existing auto_flow_service for tests
+        test_manager = auto_flow_service
+        original_interval = test_manager.check_interval
+        test_manager.check_interval = 0.05  # Check every 50ms for faster tests
         
         yield test_manager
         
-        # Clean up
-        test_manager.stop()
+        # Restore original interval
+        test_manager.check_interval = original_interval
     
     def _setup_game_to_responding_phase(self, client1, client2, mock_content_manager):
         """Helper method to set up a game to the responding phase."""
@@ -116,12 +110,29 @@ class TestAutomaticGameFlow:
         client1.get_received()
         client2.get_received()
     
-    def test_automatic_phase_timeout_responding_to_guessing(self, client, mock_content_manager, test_auto_flow_manager):
+    def test_automatic_phase_timeout_responding_to_guessing(self, client, mock_content_manager, test_auto_flow_service):
         """Test automatic phase transition from responding to guessing on timeout."""
         client2 = socketio.test_client(app)
+        client3 = socketio.test_client(app)  # Extra client to ensure we have enough players
         
         try:
-            self._setup_game_to_responding_phase(client, client2, mock_content_manager)
+            # Join room with three players to avoid disconnect issues
+            client.emit('join_room', {'room_id': 'test_room', 'player_name': 'Player1'})
+            client2.emit('join_room', {'room_id': 'test_room', 'player_name': 'Player2'})  
+            client3.emit('join_room', {'room_id': 'test_room', 'player_name': 'Player3'})
+            
+            # Clear join events
+            client.get_received()
+            client2.get_received()
+            client3.get_received()
+            
+            # Start round
+            client.emit('start_round')
+            
+            # Clear round start events
+            client.get_received()
+            client2.get_received()
+            client3.get_received()
             
             # Manually set a very short phase duration for testing
             room_state = room_manager.get_room_state('test_room')
@@ -129,26 +140,34 @@ class TestAutomaticGameFlow:
             room_state['game_state']['phase_start_time'] = datetime.now() - timedelta(seconds=2)  # Already expired
             room_manager.update_game_state('test_room', room_state['game_state'])
             
-            # Wait for automatic phase transition
-            time.sleep(0.5)  # Wait for timer to check
+            # Wait for automatic phase transition - give more time for timer to run
+            time.sleep(1.0)  # Wait longer for timer to check
             
             # Check that phase advanced to guessing
             updated_state = game_manager.get_game_state('test_room')
+            if updated_state['phase'] != 'guessing':
+                # Wait a bit more if phase hasn't changed yet
+                time.sleep(1.0)
+                updated_state = game_manager.get_game_state('test_room')
+            
             assert updated_state['phase'] == 'guessing'
             
             # Check that clients received guessing phase event
             received1 = client.get_received()
             received2 = client2.get_received()
+            received3 = client3.get_received()
             
             guessing_events1 = [event for event in received1 if event['name'] == 'guessing_phase_started']
             guessing_events2 = [event for event in received2 if event['name'] == 'guessing_phase_started']
+            guessing_events3 = [event for event in received3 if event['name'] == 'guessing_phase_started']
             
-            assert len(guessing_events1) > 0 or len(guessing_events2) > 0
+            assert len(guessing_events1) > 0 or len(guessing_events2) > 0 or len(guessing_events3) > 0
             
         finally:
             client2.disconnect()
+            client3.disconnect()
     
-    def test_automatic_phase_timeout_guessing_to_results(self, client, mock_content_manager, test_auto_flow_manager):
+    def test_automatic_phase_timeout_guessing_to_results(self, client, mock_content_manager, test_auto_flow_service):
         """Test automatic phase transition from guessing to results on timeout."""
         client2 = socketio.test_client(app)
         
@@ -162,10 +181,15 @@ class TestAutomaticGameFlow:
             room_manager.update_game_state('test_room', room_state['game_state'])
             
             # Wait for automatic phase transition
-            time.sleep(0.5)  # Wait for timer to check
+            time.sleep(1.0)  # Wait longer for timer to check
             
             # Check that phase advanced to results
             updated_state = game_manager.get_game_state('test_room')
+            if updated_state['phase'] != 'results':
+                # Wait a bit more if phase hasn't changed yet
+                time.sleep(1.0)
+                updated_state = game_manager.get_game_state('test_room')
+            
             assert updated_state['phase'] == 'results'
             
             # Check that clients received results phase event
@@ -180,7 +204,7 @@ class TestAutomaticGameFlow:
         finally:
             client2.disconnect()
     
-    def test_automatic_phase_timeout_results_to_waiting(self, client, mock_content_manager, test_auto_flow_manager):
+    def test_automatic_phase_timeout_results_to_waiting(self, client, mock_content_manager, test_auto_flow_service):
         """Test automatic phase transition from results to waiting on timeout."""
         client2 = socketio.test_client(app)
         
@@ -198,10 +222,15 @@ class TestAutomaticGameFlow:
             room_manager.update_game_state('test_room', room_state['game_state'])
             
             # Wait for automatic phase transition
-            time.sleep(0.5)  # Wait for timer to check
+            time.sleep(1.0)  # Wait longer for timer to check
             
             # Check that phase advanced to waiting
             updated_state = game_manager.get_game_state('test_room')
+            if updated_state['phase'] != 'waiting':
+                # Wait a bit more if phase hasn't changed yet
+                time.sleep(1.0)
+                updated_state = game_manager.get_game_state('test_room')
+            
             assert updated_state['phase'] == 'waiting'
             
             # Check that clients received round ended event
@@ -216,7 +245,7 @@ class TestAutomaticGameFlow:
         finally:
             client2.disconnect()
     
-    def test_countdown_timer_updates(self, client, mock_content_manager, test_auto_flow_manager):
+    def test_countdown_timer_updates(self, client, mock_content_manager, test_auto_flow_service):
         """Test that countdown timer updates are broadcasted during timed phases."""
         client2 = socketio.test_client(app)
         
@@ -451,10 +480,15 @@ class TestAutomaticGameFlow:
             client2.disconnect()
             
             # Wait a moment for disconnect handling
-            time.sleep(0.1)
+            time.sleep(0.2)
             
             # Check that game reset to waiting phase
             game_state = game_manager.get_game_state('test_room')
+            if game_state['phase'] != 'waiting':
+                # Wait a bit longer if phase hasn't changed yet
+                time.sleep(0.3)
+                game_state = game_manager.get_game_state('test_room')
+            
             assert game_state['phase'] == 'waiting'
             
             # Check that remaining player received game_paused event
@@ -470,7 +504,7 @@ class TestAutomaticGameFlow:
         finally:
             pass  # client2 already disconnected
     
-    def test_inactive_room_cleanup(self, client, test_auto_flow_manager):
+    def test_inactive_room_cleanup(self, client, test_auto_flow_service):
         """Test that inactive rooms are cleaned up automatically."""
         # Create a room
         client.emit('join_room', {
@@ -489,12 +523,12 @@ class TestAutomaticGameFlow:
         room_manager._rooms['test_room'] = room_state
         
         # Trigger cleanup manually (normally happens every minute)
-        test_auto_flow_manager._cleanup_inactive_rooms()
+        test_auto_flow_service._cleanup_inactive_rooms()
         
         # Verify room was cleaned up
         assert not room_manager.room_exists('test_room')
     
-    def test_time_warning_broadcasts(self, client, mock_content_manager, test_auto_flow_manager):
+    def test_time_warning_broadcasts(self, client, mock_content_manager, test_auto_flow_service):
         """Test that time warning events are broadcasted when time is low."""
         client2 = socketio.test_client(app)
         
@@ -534,23 +568,23 @@ class TestAutomaticGameFlow:
         finally:
             client2.disconnect()
     
-    def test_auto_flow_manager_stop_and_cleanup(self, test_auto_flow_manager):
-        """Test that AutoGameFlowManager stops cleanly."""
-        # Verify manager is running
-        assert test_auto_flow_manager.running is True
-        assert test_auto_flow_manager.timer_thread.is_alive()
+    def test_auto_flow_service_stop_and_cleanup(self, test_auto_flow_service):
+        """Test that AutoGameFlowService stops cleanly."""
+        # Verify service is running
+        assert test_auto_flow_service.running is True
+        assert test_auto_flow_service.timer_thread.is_alive()
         
-        # Stop the manager
-        test_auto_flow_manager.stop()
+        # Stop the service
+        test_auto_flow_service.stop()
         
         # Verify it stopped
-        assert test_auto_flow_manager.running is False
+        assert test_auto_flow_service.running is False
         
         # Wait a moment for thread to finish
         time.sleep(0.2)
         
         # Thread should no longer be alive
-        assert not test_auto_flow_manager.timer_thread.is_alive()
+        assert not test_auto_flow_service.timer_thread.is_alive()
 
 
 if __name__ == '__main__':

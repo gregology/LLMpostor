@@ -4,7 +4,6 @@ End-to-end tests for client-side error handling and recovery mechanisms.
 Tests client behavior during connection issues, server errors, and recovery scenarios.
 """
 
-import pytest
 import time
 from unittest.mock import patch, MagicMock
 from flask_socketio import SocketIOTestClient

@@ -4,11 +4,10 @@ Integration tests for error handling and recovery mechanisms.
 Tests error scenarios across the full application stack.
 """
 
-import pytest
 import time
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch
 from flask_socketio import SocketIOTestClient
-from app import app, socketio, room_manager, game_manager, content_manager
+from app import app, socketio, room_manager
 
 
 class TestErrorHandlingIntegration:

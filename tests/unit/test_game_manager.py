@@ -2,9 +2,7 @@
 Unit tests for GameManager class.
 """
 
-import pytest
-from datetime import datetime, timedelta
-from unittest.mock import Mock, patch
+from datetime import datetime
 import sys
 import os
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..', 'src'))

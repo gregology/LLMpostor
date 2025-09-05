@@ -8,7 +8,6 @@ import pytest
 import tempfile
 import os
 import yaml
-from unittest.mock import patch, mock_open
 from src.content_manager import ContentManager, PromptData, ContentValidationError
 
 

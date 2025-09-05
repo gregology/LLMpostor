@@ -3,7 +3,7 @@ Integration tests for scoring system and results display functionality.
 """
 
 import pytest
-from unittest.mock import Mock, patch
+from unittest.mock import patch
 import sys
 import os
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..'))

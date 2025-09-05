@@ -4,9 +4,8 @@ Tests room joining, player management, and real-time updates.
 """
 
 import pytest
-import json
 from flask_socketio import SocketIOTestClient
-from app import app, socketio, room_manager, player_sessions
+from app import app, socketio, room_manager, session_service
 import time
 
 
@@ -17,7 +16,7 @@ class TestSocketIORoomOperations:
         """Set up test environment before each test."""
         # Clear any existing state
         room_manager._rooms.clear()
-        player_sessions.clear()
+        session_service._player_sessions.clear()
         
         # Create test client
         self.client = SocketIOTestClient(app, socketio)
@@ -30,7 +29,7 @@ class TestSocketIORoomOperations:
         
         # Clear state
         room_manager._rooms.clear()
-        player_sessions.clear()
+        session_service._player_sessions.clear()
     
     def test_successful_room_join(self):
         """Test successful room joining."""
