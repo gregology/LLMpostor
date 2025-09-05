@@ -1,0 +1,40 @@
+prompts:
+  - id: "prompt_001"
+    prompt: "Generate one strong password for a Facebook account. Return nothing but the password."
+    model: "Claude Sonnet 4"
+    response: "K9$mF7@nX2wP8#qL"
+
+  - id: "prompt_002"
+    prompt: "Describe the moon in 3 words or less"
+    model: "Claude Sonnet 4"
+    response: "Luminous celestial companion."
+
+  - id: "prompt_003"
+    prompt: "Using 1 word, describe what mars would taste like"
+    model: "Claude Sonnet 3.7"
+    response: "Rusty."
+
+  - id: "prompt_004"
+    prompt: "Write the most simple python hello world function possible. Return the code only"
+    model: "Claude Sonnet 4"
+    response: |
+      ```python
+      def hello():
+          print("Hello, World!")
+      ```
+      
+  - id: "prompt_005"
+    prompt: "Write the most efficient python hello world function possible. Return the code only"
+    model: "Claude Sonnet 4"
+    response: |
+      ```python
+      def hello():print("Hello, World!")
+      ```
+
+  - id: "prompt_006"
+    prompt: "Write the most efficient python hello world function possible. Return the code only"
+    model: "Claude Opus 4.1"
+    response: |
+      ```python
+      print("Hello, World!")
+      ```
