@@ -1,0 +1,19 @@
+{
+  "name": "llmpostor",
+  "version": "1.0.0",
+  "description": "A multiplayer game where players try to identify AI-generated responses",
+  "scripts": {
+    "test": "vitest",
+    "test:run": "vitest run",
+    "test:coverage": "vitest run --coverage",
+    "test:ui": "vitest --ui",
+    "test:watch": "vitest --watch"
+  },
+  "devDependencies": {
+    "vitest": "^1.2.0",
+    "jsdom": "^24.0.0",
+    "@vitest/ui": "^1.2.0",
+    "@vitest/coverage-v8": "^1.2.0"
+  },
+  "type": "module"
+}

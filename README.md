@@ -159,10 +159,69 @@ docker build -t llmpostor .
 docker run -p 8000:8000 -v ./prompts.yaml:/app/prompts.yaml:ro llmpostor
 ```
 
+## Testing Framework
+
+LLMpostor includes a comprehensive test suite using Vitest to ensure reliability and prevent regressions in the JavaScript frontend modules.
+
+### Test Infrastructure
+- **Modern testing framework** with native ES modules support and fast execution
+- **jsdom environment** for DOM testing without browser overhead
+- **230+ unit tests** covering all JavaScript modules
+- **50+ integration tests** for cross-module scenarios and bug prevention
+- **Coverage reporting** with 90% line coverage requirements
+
+### Running Tests
+```bash
+# Install dependencies
+npm install
+
+# Run all tests
+npm test
+
+# Run tests with coverage report
+npm run test:coverage
+
+# Run tests in watch mode during development
+npm run test:watch
+
+# Run tests with UI (browser-based test runner)
+npm run test:ui
+```
+
+### Test Organization
+```
+tests/
+├── setup.js              # Global test setup and DOM mocking
+├── helpers/
+│   ├── testUtils.js      # Test utilities and helper functions
+│   └── mockFactory.js    # Mock object factory for consistent mocking
+├── unit/                 # Unit tests for individual modules
+│   ├── GameStateManager.test.js
+│   ├── EventManager.test.js
+│   ├── UIManager.test.js
+│   ├── SocketManager.test.js
+│   ├── TimerManager.test.js
+│   └── ToastManager.test.js
+└── integration/          # Integration tests for cross-module scenarios
+    └── critical-bugs.test.js
+```
+
+### Critical Bug Prevention
+The test suite includes specific regression tests for bugs we've encountered:
+
+1. **Double Initialization Bug**: Prevents UIManager from initializing twice
+2. **Button State Race Condition**: Ensures response submitted state persists
+3. **Response Filtering Bug**: Filters player's own response during voting
+4. **Invalid Guess Index**: Sends correct filtered indices to server
+5. **Phase State Corruption**: Handles rapid phase changes correctly
+
+This testing framework transforms the previously "fragile" JavaScript codebase into a robust, maintainable system with high confidence in stability and correctness.
+
 ## Requirements
 
 - Python 3.11+ (for local development)
 - uv (for dependency management)
+- Node.js 18+ (for JavaScript testing)
 - Docker & Docker Compose (for containerized deployment)
 
 ## License
