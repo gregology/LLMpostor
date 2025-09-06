@@ -92,23 +92,6 @@ class ToastManager {
      * Clear all active toasts
      */
     clearAll() {
-        Array.from(this.activeToasts).forEach(toast => {
-            this._removeToast(toast);
-        });
-    }
-    
-    /**
-     * Remove specific toast
-     * @param {HTMLElement} toast - Toast element to remove
-     */
-    remove(toast) {
-        this._removeToast(toast);
-    }
-    
-    /**
-     * Clear all toasts immediately for test compatibility
-     */
-    clearAll() {
         // In test environment, remove immediately
         if (typeof window !== 'undefined' && window.isTestEnvironment) {
             [...this.toasts].forEach(toast => {
@@ -124,6 +107,14 @@ class ToastManager {
                 this._removeToast(toast);
             });
         }
+    }
+    
+    /**
+     * Remove specific toast
+     * @param {HTMLElement} toast - Toast element to remove
+     */
+    remove(toast) {
+        this._removeToast(toast);
     }
 
     /**

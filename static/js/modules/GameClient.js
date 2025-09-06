@@ -226,8 +226,3 @@ if (typeof module !== 'undefined' && module.exports) {
     module.exports = GameClient;
 }
 
-// Auto-instantiate for browser usage
-if (typeof window !== 'undefined') {
-    // Initialize game client when modules are loaded
-    window.LLMpostorGameClient = GameClient;
-}

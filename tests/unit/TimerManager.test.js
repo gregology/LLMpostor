@@ -156,47 +156,47 @@ describe('TimerManager', () => {
   describe('Progress Calculation', () => {
     it('should calculate progress correctly', () => {
       // Test various progress scenarios
-      expect(timerManager._calculateProgress(180, 180)).toBe(100);
-      expect(timerManager._calculateProgress(90, 180)).toBe(50);
-      expect(timerManager._calculateProgress(0, 180)).toBe(0);
-      expect(timerManager._calculateProgress(270, 180)).toBe(150); // Over 100%
+      expect(timerManager.calculateProgress(180, 180)).toBe(100);
+      expect(timerManager.calculateProgress(90, 180)).toBe(50);
+      expect(timerManager.calculateProgress(0, 180)).toBe(0);
+      expect(timerManager.calculateProgress(270, 180)).toBe(100); // Clamped to 100%
     });
 
     it('should handle division by zero', () => {
-      expect(timerManager._calculateProgress(0, 0)).toBe(0);
-      expect(timerManager._calculateProgress(10, 0)).toBe(0);
+      expect(timerManager.calculateProgress(0, 0)).toBe(0);
+      expect(timerManager.calculateProgress(10, 0)).toBe(0);
     });
   });
 
   describe('Progress Color', () => {
     it('should return correct color based on progress', () => {
-      expect(timerManager._getProgressColor(100)).toBe('#10b981'); // Green
-      expect(timerManager._getProgressColor(75)).toBe('#10b981'); // Green
-      expect(timerManager._getProgressColor(50)).toBe('#f59e0b'); // Orange  
-      expect(timerManager._getProgressColor(25)).toBe('#f59e0b'); // Orange
-      expect(timerManager._getProgressColor(10)).toBe('#ef4444'); // Red
-      expect(timerManager._getProgressColor(0)).toBe('#ef4444'); // Red
+      expect(timerManager.getProgressColor(100)).toBe('#10b981'); // Green
+      expect(timerManager.getProgressColor(75)).toBe('#10b981'); // Green
+      expect(timerManager.getProgressColor(50)).toBe('#f59e0b'); // Orange  
+      expect(timerManager.getProgressColor(25)).toBe('#ef4444'); // Red (25% or less)
+      expect(timerManager.getProgressColor(10)).toBe('#ef4444'); // Red
+      expect(timerManager.getProgressColor(0)).toBe('#ef4444'); // Red
     });
   });
 
   describe('Time Formatting', () => {
     it('should format time correctly', () => {
-      expect(timerManager._formatTime(180)).toBe('3:00');
-      expect(timerManager._formatTime(90)).toBe('1:30');
-      expect(timerManager._formatTime(60)).toBe('1:00');
-      expect(timerManager._formatTime(30)).toBe('0:30');
-      expect(timerManager._formatTime(5)).toBe('0:05');
-      expect(timerManager._formatTime(0)).toBe('0:00');
+      expect(timerManager.formatTime(180)).toBe('3:00');
+      expect(timerManager.formatTime(90)).toBe('1:30');
+      expect(timerManager.formatTime(60)).toBe('1:00');
+      expect(timerManager.formatTime(30)).toBe('0:30');
+      expect(timerManager.formatTime(5)).toBe('0:05');
+      expect(timerManager.formatTime(0)).toBe('0:00');
     });
 
     it('should handle negative time', () => {
-      expect(timerManager._formatTime(-10)).toBe('0:00');
-      expect(timerManager._formatTime(-60)).toBe('0:00');
+      expect(timerManager.formatTime(-10)).toBe('0:00');
+      expect(timerManager.formatTime(-60)).toBe('0:00');
     });
 
     it('should handle large times', () => {
-      expect(timerManager._formatTime(3600)).toBe('60:00'); // 1 hour
-      expect(timerManager._formatTime(3661)).toBe('61:01'); // 1 hour 1 minute 1 second
+      expect(timerManager.formatTime(3600)).toBe('60:00'); // 1 hour
+      expect(timerManager.formatTime(3661)).toBe('61:01'); // 1 hour 1 minute 1 second
     });
   });
 

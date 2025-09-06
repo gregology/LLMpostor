@@ -11,7 +11,7 @@
 class TimerManager {
     constructor() {
         this.activeTimers = new Map();
-        this.timers = this.activeTimers; // Backward compatibility
+        this.timers = this.activeTimers;
         this.onTimerUpdate = null;
         this.onTimerWarning = null;
     }
@@ -141,35 +141,6 @@ class TimerManager {
         return Math.max(0, Math.min(100, (timeRemaining / totalDuration) * 100));
     }
 
-    // Private methods for testing compatibility
-    _calculateProgress(timeRemaining, totalDuration) {
-        if (!totalDuration || totalDuration <= 0) {
-            return 0;
-        }
-        
-        // Allow progress over 100% for cases where timeRemaining > totalDuration
-        return Math.max(0, (timeRemaining / totalDuration) * 100);
-    }
-
-    _formatTime(seconds) {
-        if (isNaN(seconds) || seconds < 0) {
-            seconds = 0;
-        }
-        
-        const minutes = Math.floor(seconds / 60);
-        const remainingSeconds = seconds % 60;
-        return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
-    }
-
-    _getProgressColor(progress) {
-        if (progress <= 20) {
-            return '#ef4444'; // red
-        } else if (progress <= 50) {
-            return '#f59e0b'; // orange  
-        } else {
-            return '#10b981'; // green
-        }
-    }
     
     /**
      * Get progress bar color based on remaining time
@@ -195,7 +166,7 @@ class TimerManager {
                 phase,
                 timeText: this.formatTime(timeRemaining),
                 progress: Math.round(progress * 100) / 100, // Round to 2 decimal places
-                progressColor: this._getProgressColor(progress)
+                progressColor: this.getProgressColor(progress)
             });
         }
     }

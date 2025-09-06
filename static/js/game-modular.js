@@ -62,18 +62,8 @@
         // Create global game client instance
         const gameClient = new GameClient();
         
-        // Expose globally for debugging and compatibility
+        // Expose globally for debugging
         window.gameClient = gameClient;
-        
-        // For backward compatibility, expose some methods on window
-        window.LLMpostorGame = {
-            getState: () => gameClient.getGameState(),
-            isConnected: () => gameClient.isConnected(),
-            getRoomInfo: () => gameClient.getRoomInfo(),
-            showToast: (message, type, persistent) => gameClient.showToast(message, type, persistent),
-            reconnect: () => gameClient.reconnect(),
-            disconnect: () => gameClient.disconnect()
-        };
         
         console.log('Modular LLMpostor game client initialized');
         return gameClient;
