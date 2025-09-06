@@ -1,12 +1,12 @@
 # LLMpostor
 
-Fail the Turing Test. Win the game.
+***Fail the Turing Test. Win the game.***
 
 A multiplayer guessing game where humans try to pass as robots.
 
 <img width="856" height="662" alt="Image" src="https://github.com/user-attachments/assets/1d0ede70-1424-4b9a-b9b5-9634d0c13ad7" />
 
-## Servers
+## Public servers
 
 - [LLMpostor.com](https://LLMpostor.com)
 - Add yours...
@@ -81,6 +81,13 @@ Key environment variables:
 ### Environment Configuration
 
 For production deployments, copy `.env.example` to `.env` and customize as needed.
+
+## Roadmap
+
+ - Add more prompts
+ - Better theme
+ - Multiple responses for each LLM prompt
+ - Scripts to generate prompt responses
 
 ## Requirements
 
