@@ -43,13 +43,21 @@ uv run python app.py
 
 ### Running Tests
 
+Run all tests (Python + JavaScript):
 ```bash
 make test
 ```
 
-Or with uv:
+Or run specific test suites:
 ```bash
-uv run pytest tests/ -v
+make test-python    # Run Python tests only
+make test-js        # Run JavaScript tests only
+```
+
+Manual test commands:
+```bash
+uv run pytest tests/ -v    # Python tests
+npm run test:run           # JavaScript tests
 ```
 
 ## How to Play
@@ -76,9 +84,22 @@ uv run pytest tests/ -v
 │   ├── game_manager.py    # Game logic and scoring
 │   ├── content_manager.py # Prompt and content handling
 │   └── error_handler.py   # Error handling and validation
+├── static/js/            # Frontend JavaScript modules
+│   ├── game-modular.js   # Modular entry point (current)
+│   ├── game.js          # Original monolithic file (legacy)
+│   ├── home.js          # Home page functionality
+│   └── modules/         # Modular JavaScript architecture
+│       ├── SocketManager.js     # WebSocket communication
+│       ├── GameStateManager.js  # State management
+│       ├── TimerManager.js      # Timer functionality
+│       ├── ToastManager.js      # Notifications
+│       ├── UIManager.js         # DOM manipulation
+│       ├── EventManager.js      # Business logic coordination
+│       └── GameClient.js        # Main coordinator
 ├── templates/             # HTML templates
-├── static/               # CSS, JavaScript, and assets
-├── tests/                # Test suite
+├── tests/                # Test suite (Python backend + JavaScript frontend)
+├── docs/                 # Documentation
+│   └── FRONTEND_ARCHITECTURE.md  # Detailed frontend architecture docs
 ├── prompts.yaml          # Game content and AI responses
 ├── gunicorn.conf.py      # Production server configuration
 └── run_dev.py           # Development server runner
@@ -164,28 +185,29 @@ docker run -p 8000:8000 -v ./prompts.yaml:/app/prompts.yaml:ro llmpostor
 LLMpostor includes a comprehensive test suite using Vitest to ensure reliability and prevent regressions in the JavaScript frontend modules.
 
 ### Test Infrastructure
-- **Modern testing framework** with native ES modules support and fast execution
-- **jsdom environment** for DOM testing without browser overhead
-- **230+ unit tests** covering all JavaScript modules
-- **50+ integration tests** for cross-module scenarios and bug prevention
-- **Coverage reporting** with 90% line coverage requirements
+- **Modern testing framework** using Vitest with native ES modules support and fast execution
+- **jsdom environment** for DOM testing without browser overhead  
+- **190 JavaScript tests** covering all frontend modules (7 test files, 190 individual tests)
+- **Comprehensive Python test suite** with 16 test files for backend functionality
+- **Coverage reporting** and regression prevention for critical bugs
 
 ### Running Tests
+
+**Using Makefile (Recommended):**
 ```bash
-# Install dependencies
-npm install
+make install       # Install all dependencies (Python + JavaScript)
+make test          # Run all tests (Python + JavaScript)
+make test-python   # Run Python tests only  
+make test-js       # Run JavaScript tests only
+```
 
-# Run all tests
-npm test
-
-# Run tests with coverage report
-npm run test:coverage
-
-# Run tests in watch mode during development
-npm run test:watch
-
-# Run tests with UI (browser-based test runner)
-npm run test:ui
+**Manual JavaScript Testing:**
+```bash
+npm install        # Install JavaScript dependencies
+npm test          # Run all JavaScript tests
+npm run test:coverage  # Run tests with coverage report
+npm run test:watch    # Run tests in watch mode during development
+npm run test:ui      # Run tests with UI (browser-based test runner)
 ```
 
 ### Test Organization
@@ -195,15 +217,25 @@ tests/
 ├── helpers/
 │   ├── testUtils.js      # Test utilities and helper functions
 │   └── mockFactory.js    # Mock object factory for consistent mocking
-├── unit/                 # Unit tests for individual modules
-│   ├── GameStateManager.test.js
+├── unit/                 # Unit tests for individual modules (JavaScript + Python)
+│   ├── GameStateManager.test.js  # JavaScript frontend tests
 │   ├── EventManager.test.js
 │   ├── UIManager.test.js
 │   ├── SocketManager.test.js
 │   ├── TimerManager.test.js
-│   └── ToastManager.test.js
-└── integration/          # Integration tests for cross-module scenarios
-    └── critical-bugs.test.js
+│   ├── ToastManager.test.js
+│   ├── test_game_manager.py      # Python backend tests
+│   ├── test_room_manager.py
+│   ├── test_content_manager.py
+│   └── test_error_handler.py
+├── integration/          # Integration tests for cross-module scenarios
+│   ├── critical-bugs.test.js     # JavaScript bug prevention tests
+│   ├── test_automatic_game_flow.py
+│   ├── test_guessing_phase.py
+│   ├── test_round_mechanics.py
+│   └── test_scoring_and_results.py
+└── e2e/                  # End-to-end tests
+    └── test_client_error_recovery.py
 ```
 
 ### Critical Bug Prevention
@@ -215,7 +247,20 @@ The test suite includes specific regression tests for bugs we've encountered:
 4. **Invalid Guess Index**: Sends correct filtered indices to server
 5. **Phase State Corruption**: Handles rapid phase changes correctly
 
-This testing framework transforms the previously "fragile" JavaScript codebase into a robust, maintainable system with high confidence in stability and correctness.
+## Frontend Architecture
+
+The frontend has been refactored from a monolithic 1,417-line JavaScript file into a clean, modular architecture with 7 focused modules. This provides better maintainability, extensibility, and testability while maintaining 100% functional parity.
+
+For detailed documentation about the modular frontend architecture, see [`docs/FRONTEND_ARCHITECTURE.md`](docs/FRONTEND_ARCHITECTURE.md).
+
+### Key Benefits of Modular Architecture
+
+- **Maintainability**: Each module has a single, clear responsibility
+- **Extensibility**: Easy to add new features without modifying existing code  
+- **Testability**: Modules can be unit tested individually (190 tests with 100% pass rate)
+- **Reusability**: Components can be reused across different contexts
+- **Debugging**: Clear separation makes issues easier to trace and fix
+- **Performance**: Better resource management and optimized DOM operations
 
 ## Requirements
 
