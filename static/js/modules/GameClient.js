@@ -1,5 +1,5 @@
 /**
- * GameClient - Main coordinator for the modular LLMposter game client
+ * GameClient - Main coordinator for the modular LLMpostor game client
  * 
  * Responsible for:
  * - Initializing and coordinating all modules
@@ -45,7 +45,7 @@ class GameClient {
             return;
         }
         
-        console.log('Initializing LLMposter Game Client (Modular)');
+        console.log('Initializing LLMpostor Game Client (Modular)');
         
         // Wait for UI to be ready
         this.uiManager.initialize();
@@ -229,5 +229,5 @@ if (typeof module !== 'undefined' && module.exports) {
 // Auto-instantiate for browser usage
 if (typeof window !== 'undefined') {
     // Initialize game client when modules are loaded
-    window.LLMposterGameClient = GameClient;
+    window.LLMpostorGameClient = GameClient;
 }

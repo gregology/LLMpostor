@@ -1,9 +1,9 @@
 /**
- * LLMposter Game Client JavaScript
+ * LLMpostor Game Client JavaScript
  * Handles Socket.IO communication and UI interactions for the multiplayer guessing game
  */
 
-class LLMposterGameClient {
+class LLMpostorGameClient {
     constructor() {
         this.socket = null;
         this.roomId = null;
@@ -28,7 +28,7 @@ class LLMposterGameClient {
     }
     
     init() {
-        console.log('Initializing LLMposter game client');
+        console.log('Initializing LLMpostor game client');
         
         // Cache DOM elements
         this.cacheElements();
@@ -1326,8 +1326,8 @@ class LLMposterGameClient {
     shareRoom() {
         if (navigator.share) {
             navigator.share({
-                title: 'Join my LLMposter game!',
-                text: `Join room "${this.roomId}" in LLMposter`,
+                title: 'Join my LLMpostor game!',
+                text: `Join room "${this.roomId}" in LLMpostor`,
                 url: window.location.href
             }).catch(err => {
                 console.log('Error sharing:', err);
@@ -1411,7 +1411,7 @@ class LLMposterGameClient {
 
 // Initialize the game client when DOM is ready
 document.addEventListener('DOMContentLoaded', function() {
-    const gameClient = new LLMposterGameClient();
+    const gameClient = new LLMpostorGameClient();
     
     // Expose globally for debugging
     window.gameClient = gameClient;

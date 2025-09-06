@@ -1,5 +1,5 @@
 """
-Room Manager for LLMposter Game
+Room Manager for LLMpostor Game
 
 Handles room lifecycle, player management, and room state tracking.
 Implements in-memory storage for MVP version.

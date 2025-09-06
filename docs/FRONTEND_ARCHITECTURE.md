@@ -2,7 +2,7 @@
 
 ## Overview
 
-The LLMposter frontend has been refactored from a monolithic 1,418-line JavaScript file into a clean, modular architecture with 7 focused modules. This provides better maintainability, extensibility, and testability while maintaining 100% functional parity.
+The LLMpostor frontend has been refactored from a monolithic 1,418-line JavaScript file into a clean, modular architecture with 7 focused modules. This provides better maintainability, extensibility, and testability while maintaining 100% functional parity.
 
 ## Architecture
 

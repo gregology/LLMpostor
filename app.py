@@ -1,5 +1,5 @@
 """
-LLMposter - A multiplayer guessing game where players try to identify AI-generated responses.
+LLMpostor - A multiplayer guessing game where players try to identify AI-generated responses.
 Main Flask application entry point with Socket.IO initialization.
 """
 
@@ -90,7 +90,7 @@ def room(room_id):
 def handle_connect():
     """Handle client connection."""
     logger.info(f'Client connected: {request.sid}')
-    emit('connected', {'status': 'Connected to LLMposter server'})
+    emit('connected', {'status': 'Connected to LLMpostor server'})
 
 @socketio.on('disconnect')
 def handle_disconnect():
@@ -573,7 +573,7 @@ def handle_get_time_remaining(data=None):
 
 def cleanup_on_exit():
     """Clean up resources on application exit."""
-    logger.info("Shutting down LLMposter server...")
+    logger.info("Shutting down LLMpostor server...")
     auto_flow_service.stop()
 
 atexit.register(cleanup_on_exit)
@@ -583,7 +583,7 @@ if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
     debug = os.environ.get('FLASK_ENV') == 'development'
     
-    logger.info(f"Starting LLMposter server on port {port}")
+    logger.info(f"Starting LLMpostor server on port {port}")
     try:
         socketio.run(app, host='0.0.0.0', port=port, debug=debug)
     except KeyboardInterrupt:

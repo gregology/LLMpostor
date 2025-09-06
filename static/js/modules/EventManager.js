@@ -215,8 +215,8 @@ class EventManager {
         if (navigator.share) {
             try {
                 await navigator.share({
-                    title: 'Join my LLMposter game!',
-                    text: `Join room "${this.gameState.roomInfo.roomId}" in LLMposter`,
+                    title: 'Join my LLMpostor game!',
+                    text: `Join room "${this.gameState.roomInfo.roomId}" in LLMpostor`,
                     url: window.location.href
                 });
             } catch (err) {

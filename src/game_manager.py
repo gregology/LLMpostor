@@ -1,5 +1,5 @@
 """
-Game Manager for LLMposter Game
+Game Manager for LLMpostor Game
 
 Handles game state transitions, scoring logic, and game flow.
 Works with RoomManager to manage game sessions.

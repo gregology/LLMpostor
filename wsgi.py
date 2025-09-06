@@ -1,5 +1,5 @@
 """
-WSGI entry point for LLMposter application.
+WSGI entry point for LLMpostor application.
 Used for production deployment with Gunicorn.
 """
 

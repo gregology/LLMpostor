@@ -495,8 +495,8 @@ describe('EventManager', () => {
       await eventManager.shareRoom();
 
       expect(global.navigator.share).toHaveBeenCalledWith({
-        title: 'Join my LLMposter game!',
-        text: 'Join room "test-room-123" in LLMposter',
+        title: 'Join my LLMpostor game!',
+        text: 'Join room "test-room-123" in LLMpostor',
         url: window.location.href
       });
     });

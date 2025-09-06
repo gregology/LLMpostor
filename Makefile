@@ -2,7 +2,7 @@
 
 # Default target
 help:
-	@echo "LLMposter Development Commands:"
+	@echo "LLMpostor Development Commands:"
 	@echo "  make dev         - Start development server with Gunicorn"
 	@echo "  make test        - Run all tests (Python + JavaScript)"
 	@echo "  make test-python - Run Python tests only"
@@ -15,7 +15,7 @@ help:
 
 # Start development server
 dev:
-	@echo "Starting LLMposter development server..."
+	@echo "Starting LLMpostor development server..."
 	uv run python run_dev.py
 
 # Run all tests

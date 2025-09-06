@@ -1,4 +1,4 @@
-# LLMposter
+# LLMpostor
 
 A multiplayer guessing game where players try to identify AI-generated responses among human submissions.
 

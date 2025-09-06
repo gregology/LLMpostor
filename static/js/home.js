@@ -1,5 +1,5 @@
 /**
- * LLMposter Home Page JavaScript
+ * LLMpostor Home Page JavaScript
  * 
  * Handles room joining, quick join functionality, and form interactions
  * on the home page. Extracted from inline script in index.html template.

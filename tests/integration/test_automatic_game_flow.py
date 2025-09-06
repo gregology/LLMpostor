@@ -2,7 +2,7 @@
 Integration tests for automatic game flow and timing.
 
 Tests automatic phase transitions, countdown timers, player disconnection handling,
-and cleanup logic for the LLMposter game.
+and cleanup logic for the LLMpostor game.
 """
 
 import pytest

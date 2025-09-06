@@ -1,5 +1,5 @@
 """
-Configuration settings for LLMposter application.
+Configuration settings for LLMpostor application.
 """
 
 import os

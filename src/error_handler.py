@@ -1,5 +1,5 @@
 """
-Error Handler for LLMposter Game
+Error Handler for LLMpostor Game
 
 Provides comprehensive error handling, validation, and error response formatting.
 """

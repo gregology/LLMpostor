@@ -1,7 +1,7 @@
 /**
- * LLMposter Game Client - Modular Entry Point
+ * LLMpostor Game Client - Modular Entry Point
  * 
- * This is the new modular version of the LLMposter game client.
+ * This is the new modular version of the LLMpostor game client.
  * It replaces the monolithic game.js with a clean, maintainable architecture.
  * 
  * Architecture:
@@ -66,7 +66,7 @@
         window.gameClient = gameClient;
         
         // For backward compatibility, expose some methods on window
-        window.LLMposterGame = {
+        window.LLMpostorGame = {
             getState: () => gameClient.getGameState(),
             isConnected: () => gameClient.isConnected(),
             getRoomInfo: () => gameClient.getRoomInfo(),
@@ -75,13 +75,13 @@
             disconnect: () => gameClient.disconnect()
         };
         
-        console.log('Modular LLMposter game client initialized');
+        console.log('Modular LLMpostor game client initialized');
         return gameClient;
     }
     
     // Main initialization
     async function initialize() {
-        console.log('Loading modular LLMposter game client...');
+        console.log('Loading modular LLMpostor game client...');
         
         // Load all modules
         const modulesLoaded = await loadModules();
