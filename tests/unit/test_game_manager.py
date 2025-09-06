@@ -553,10 +553,15 @@ class TestGameManager:
                 llm_index = i
                 break
         
-        # Player1 guesses wrong (not LLM), other players guess player1's response as LLM
-        wrong_guess = 0 if player1_response_index != 0 else 1
-        if wrong_guess == llm_index:
-            wrong_guess = 2 if len(responses) > 2 else 0
+        # Player1 guesses wrong (not LLM and not their own response), other players guess player1's response as LLM
+        wrong_guess = None
+        for i in range(len(responses)):
+            if i != llm_index and i != player1_response_index:
+                wrong_guess = i
+                break
+        # Fallback if we can't find a valid wrong guess (shouldn't happen with 4 responses)
+        if wrong_guess is None:
+            wrong_guess = 0 if player1_response_index != 0 and llm_index != 0 else 1
             
         self.game_manager.submit_player_guess(
             self.room_id, self.player1["player_id"], wrong_guess  # Wrong guess to avoid LLM points
