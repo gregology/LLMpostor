@@ -5,7 +5,7 @@ Tests validation functions, error formatting, and error handling utilities.
 """
 
 import pytest
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch
 from src.error_handler import ErrorHandler, ErrorCode, ValidationError, with_error_handling
 
 

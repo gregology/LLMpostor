@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}LLMposter - Room {{ room_id }}{% endblock %}
+{% block title %}LLMpostor - Room {{ room_id }}{% endblock %}
 
 {% block content %}
 <div class="game-container">
@@ -170,12 +170,12 @@
 <!-- Game State Data -->
 <script>
 // Pass room ID and config to the game client
-const roomId = "{{ room_id }}";
-const maxResponseLength = {{ max_response_length }};
+window.roomId = "{{ room_id }}";
+window.maxResponseLength = {{ max_response_length }};
 </script>
 {% endblock %}
 
 {% block scripts %}
 <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.2/socket.io.js"></script>
-<script src="{{ url_for('static', filename='js/game.js') }}"></script>
+<script src="{{ url_for('static', filename='js/game-modular.js') }}"></script>
 {% endblock %}

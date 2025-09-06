@@ -1,1 +1,1 @@
-# Test package for LLMposter
+# Test package for LLMpostor

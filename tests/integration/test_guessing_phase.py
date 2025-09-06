@@ -6,16 +6,14 @@ guess submission, validation, and time limit enforcement during guessing phase.
 """
 
 import pytest
-import json
-from datetime import datetime, timedelta
-from unittest.mock import Mock, patch, MagicMock
+from unittest.mock import patch
 
 # Import the Flask app and Socket.IO client for testing
 import sys
 import os
 sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
 
-from app import app, socketio, room_manager, game_manager, content_manager
+from app import app, socketio, room_manager, content_manager
 from src.content_manager import PromptData
 
 
@@ -28,8 +26,8 @@ class TestGuessingPhase:
         app.config['TESTING'] = True
         # Clear any existing rooms and sessions before each test
         room_manager._rooms.clear()
-        from app import player_sessions
-        player_sessions.clear()
+        from app import session_service
+        session_service._player_sessions.clear()
         return socketio.test_client(app)
     
     @pytest.fixture

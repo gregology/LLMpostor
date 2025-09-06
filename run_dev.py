@@ -24,7 +24,7 @@ def main():
         'wsgi:app'
     ]
     
-    print("Starting LLMposter development server with Gunicorn...")
+    print("Starting LLMpostor development server with Gunicorn...")
     print(f"Server will be available at: http://localhost:{os.environ.get('PORT', 8000)}")
     print("Press Ctrl+C to stop the server")
     print("-" * 50)

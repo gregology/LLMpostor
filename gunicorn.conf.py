@@ -1,5 +1,5 @@
 """
-Gunicorn configuration for LLMposter application.
+Gunicorn configuration for LLMpostor application.
 Optimized for Socket.IO with eventlet workers.
 """
 

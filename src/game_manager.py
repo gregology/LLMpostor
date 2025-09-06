@@ -1,11 +1,11 @@
 """
-Game Manager for LLMposter Game
+Game Manager for LLMpostor Game
 
 Handles game state transitions, scoring logic, and game flow.
 Works with RoomManager to manage game sessions.
 """
 
-from datetime import datetime, timedelta
+from datetime import datetime
 from typing import Dict, List, Optional, Tuple
 import random
 from enum import Enum
@@ -266,7 +266,7 @@ class GameManager:
         Returns:
             Dict mapping player_id to points earned this round
         """
-        round_scores = {}
+        round_scores: Dict[str, int] = {}
         responses = room["game_state"]["responses"]
         guesses = room["game_state"]["guesses"]
         

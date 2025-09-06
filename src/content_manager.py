@@ -1,5 +1,5 @@
 """
-Content Manager for LLMposter Game
+Content Manager for LLMpostor Game
 
 Handles loading and validation of YAML configuration files containing
 prompts, responses, and model information for the guessing game.
