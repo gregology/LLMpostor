@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { createMockSocket, nextTick } from '../helpers/testUtils.js';
 
 const SocketManager = (await import('../../static/js/modules/SocketManager.js')).default || 

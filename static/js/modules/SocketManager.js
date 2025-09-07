@@ -272,3 +272,5 @@ class SocketManager {
 if (typeof module !== 'undefined' && module.exports) {
     module.exports = SocketManager;
 }
+
+export default SocketManager;

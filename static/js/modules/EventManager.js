@@ -1,16 +1,23 @@
 /**
- * EventManager - Handles event coordination and business logic
+ * EventManager - Event-driven coordination and business logic orchestration
  * 
  * Responsible for:
- * - Coordinating between modules
- * - Game event handling and routing
- * - Error handling and user feedback
- * - Connection management
- * - Business logic orchestration
+ * - Coordinating between event-driven modules
+ * - Game event handling and routing via EventBus
+ * - Error handling and user feedback coordination
+ * - Connection management and socket event routing
+ * - Business logic orchestration through events
+ * 
+ * Migration Status: Updated to coordinate with EventBus-enabled modules
  */
 
-class EventManager {
+import { EventBusModule, migrationHelper } from './EventBusMigration.js';
+import { Events } from './EventBus.js';
+
+class EventManager extends EventBusModule {
     constructor(socketManager, gameStateManager, uiManager, timerManager, toastManager) {
+        super('EventManager');
+        
         this.socket = socketManager;
         this.gameState = gameStateManager;
         this.ui = uiManager;
@@ -26,11 +33,17 @@ class EventManager {
         // Response filtering
         this.responseIndexMapping = null;
         
+        // Subscribe to EventBus events from modules
+        this._setupEventBusSubscriptions();
+        
+        // Legacy callback setup (for backward compatibility)
         this._setupSocketCallbacks();
         this._setupUICallbacks();
         this._setupGameStateCallbacks();
         this._setupTimerCallbacks();
         this._registerSocketEvents();
+        
+        console.log('EventManager initialized with EventBus coordination');
     }
     
     /**
@@ -46,6 +59,13 @@ class EventManager {
         
         this.socket.initialize();
         this.isInitialized = true;
+        
+        // Publish initialization event
+        this.publish(Events.SYSTEM.INFO, {
+            message: 'EventManager initialized',
+            roomId,
+            timestamp: Date.now()
+        });
     }
     
     /**
@@ -136,7 +156,10 @@ class EventManager {
         }
         
         if (!this.gameState.canSubmitResponse()) {
-            this.toast.warning('Cannot submit response right now');
+            // Don't show warning if already submitted (common race condition)
+            if (!this.gameState.hasSubmittedResponse) {
+                this.toast.warning('Cannot submit response right now');
+            }
             return;
         }
         
@@ -228,6 +251,72 @@ class EventManager {
         }
     }
     
+    // EventBus subscription setup
+    
+    _setupEventBusSubscriptions() {
+        // Subscribe to user action events from UI modules
+        this.subscribe(Events.USER.RESPONSE_SUBMITTED, this._handleUserResponseSubmitted.bind(this));
+        this.subscribe(Events.USER.GUESS_SUBMITTED, this._handleUserGuessSubmitted.bind(this));
+        this.subscribe(Events.USER.ROUND_START, this._handleUserRoundStart.bind(this));
+        this.subscribe(Events.USER.ROOM_LEAVE, this._handleUserRoomLeave.bind(this));
+        this.subscribe(Events.USER.ROOM_SHARE, this._handleUserRoomShare.bind(this));
+        
+        // Subscribe to socket events for coordination
+        this.subscribe(Events.SOCKET.CONNECTED, this._handleSocketConnectedEvent.bind(this));
+        this.subscribe(Events.SOCKET.DISCONNECTED, this._handleSocketDisconnectedEvent.bind(this));
+        this.subscribe(Events.SOCKET.ERROR, this._handleSocketErrorEvent.bind(this));
+        
+        // Subscribe to system events for error handling
+        this.subscribe(Events.SYSTEM.ERROR, this._handleSystemError.bind(this));
+        this.subscribe(Events.SYSTEM.WARNING, this._handleSystemWarning.bind(this));
+    }
+    
+    // EventBus event handlers
+    
+    _handleUserResponseSubmitted(data) {
+        if (data.response) {
+            this.submitResponse(data.response);
+        }
+    }
+    
+    _handleUserGuessSubmitted(data) {
+        if (typeof data.guessIndex === 'number') {
+            this.submitGuess(data.guessIndex);
+        }
+    }
+    
+    _handleUserRoundStart(data) {
+        this.startRound();
+    }
+    
+    _handleUserRoomLeave(data) {
+        this.leaveRoom();
+    }
+    
+    _handleUserRoomShare(data) {
+        this.shareRoom();
+    }
+    
+    _handleSocketConnectedEvent(data) {
+        console.log('EventManager handling socket connected event:', data);
+    }
+    
+    _handleSocketDisconnectedEvent(data) {
+        console.log('EventManager handling socket disconnected event:', data);
+    }
+    
+    _handleSocketErrorEvent(data) {
+        console.error('EventManager handling socket error event:', data);
+    }
+    
+    _handleSystemError(data) {
+        console.error('System error:', data);
+    }
+    
+    _handleSystemWarning(data) {
+        console.warn('System warning:', data);
+    }
+    
     // Private methods - Socket event handlers
     
     _registerSocketEvents() {
@@ -263,26 +352,87 @@ class EventManager {
     _setupSocketCallbacks() {
         this.socket.onConnect = () => {
             console.log('Connected to server');
-            this.ui.updateConnectionStatus('connected', 'Connected');
-            this.toast.success('Connected to server');
+            
+            // Use migration helper for dual-mode operation
+            migrationHelper.execute(
+                'socket-connected',
+                // Old pattern (legacy callback-driven)
+                () => {
+                    this.ui.updateConnectionStatus('connected', 'Connected');
+                    this.toast.success('Connected to server');
+                },
+                // New pattern (event-driven)
+                () => {
+                    this.publish(Events.SOCKET.CONNECTED, {
+                        timestamp: Date.now(),
+                        status: 'connected'
+                    });
+                }
+            );
         };
         
         this.socket.onDisconnect = () => {
             console.log('Disconnected from server');
-            this.ui.updateConnectionStatus('disconnected', 'Disconnected');
-            this.toast.warning('Connection lost. Attempting to reconnect...');
+            
+            migrationHelper.execute(
+                'socket-disconnected',
+                // Old pattern
+                () => {
+                    this.ui.updateConnectionStatus('disconnected', 'Disconnected');
+                    this.toast.warning('Connection lost. Attempting to reconnect...');
+                },
+                // New pattern
+                () => {
+                    this.publish(Events.SOCKET.DISCONNECTED, {
+                        timestamp: Date.now(),
+                        status: 'disconnected',
+                        message: 'Connection lost. Attempting to reconnect...'
+                    });
+                }
+            );
         };
         
         this.socket.onConnectionError = (error) => {
             console.error('Connection error:', error);
-            this.ui.updateConnectionStatus('error', 'Connection Error');
-            this.toast.error('Failed to connect to server');
+            
+            migrationHelper.execute(
+                'socket-error',
+                // Old pattern
+                () => {
+                    this.ui.updateConnectionStatus('error', 'Connection Error');
+                    this.toast.error('Failed to connect to server');
+                },
+                // New pattern
+                () => {
+                    this.publish(Events.SOCKET.ERROR, {
+                        error,
+                        timestamp: Date.now(),
+                        status: 'error',
+                        message: 'Failed to connect to server'
+                    });
+                }
+            );
         };
         
         this.socket.onReconnect = () => {
             console.log('Reconnected to server');
-            this.ui.updateConnectionStatus('connected', 'Connected');
-            this.toast.success('Reconnected successfully!');
+            
+            migrationHelper.execute(
+                'socket-reconnected',
+                // Old pattern
+                () => {
+                    this.ui.updateConnectionStatus('connected', 'Connected');
+                    this.toast.success('Reconnected successfully!');
+                },
+                // New pattern
+                () => {
+                    this.publish(Events.SOCKET.CONNECTED, {
+                        timestamp: Date.now(),
+                        status: 'reconnected',
+                        message: 'Reconnected successfully!'
+                    });
+                }
+            );
             
             // Rejoin room if we were in one
             if (this.gameState.roomInfo.roomId && this.gameState.roomInfo.playerName) {
@@ -293,26 +443,27 @@ class EventManager {
     }
     
     _setupUICallbacks() {
-        this.ui.onSubmitResponse = () => {
-            const responseText = this.ui.elements.responseInput?.value?.trim();
-            this.submitResponse(responseText);
-        };
+        // Disable old callback patterns - using EventBus only
+        // this.ui.onSubmitResponse = () => {
+        //     const responseText = this.ui.elements.responseInput?.value?.trim();
+        //     this.submitResponse(responseText);
+        // };
         
-        this.ui.onSubmitGuess = (index) => {
-            this.submitGuess(index);
-        };
+        // this.ui.onSubmitGuess = (index) => {
+        //     this.submitGuess(index);
+        // };
         
-        this.ui.onStartRound = () => {
-            this.startRound();
-        };
+        // this.ui.onStartRound = () => {
+        //     this.startRound();
+        // };
         
-        this.ui.onLeaveRoom = () => {
-            this.leaveRoom();
-        };
+        // this.ui.onLeaveRoom = () => {
+        //     this.leaveRoom();
+        // };
         
-        this.ui.onShareRoom = () => {
-            this.shareRoom();
-        };
+        // this.ui.onShareRoom = () => {
+        //     this.shareRoom();
+        // };
     }
     
     _setupGameStateCallbacks() {
@@ -726,9 +877,30 @@ class EventManager {
             this.guessSubmissionTimeout = null;
         }
     }
+    
+    /**
+     * Clean up event subscriptions and timeouts
+     */
+    destroy() {
+        this._clearGuessSubmissionTimeout();
+        this.cleanup(); // Clean up event bus subscriptions
+        
+        console.log('EventManager destroyed');
+    }
+    
+    /**
+     * Legacy method to set callback handlers (for backward compatibility)
+     * @deprecated Most functionality now handled through EventBus
+     */
+    setCallbacks(callbacks) {
+        console.warn('EventManager.setCallbacks() is partially deprecated. Most functionality now handled through EventBus.');
+        // Legacy callbacks can still be set if needed for specific integrations
+    }
 }
 
 // Export for module system
 if (typeof module !== 'undefined' && module.exports) {
     module.exports = EventManager;
 }
+
+export default EventManager;

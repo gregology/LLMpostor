@@ -1,16 +1,23 @@
 /**
- * UIManager - Handles all UI rendering and DOM manipulation
+ * UIManager - Event-driven UI rendering and DOM manipulation
  * 
  * Responsible for:
  * - DOM element caching and management
- * - UI state transitions
+ * - UI state transitions and event-driven updates
  * - Content rendering and updates
  * - Form state management
  * - Visual feedback and animations
+ * 
+ * Migration Status: Updated to use EventBus with backward compatibility
  */
 
-class UIManager {
+import { EventBusModule, migrationHelper } from './EventBusMigration.js';
+import { Events } from './EventBus.js';
+
+class UIManager extends EventBusModule {
     constructor() {
+        super('UIManager');
+        
         this.elements = {};
         this.maxResponseLength = window.maxResponseLength || 500;
         
@@ -18,12 +25,15 @@ class UIManager {
         this.currentPhase = null;
         this.isInitialized = false;
         
-        // Callbacks
+        // Legacy callback support (for gradual migration)
         this.onSubmitResponse = null;
         this.onSubmitGuess = null;
         this.onStartRound = null;
         this.onLeaveRoom = null;
         this.onShareRoom = null;
+        
+        // Subscribe to events that trigger UI updates
+        this._setupEventSubscriptions();
         
         // Initialize when DOM is ready (skip in test environment)
         if (typeof window !== 'undefined' && !window.isTestEnvironment) {
@@ -33,6 +43,8 @@ class UIManager {
                 this.initialize();
             }
         }
+        
+        console.log('UIManager initialized with EventBus integration');
     }
     
     /**
@@ -47,6 +59,13 @@ class UIManager {
         this._cacheElements();
         this._setupEventListeners();
         this.isInitialized = true;
+        
+        // Publish initialization event
+        this.publish(Events.UI.CONNECTION_STATUS_CHANGED, {
+            status: 'initialized',
+            message: 'UI Manager ready'
+        });
+        
         console.log('UIManager initialized');
     }
     
@@ -63,6 +82,13 @@ class UIManager {
             <span class="status-dot"></span>
             ${text}
         `;
+        
+        // Publish connection status change event
+        this.publish(Events.UI.CONNECTION_STATUS_CHANGED, {
+            status,
+            text,
+            timestamp: Date.now()
+        });
     }
     
     /**
@@ -81,6 +107,12 @@ class UIManager {
         }
         
         this._updateStartRoundButton(roomInfo.connectedCount || 0);
+        
+        // Publish room info update event
+        this.publish(Events.UI.ROOM_INFO_UPDATED, {
+            roomInfo,
+            timestamp: Date.now()
+        });
     }
     
     /**
@@ -109,6 +141,14 @@ class UIManager {
             previousScore = player.score;
             
             this.elements.playersList.appendChild(playerElement);
+        });
+        
+        // Publish players list update event
+        this.publish(Events.UI.PLAYERS_UPDATED, {
+            players: sortedPlayers,
+            currentPlayerId,
+            playerCount: players.length,
+            timestamp: Date.now()
         });
     }
     
@@ -329,6 +369,61 @@ class UIManager {
         this._displayPlayerResults(results);
     }
     
+    // Event subscription setup
+    
+    _setupEventSubscriptions() {
+        // Subscribe to timer updates to update UI
+        this.subscribe(Events.TIMER.UPDATED, this._handleTimerUpdate.bind(this));
+        this.subscribe(Events.TIMER.WARNING, this._handleTimerWarning.bind(this));
+        
+        // Subscribe to game state changes
+        this.subscribe(Events.GAME.PHASE_CHANGED, this._handlePhaseChange.bind(this));
+        this.subscribe(Events.GAME.STATE_CHANGED, this._handleGameStateChange.bind(this));
+        this.subscribe(Events.GAME.PROMPT_UPDATED, this._handlePromptUpdate.bind(this));
+        
+        // Subscribe to socket events for UI updates
+        this.subscribe(Events.SOCKET.CONNECTED, this._handleSocketConnected.bind(this));
+        this.subscribe(Events.SOCKET.DISCONNECTED, this._handleSocketDisconnected.bind(this));
+        this.subscribe(Events.SOCKET.ERROR, this._handleSocketError.bind(this));
+    }
+    
+    _handleTimerUpdate(timerData) {
+        this.updateTimer(timerData);
+    }
+    
+    _handleTimerWarning(warningData) {
+        this.flashTimer(warningData.phase);
+    }
+    
+    _handlePhaseChange(data) {
+        if (data.newPhase !== this.currentPhase) {
+            this.switchToPhase(data.newPhase, data);
+        }
+    }
+    
+    _handleGameStateChange(stateData) {
+        // Handle general game state changes
+        if (stateData.roundsCompleted !== undefined) {
+            this.updateRoundsPlayed(stateData.roundsCompleted);
+        }
+    }
+    
+    _handlePromptUpdate(promptData) {
+        this.updatePromptDisplay(promptData);
+    }
+    
+    _handleSocketConnected(data) {
+        this.updateConnectionStatus('connected', 'Connected');
+    }
+    
+    _handleSocketDisconnected(data) {
+        this.updateConnectionStatus('disconnected', 'Disconnected');
+    }
+    
+    _handleSocketError(data) {
+        this.updateConnectionStatus('error', 'Connection Error');
+    }
+    
     // Private methods
     
     _cacheElements() {
@@ -379,23 +474,60 @@ class UIManager {
         // Leave room
         if (this.elements.leaveRoomBtn) {
             this.elements.leaveRoomBtn.addEventListener('click', () => {
-                if (this.onLeaveRoom) this.onLeaveRoom();
+                migrationHelper.execute(
+                    'leave-room',
+                    // Old pattern
+                    () => {
+                        if (this.onLeaveRoom) this.onLeaveRoom();
+                    },
+                    // New pattern
+                    () => {
+                        this.publish(Events.USER.ROOM_LEAVE, {
+                            timestamp: Date.now()
+                        });
+                    }
+                );
             });
         }
         
         // Share room
         if (this.elements.shareRoomBtn) {
             this.elements.shareRoomBtn.addEventListener('click', () => {
-                if (this.onShareRoom) this.onShareRoom();
+                migrationHelper.execute(
+                    'share-room',
+                    // Old pattern
+                    () => {
+                        if (this.onShareRoom) this.onShareRoom();
+                    },
+                    // New pattern
+                    () => {
+                        this.publish(Events.USER.ROOM_SHARE, {
+                            timestamp: Date.now()
+                        });
+                    }
+                );
             });
         }
         
         // Response input handling
         if (this.elements.responseInput) {
-            this.elements.responseInput.addEventListener('input', () => this._handleResponseInput());
+            this.elements.responseInput.addEventListener('input', () => {
+                this._handleResponseInput();
+                
+                // Publish input change event
+                this.publish(Events.USER.INPUT_CHANGED, {
+                    inputType: 'response',
+                    value: this.elements.responseInput.value,
+                    length: this.elements.responseInput.value.length,
+                    maxLength: this.maxResponseLength,
+                    isValid: this._isResponseValid(),
+                    timestamp: Date.now()
+                });
+            });
+            
             this.elements.responseInput.addEventListener('keydown', (e) => {
                 if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
-                    if (this.onSubmitResponse) this.onSubmitResponse();
+                    this._submitResponse();
                 }
             });
         }
@@ -403,16 +535,54 @@ class UIManager {
         // Submit response button
         if (this.elements.submitResponseBtn) {
             this.elements.submitResponseBtn.addEventListener('click', () => {
-                if (this.onSubmitResponse) this.onSubmitResponse();
+                this._submitResponse();
             });
         }
         
         // Start round button
         if (this.elements.startRoundBtn) {
             this.elements.startRoundBtn.addEventListener('click', () => {
-                if (this.onStartRound) this.onStartRound();
+                migrationHelper.execute(
+                    'start-round',
+                    // Old pattern
+                    () => {
+                        if (this.onStartRound) this.onStartRound();
+                    },
+                    // New pattern
+                    () => {
+                        this.publish(Events.USER.ROUND_START, {
+                            timestamp: Date.now()
+                        });
+                    }
+                );
             });
         }
+    }
+    
+    _submitResponse() {
+        const responseText = this.elements.responseInput?.value?.trim();
+        
+        migrationHelper.execute(
+            'submit-response',
+            // Old pattern
+            () => {
+                if (this.onSubmitResponse) this.onSubmitResponse();
+            },
+            // New pattern
+            () => {
+                this.publish(Events.USER.RESPONSE_SUBMITTED, {
+                    response: responseText,
+                    length: responseText?.length || 0,
+                    timestamp: Date.now()
+                });
+            }
+        );
+    }
+    
+    _isResponseValid() {
+        if (!this.elements.responseInput) return false;
+        const text = this.elements.responseInput.value.trim();
+        return text.length > 0 && text.length <= this.maxResponseLength;
     }
     
     _hideAllGameStates() {
@@ -589,8 +759,22 @@ class UIManager {
         const guessBtn = responseCard.querySelector('.guess-btn');
         guessBtn.addEventListener('click', (event) => {
             event.preventDefault();
-            if (!guessBtn.disabled && this.onSubmitGuess) {
-                this.onSubmitGuess(index);
+            if (!guessBtn.disabled) {
+                migrationHelper.execute(
+                    'submit-guess',
+                    // Old pattern
+                    () => {
+                        if (this.onSubmitGuess) this.onSubmitGuess(index);
+                    },
+                    // New pattern
+                    () => {
+                        this.publish(Events.USER.GUESS_SUBMITTED, {
+                            guessIndex: index,
+                            response: response,
+                            timestamp: Date.now()
+                        });
+                    }
+                );
             }
         });
         
@@ -710,9 +894,39 @@ class UIManager {
         div.textContent = text;
         return div.innerHTML;
     }
+    
+    /**
+     * Clean up event subscriptions and DOM listeners
+     */
+    destroy() {
+        this.cleanup(); // Clean up event bus subscriptions
+        
+        // Remove DOM event listeners if needed
+        if (this.elements.responseInput) {
+            this.elements.responseInput.removeEventListener('input', this._handleResponseInput);
+        }
+        
+        console.log('UIManager destroyed');
+    }
+    
+    /**
+     * Legacy method to set callback handlers (for backward compatibility)
+     * @deprecated Use event subscriptions instead
+     */
+    setCallbacks(callbacks) {
+        console.warn('UIManager.setCallbacks() is deprecated. Use EventBus subscriptions instead.');
+        
+        if (callbacks.onSubmitResponse) this.onSubmitResponse = callbacks.onSubmitResponse;
+        if (callbacks.onSubmitGuess) this.onSubmitGuess = callbacks.onSubmitGuess;
+        if (callbacks.onStartRound) this.onStartRound = callbacks.onStartRound;
+        if (callbacks.onLeaveRoom) this.onLeaveRoom = callbacks.onLeaveRoom;
+        if (callbacks.onShareRoom) this.onShareRoom = callbacks.onShareRoom;
+    }
 }
 
 // Export for module system
 if (typeof module !== 'undefined' && module.exports) {
     module.exports = UIManager;
 }
+
+export default UIManager;

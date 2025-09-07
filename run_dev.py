@@ -15,6 +15,15 @@ def main():
     os.environ.setdefault('FLASK_ENV', 'development')
     os.environ.setdefault('PORT', '8000')
     
+    # Load configuration to display correct info
+    try:
+        from config_factory import load_config
+        config = load_config()
+        server_url = f"http://{config.host}:{config.port}"
+    except Exception:
+        # Fallback if config fails
+        server_url = f"http://localhost:{os.environ.get('PORT', 8000)}"
+    
     # Gunicorn command with eventlet worker
     cmd = [
         'gunicorn',
@@ -25,7 +34,7 @@ def main():
     ]
     
     print("Starting LLMpostor development server with Gunicorn...")
-    print(f"Server will be available at: http://localhost:{os.environ.get('PORT', 8000)}")
+    print(f"Server will be available at: {server_url}")
     print("Press Ctrl+C to stop the server")
     print("-" * 50)
     

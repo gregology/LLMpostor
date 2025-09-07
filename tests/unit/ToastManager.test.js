@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 
 const ToastManager = (await import('../../static/js/modules/ToastManager.js')).default || 
                      (await import('../../static/js/modules/ToastManager.js')).ToastManager;
@@ -18,6 +18,12 @@ describe('ToastManager', () => {
   });
 
   afterEach(() => {
+    // Clean up toasts and EventBus subscriptions
+    if (toastManager && typeof toastManager.destroy === 'function') {
+      toastManager.destroy();
+    } else if (toastManager && typeof toastManager.clearAll === 'function') {
+      toastManager.clearAll();
+    }
     vi.useRealTimers();
   });
 

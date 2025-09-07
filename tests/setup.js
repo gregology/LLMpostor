@@ -1,8 +1,32 @@
 // Global test setup
-import { vi } from 'vitest';
+import { vi, afterEach } from 'vitest';
 
 // Set test environment flag to prevent auto-initialization
 global.window.isTestEnvironment = true;
+
+// Track all intervals created during tests so we can clean them up
+const originalSetInterval = global.setInterval;
+const activeIntervals = new Set();
+
+global.setInterval = (callback, delay, ...args) => {
+  const intervalId = originalSetInterval(callback, delay, ...args);
+  activeIntervals.add(intervalId);
+  return intervalId;
+};
+
+const originalClearInterval = global.clearInterval;
+global.clearInterval = (intervalId) => {
+  activeIntervals.delete(intervalId);
+  return originalClearInterval(intervalId);
+};
+
+// Function to clear all intervals
+global.clearAllIntervals = () => {
+  activeIntervals.forEach(intervalId => {
+    originalClearInterval(intervalId);
+  });
+  activeIntervals.clear();
+};
 
 // Mock Socket.IO globally
 global.io = vi.fn(() => ({
@@ -82,7 +106,23 @@ global.window.roomId = 'test-room';
 global.window.maxResponseLength = 500;
 
 // Clean up after each test
-afterEach(() => {
+afterEach(async () => {
+  // Clear all mocks and timers
   vi.clearAllMocks();
   vi.clearAllTimers();
+  
+  // Clean up EventBus subscriptions
+  try {
+    const { EventBus } = await import('../static/js/modules/EventBus.js');
+    if (EventBus && typeof EventBus.clear === 'function') {
+      EventBus.clear();
+    }
+  } catch (error) {
+    // EventBus might not be loaded in all tests, ignore the error
+  }
+  
+  // Clean up any running intervals or timeouts
+  if (global.clearAllIntervals) {
+    global.clearAllIntervals();
+  }
 });

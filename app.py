@@ -9,20 +9,21 @@ import os
 import logging
 import atexit
 
-# Import game modules
-from src.room_manager import RoomManager
-from src.game_manager import GameManager
-from src.content_manager import ContentManager
-from src.error_handler import ErrorHandler, ErrorCode, ValidationError, with_error_handling
+# Import error handling utilities (still needed for decorators and validation)
+from src.error_handler import ErrorCode, ValidationError, with_error_handling
 
-# Import services
-from src.services.broadcast_service import BroadcastService
-from src.services.session_service import SessionService
-from src.services.auto_game_flow_service import AutoGameFlowService
+# Import service container and configuration factory
+from container import configure_container, get_container
+from config_factory import load_config
 
 # Initialize Flask app
 app = Flask(__name__)
-app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'dev-secret-key-change-in-production')
+
+# Load configuration using Configuration Factory
+app_config = load_config()
+from config_factory import ConfigurationFactory
+config_factory = ConfigurationFactory()
+app.config.update(config_factory.get_flask_config())
 
 # Initialize Socket.IO with CORS enabled for development
 socketio = SocketIO(app, cors_allowed_origins="*", async_mode='eventlet')
@@ -31,15 +32,17 @@ socketio = SocketIO(app, cors_allowed_origins="*", async_mode='eventlet')
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# Initialize game managers
-room_manager = RoomManager()
-game_manager = GameManager(room_manager)
-content_manager = ContentManager()
-error_handler = ErrorHandler()
+# Configure service container with dependencies
+container = configure_container(socketio=socketio, config=config_factory.to_dict())
 
-# Initialize services
-session_service = SessionService()
-broadcast_service = BroadcastService(socketio, room_manager, game_manager, error_handler)
+# Get services from container
+room_manager = container.get('RoomManager')
+game_manager = container.get('GameManager')
+content_manager = container.get('ContentManager')
+error_handler = container.get('ErrorHandler')
+session_service = container.get('SessionService')
+broadcast_service = container.get('BroadcastService')
+auto_flow_service = container.get('AutoGameFlowService')
 
 # Load prompts on startup
 try:
@@ -48,11 +51,6 @@ try:
 except Exception as e:
     logger.error(f"Failed to load prompts: {e}")
     # Continue without prompts for now - will handle gracefully
-
-# Session management is now handled by session_service
-
-# Initialize auto game flow service
-auto_flow_service = AutoGameFlowService(broadcast_service, game_manager, room_manager)
 
 @app.route('/')
 def index():
@@ -83,8 +81,7 @@ def find_available_room():
 @app.route('/<room_id>')
 def room(room_id):
     """Serve the game interface for a specific room."""
-    from src.error_handler import ErrorHandler
-    return render_template('game.html', room_id=room_id, max_response_length=ErrorHandler.MAX_RESPONSE_LENGTH)
+    return render_template('game.html', room_id=room_id, max_response_length=error_handler.MAX_RESPONSE_LENGTH)
 
 @socketio.on('connect')
 def handle_connect():
@@ -153,8 +150,8 @@ def handle_join_room(data):
         )
     
     # Validate and sanitize room ID and player name
-    room_id = ErrorHandler.validate_room_id(data['room_id'])
-    player_name = ErrorHandler.validate_player_name(data['player_name'])
+    room_id = error_handler.validate_room_id(data['room_id'])
+    player_name = error_handler.validate_player_name(data['player_name'])
     
     # Check if player is already in a room
     if session_service.has_session(request.sid):
@@ -176,7 +173,7 @@ def handle_join_room(data):
         logger.info(f'Player {player_name} ({player_data["player_id"]}) joined room {room_id}')
         
         # Send success response to joining player
-        emit('room_joined', ErrorHandler.create_success_response({
+        emit('room_joined', error_handler.create_success_response({
             'room_id': room_id,
             'player_id': player_data['player_id'],
             'player_name': player_name,
@@ -223,7 +220,7 @@ def handle_leave_room(data=None):
         logger.info(f'Player {player_name} ({player_id}) left room {room_id}')
         
         # Send confirmation to leaving player
-        emit('room_left', ErrorHandler.create_success_response({
+        emit('room_left', error_handler.create_success_response({
             'message': f'Successfully left room {room_id}'
         }))
         
@@ -307,7 +304,7 @@ def handle_start_round(data=None):
         broadcast_service.broadcast_round_started(room_id)
         broadcast_service.broadcast_room_state_update(room_id)
         
-        emit('round_started', ErrorHandler.create_success_response({
+        emit('round_started', error_handler.create_success_response({
             'message': 'Round started successfully'
         }))
     else:
@@ -349,7 +346,7 @@ def handle_submit_response(data):
         )
     
     # Validate and sanitize response text
-    response_text = ErrorHandler.validate_response_text(data['response'])
+    response_text = error_handler.validate_response_text(data['response'])
     
     room_id = session_info['room_id']
     player_id = session_info['player_id']
@@ -374,7 +371,7 @@ def handle_submit_response(data):
         logger.info(f'Player {player_id} submitted response in room {room_id}')
         
         # Send confirmation to submitting player
-        emit('response_submitted', ErrorHandler.create_success_response({
+        emit('response_submitted', error_handler.create_success_response({
             'message': 'Response submitted successfully'
         }))
         
@@ -449,7 +446,7 @@ def handle_submit_guess(data):
     filtered_responses = [i for i, response in enumerate(responses) if response['author_id'] != player_id]
     
     # Validate guess index against filtered responses
-    guess_index = ErrorHandler.validate_guess_index(data['guess_index'], len(filtered_responses))
+    guess_index = error_handler.validate_guess_index(data['guess_index'], len(filtered_responses))
     
     # Map the filtered index to the actual response index
     actual_response_index = filtered_responses[guess_index]
@@ -459,7 +456,7 @@ def handle_submit_guess(data):
         logger.info(f'Player {player_id} submitted guess {guess_index} in room {room_id}')
         
         # Send confirmation to submitting player
-        emit('guess_submitted', ErrorHandler.create_success_response({
+        emit('guess_submitted', error_handler.create_success_response({
             'message': 'Guess submitted successfully',
             'guess_index': guess_index  # This is the filtered index the player sees
         }))
@@ -558,7 +555,7 @@ def handle_get_time_remaining(data=None):
     game_state = game_manager.get_game_state(room_id)
     
     if game_state:
-        emit('time_remaining', ErrorHandler.create_success_response({
+        emit('time_remaining', error_handler.create_success_response({
             'time_remaining': time_remaining,
             'phase': game_state['phase'],
             'phase_duration': game_state.get('phase_duration', 0)
@@ -579,13 +576,10 @@ def cleanup_on_exit():
 atexit.register(cleanup_on_exit)
 
 if __name__ == '__main__':
-    # Run the application
-    port = int(os.environ.get('PORT', 5000))
-    debug = os.environ.get('FLASK_ENV') == 'development'
-    
-    logger.info(f"Starting LLMpostor server on port {port}")
+    # Run the application using configuration
+    logger.info(f"Starting LLMpostor server on {app_config.host}:{app_config.port}")
     try:
-        socketio.run(app, host='0.0.0.0', port=port, debug=debug)
+        socketio.run(app, host=app_config.host, port=app_config.port, debug=app_config.debug)
     except KeyboardInterrupt:
         logger.info("Received interrupt signal")
     finally:

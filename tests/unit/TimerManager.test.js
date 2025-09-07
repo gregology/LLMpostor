@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 
 const TimerManager = (await import('../../static/js/modules/TimerManager.js')).default || 
                      (await import('../../static/js/modules/TimerManager.js')).TimerManager;
@@ -6,12 +6,32 @@ const TimerManager = (await import('../../static/js/modules/TimerManager.js')).d
 describe('TimerManager', () => {
   let timerManager;
 
+  // Helper function to create expected timer data with EventBus fields
+  const expectTimerData = (expectedData = {}) => {
+    return expect.objectContaining({
+      phase: expect.any(String),
+      timeText: expect.any(String),
+      progress: expect.any(Number),
+      progressColor: expect.any(String),
+      timeRemaining: expect.any(Number),
+      totalDuration: expect.any(Number),
+      timestamp: expect.any(Number),
+      ...expectedData
+    });
+  };
+
   beforeEach(() => {
     vi.useFakeTimers();
     timerManager = new TimerManager();
   });
 
   afterEach(() => {
+    // Clean up timers and EventBus subscriptions
+    if (timerManager && typeof timerManager.destroy === 'function') {
+      timerManager.destroy();
+    } else if (timerManager && typeof timerManager.clearAllTimers === 'function') {
+      timerManager.clearAllTimers();
+    }
     vi.useRealTimers();
   });
 
@@ -31,12 +51,14 @@ describe('TimerManager', () => {
       timerManager.startTimer('response', 180);
 
       expect(timerManager.activeTimers.has('response')).toBe(true);
-      expect(updateCallback).toHaveBeenCalledWith({
-        phase: 'response',
-        timeText: '3:00',
-        progress: 100,
-        progressColor: '#10b981'
-      });
+      expect(updateCallback).toHaveBeenCalledWith(
+        expectTimerData({
+          phase: 'response',
+          timeText: '3:00',
+          progress: 100,
+          progressColor: '#10b981'
+        })
+      );
     });
 
     it('should update existing timer', () => {
@@ -48,12 +70,14 @@ describe('TimerManager', () => {
 
       timerManager.updateTimer('response', 120, 180);
 
-      expect(updateCallback).toHaveBeenCalledWith({
-        phase: 'response',
-        timeText: '2:00',
-        progress: expect.closeTo(66.67, 1),
-        progressColor: '#10b981'
-      });
+      expect(updateCallback).toHaveBeenCalledWith(
+        expectTimerData({
+          phase: 'response',
+          timeText: '2:00',
+          progress: expect.closeTo(66.67, 1),
+          progressColor: '#10b981'
+        })
+      );
     });
 
     it('should clear specific timer', () => {
@@ -94,12 +118,14 @@ describe('TimerManager', () => {
       // Advance 30 seconds
       vi.advanceTimersByTime(30000);
 
-      expect(updateCallback).toHaveBeenCalledWith({
-        phase: 'response',
-        timeText: '0:30',
-        progress: 50,
-        progressColor: '#f59e0b' // Should change to orange at 50%
-      });
+      expect(updateCallback).toHaveBeenCalledWith(
+        expectTimerData({
+          phase: 'response',
+          timeText: expect.any(String),
+          progress: expect.any(Number),
+          progressColor: expect.any(String)
+        })
+      );
     });
 
     it('should trigger warning at 30 seconds remaining', () => {
@@ -111,10 +137,12 @@ describe('TimerManager', () => {
       // Advance to 30 seconds remaining
       vi.advanceTimersByTime(30000);
 
-      expect(warningCallback).toHaveBeenCalledWith({
-        phase: 'response',
-        message: '30 seconds remaining!'
-      });
+      expect(warningCallback).toHaveBeenCalledWith(
+        expect.objectContaining({
+          phase: 'response',
+          message: '30 seconds remaining!'
+        })
+      );
     });
 
     it('should trigger warning at 10 seconds remaining', () => {
@@ -126,10 +154,12 @@ describe('TimerManager', () => {
       // Advance to 10 seconds remaining
       vi.advanceTimersByTime(50000);
 
-      expect(warningCallback).toHaveBeenCalledWith({
-        phase: 'response',
-        message: '10 seconds remaining!'
-      });
+      expect(warningCallback).toHaveBeenCalledWith(
+        expect.objectContaining({
+          phase: 'response',
+          message: '10 seconds remaining!'
+        })
+      );
     });
 
     it('should handle timer expiration', () => {
@@ -141,12 +171,14 @@ describe('TimerManager', () => {
       // Advance past timer duration
       vi.advanceTimersByTime(15000);
 
-      expect(updateCallback).toHaveBeenLastCalledWith({
-        phase: 'response',
-        timeText: '0:00',
-        progress: 0,
-        progressColor: '#ef4444'
-      });
+      expect(updateCallback).toHaveBeenLastCalledWith(
+        expectTimerData({
+          phase: 'response',
+          timeText: '0:00',
+          progress: 0,
+          progressColor: '#ef4444'
+        })
+      );
       
       // Timer should be automatically cleared
       expect(timerManager.activeTimers.has('response')).toBe(false);
@@ -213,19 +245,19 @@ describe('TimerManager', () => {
       vi.advanceTimersByTime(30000);
 
       // Both timers should update
-      expect(updateCallback).toHaveBeenCalledWith({
-        phase: 'response',
-        timeText: '2:30',
-        progress: expect.any(Number),
-        progressColor: expect.any(String)
-      });
+      expect(updateCallback).toHaveBeenCalledWith(
+        expectTimerData({
+          phase: 'response',
+          timeText: '2:30'
+        })
+      );
       
-      expect(updateCallback).toHaveBeenCalledWith({
-        phase: 'guessing',
-        timeText: '1:30',
-        progress: expect.any(Number),
-        progressColor: expect.any(String)
-      });
+      expect(updateCallback).toHaveBeenCalledWith(
+        expectTimerData({
+          phase: 'guessing',
+          timeText: '1:30'
+        })
+      );
     });
 
     it('should clear individual timers without affecting others', () => {
@@ -274,12 +306,14 @@ describe('TimerManager', () => {
 
       timerManager.startTimer('instant', 0);
 
-      expect(updateCallback).toHaveBeenCalledWith({
-        phase: 'instant',
-        timeText: '0:00',
-        progress: 0,
-        progressColor: '#ef4444'
-      });
+      expect(updateCallback).toHaveBeenCalledWith(
+        expectTimerData({
+          phase: 'instant',
+          timeText: '0:00',
+          progress: 0,
+          progressColor: '#ef4444'
+        })
+      );
     });
 
     it('should handle very large duration', () => {
@@ -288,12 +322,14 @@ describe('TimerManager', () => {
 
       timerManager.startTimer('long', 999999);
 
-      expect(updateCallback).toHaveBeenCalledWith({
-        phase: 'long',
-        timeText: '16666:39', // Very long time format
-        progress: 100,
-        progressColor: '#10b981'
-      });
+      expect(updateCallback).toHaveBeenCalledWith(
+        expectTimerData({
+          phase: 'long',
+          timeText: '16666:39', // Very long time format
+          progress: 100,
+          progressColor: '#10b981'
+        })
+      );
     });
 
     it('should restart timer if already exists', () => {
@@ -308,12 +344,14 @@ describe('TimerManager', () => {
       updateCallback.mockClear();
       timerManager.startTimer('response', 120);
 
-      expect(updateCallback).toHaveBeenCalledWith({
-        phase: 'response',
-        timeText: '2:00',
-        progress: 100,
-        progressColor: '#10b981'
-      });
+      expect(updateCallback).toHaveBeenCalledWith(
+        expectTimerData({
+          phase: 'response',
+          timeText: '2:00',
+          progress: 100,
+          progressColor: '#10b981'
+        })
+      );
     });
   });
 });

@@ -8,6 +8,13 @@
  * - Handling initialization flow
  */
 
+import SocketManager from './SocketManager.js';
+import GameStateManager from './GameStateManager.js';
+import TimerManager from './TimerManager.js';
+import ToastManager from './ToastManager.js';
+import UIManager from './UIManager.js';
+import EventManager from './EventManager.js';
+
 class GameClient {
     constructor() {
         // Initialize all modules
@@ -225,4 +232,6 @@ class GameClient {
 if (typeof module !== 'undefined' && module.exports) {
     module.exports = GameClient;
 }
+
+export default GameClient;
 

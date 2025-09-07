@@ -5,7 +5,6 @@ Provides comprehensive error handling, validation, and error response formatting
 """
 
 import logging
-import os
 from typing import Dict, Any, Optional, Tuple
 from enum import Enum
 from flask_socketio import emit
@@ -81,8 +80,29 @@ class ErrorHandler:
     # Validation constants
     MAX_ROOM_ID_LENGTH = 50
     MAX_PLAYER_NAME_LENGTH = 20
-    MAX_RESPONSE_LENGTH = int(os.environ.get('MAX_RESPONSE_LENGTH', 100))
     MIN_RESPONSE_LENGTH = 1
+    
+    def __init__(self):
+        """Initialize ErrorHandler with configuration"""
+        self._config = None
+    
+    @classmethod
+    def get_max_response_length(cls):
+        """Get maximum response length from configuration"""
+        try:
+            from config_factory import get_config
+            config = get_config()
+            return config.max_response_length
+        except Exception:
+            # Fallback to environment variable if config not available
+            import os
+            try:
+                return int(os.environ.get('MAX_RESPONSE_LENGTH', 100))
+            except (ValueError, TypeError):
+                return 100
+    
+    # Keep backwards compatibility - this will be the default, overridden at runtime
+    MAX_RESPONSE_LENGTH = 100
     
     # Room ID pattern: alphanumeric, hyphens, underscores
     ROOM_ID_PATTERN = re.compile(r'^[a-zA-Z0-9_-]+$')
@@ -201,11 +221,12 @@ class ErrorHandler:
                 "Response is too short"
             )
         
-        if len(response_text) > ErrorHandler.MAX_RESPONSE_LENGTH:
+        max_length = ErrorHandler.get_max_response_length()
+        if len(response_text) > max_length:
             raise ValidationError(
                 ErrorCode.RESPONSE_TOO_LONG,
-                f"Response must be {ErrorHandler.MAX_RESPONSE_LENGTH} characters or less",
-                {"max_length": ErrorHandler.MAX_RESPONSE_LENGTH, "actual_length": len(response_text)}
+                f"Response must be {max_length} characters or less",
+                {"max_length": max_length, "actual_length": len(response_text)}
             )
         
         return response_text
