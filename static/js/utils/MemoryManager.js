@@ -348,7 +348,7 @@ class MemoryManager {
         const handlerKey = typeof handler === 'function' ? 
             handler.toString().substring(0, 100) : String(handler);
         
-        return `${element.tagName || 'unknown'}-${event}-${handlerKey.hashCode()}`;
+        return `${element.tagName || 'unknown'}-${event}-${hashCode(handlerKey)}`;
     }
     
     /**
@@ -403,16 +403,16 @@ class MemoryManager {
 }
 
 // Helper function for string hashing
-String.prototype.hashCode = function() {
+function hashCode(str) {
     let hash = 0;
-    if (this.length === 0) return hash;
-    for (let i = 0; i < this.length; i++) {
-        const char = this.charCodeAt(i);
+    if (str.length === 0) return hash;
+    for (let i = 0; i < str.length; i++) {
+        const char = str.charCodeAt(i);
         hash = ((hash << 5) - hash) + char;
         hash = hash & hash; // Convert to 32-bit integer
     }
     return hash;
-};
+}
 
 
 export default MemoryManager;

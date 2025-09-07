@@ -21,7 +21,7 @@
  * Migration Status: Updated to use EventBus with backward compatibility
  */
 
-import { EventBusModule, migrationHelper } from './EventBusMigration.js';
+import { EventBusModule } from './EventBusMigration.js';
 import { Events } from './EventBus.js';
 import MemoryManager from '../utils/MemoryManager.js';
 
@@ -47,12 +47,6 @@ class UIManager extends EventBusModule {
         this.currentPhase = null;
         this.isInitialized = false;
         
-        // Legacy callback support (for gradual migration)
-        this.onSubmitResponse = null;
-        this.onSubmitGuess = null;
-        this.onStartRound = null;
-        this.onLeaveRoom = null;
-        this.onShareRoom = null;
         
         // Subscribe to events that trigger UI updates
         this._setupEventSubscriptions();
@@ -498,38 +492,18 @@ class UIManager extends EventBusModule {
         // Leave room
         if (this.elements.leaveRoomBtn) {
             this.elements.leaveRoomBtn.addEventListener('click', () => {
-                migrationHelper.execute(
-                    'leave-room',
-                    // Old pattern
-                    () => {
-                        if (this.onLeaveRoom) this.onLeaveRoom();
-                    },
-                    // New pattern
-                    () => {
-                        this.publish(Events.USER.ROOM_LEAVE, {
-                            timestamp: Date.now()
-                        });
-                    }
-                );
+                this.publish(Events.USER.ROOM_LEAVE, {
+                    timestamp: Date.now()
+                });
             });
         }
         
         // Share room
         if (this.elements.shareRoomBtn) {
             this.elements.shareRoomBtn.addEventListener('click', () => {
-                migrationHelper.execute(
-                    'share-room',
-                    // Old pattern
-                    () => {
-                        if (this.onShareRoom) this.onShareRoom();
-                    },
-                    // New pattern
-                    () => {
-                        this.publish(Events.USER.ROOM_SHARE, {
-                            timestamp: Date.now()
-                        });
-                    }
-                );
+                this.publish(Events.USER.ROOM_SHARE, {
+                    timestamp: Date.now()
+                });
             });
         }
         
@@ -574,19 +548,9 @@ class UIManager extends EventBusModule {
         // Start round button
         if (this.elements.startRoundBtn) {
             this.elements.startRoundBtn.addEventListener('click', () => {
-                migrationHelper.execute(
-                    'start-round',
-                    // Old pattern
-                    () => {
-                        if (this.onStartRound) this.onStartRound();
-                    },
-                    // New pattern
-                    () => {
-                        this.publish(Events.USER.ROUND_START, {
-                            timestamp: Date.now()
-                        });
-                    }
-                );
+                this.publish(Events.USER.ROUND_START, {
+                    timestamp: Date.now()
+                });
             });
         }
     }
@@ -594,21 +558,11 @@ class UIManager extends EventBusModule {
     _submitResponse() {
         const responseText = this.elements.responseInput?.value?.trim();
         
-        migrationHelper.execute(
-            'submit-response',
-            // Old pattern
-            () => {
-                if (this.onSubmitResponse) this.onSubmitResponse();
-            },
-            // New pattern
-            () => {
-                this.publish(Events.USER.RESPONSE_SUBMITTED, {
-                    response: responseText,
-                    length: responseText?.length || 0,
-                    timestamp: Date.now()
-                });
-            }
-        );
+        this.publish(Events.USER.RESPONSE_SUBMITTED, {
+            response: responseText,
+            length: responseText?.length || 0,
+            timestamp: Date.now()
+        });
     }
     
     _isResponseValid() {
@@ -792,21 +746,11 @@ class UIManager extends EventBusModule {
         guessBtn.addEventListener('click', (event) => {
             event.preventDefault();
             if (!guessBtn.disabled) {
-                migrationHelper.execute(
-                    'submit-guess',
-                    // Old pattern
-                    () => {
-                        if (this.onSubmitGuess) this.onSubmitGuess(index);
-                    },
-                    // New pattern
-                    () => {
-                        this.publish(Events.USER.GUESS_SUBMITTED, {
-                            guessIndex: index,
-                            response: response,
-                            timestamp: Date.now()
-                        });
-                    }
-                );
+                this.publish(Events.USER.GUESS_SUBMITTED, {
+                    guessIndex: index,
+                    response: response,
+                    timestamp: Date.now()
+                });
             }
         });
         
@@ -1093,19 +1037,6 @@ class UIManager extends EventBusModule {
         console.log('UIManager destroyed');
     }
     
-    /**
-     * Legacy method to set callback handlers (for backward compatibility)
-     * @deprecated Use event subscriptions instead
-     */
-    setCallbacks(callbacks) {
-        console.warn('UIManager.setCallbacks() is deprecated. Use EventBus subscriptions instead.');
-        
-        if (callbacks.onSubmitResponse) this.onSubmitResponse = callbacks.onSubmitResponse;
-        if (callbacks.onSubmitGuess) this.onSubmitGuess = callbacks.onSubmitGuess;
-        if (callbacks.onStartRound) this.onStartRound = callbacks.onStartRound;
-        if (callbacks.onLeaveRoom) this.onLeaveRoom = callbacks.onLeaveRoom;
-        if (callbacks.onShareRoom) this.onShareRoom = callbacks.onShareRoom;
-    }
 }
 
 export default UIManager;

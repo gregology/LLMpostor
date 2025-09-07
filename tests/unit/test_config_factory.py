@@ -376,59 +376,6 @@ class TestBackwardCompatibility:
             'results_display_time': 45
         })
     
-    def test_legacy_config_class(self):
-        """Test legacy Config class properties"""
-        from config_factory import Config
-        
-        config = Config()
-        assert config.SECRET_KEY == 'compat-secret'
-        assert config.PROMPTS_FILE == 'test-prompts.yaml'
-        assert config.MAX_PLAYERS_PER_ROOM == 10
-        assert config.RESPONSE_TIME_LIMIT == 200
-        assert config.GUESSING_TIME_LIMIT == 100
-        assert config.RESULTS_DISPLAY_TIME == 45
-    
-    def test_legacy_development_config(self):
-        """Test legacy DevelopmentConfig class"""
-        from config_factory import DevelopmentConfig
-        
-        # Load development configuration
-        reset_config()
-        load_config_from_dict({
-            'environment': Environment.DEVELOPMENT,
-            'debug': True,
-            'flask_env': 'development'
-        })
-        
-        config = DevelopmentConfig()
-        assert config.DEBUG == True
-        assert config.FLASK_ENV == 'development'
-    
-    def test_legacy_production_config(self):
-        """Test legacy ProductionConfig class"""
-        from config_factory import ProductionConfig
-        
-        # Load production configuration
-        reset_config()
-        load_config_from_dict({
-            'environment': Environment.PRODUCTION,
-            'debug': False,
-            'flask_env': 'production',
-            'secret_key': 'prod-secret'
-        })
-        
-        config = ProductionConfig()
-        assert config.DEBUG == False
-        assert config.FLASK_ENV == 'production'
-    
-    def test_legacy_config_mapping(self):
-        """Test legacy config mapping"""
-        from config_factory import config
-        
-        assert 'development' in config
-        assert 'production' in config
-        assert 'default' in config
-        assert config['default'] is config['development']
 
 
 if __name__ == '__main__':

@@ -374,65 +374,32 @@ class EventManager extends EventBusModule {
         this.socket.onDisconnect = () => {
             console.log('Disconnected from server');
             
-            migrationHelper.execute(
-                'socket-disconnected',
-                // Old pattern
-                () => {
-                    this.ui.updateConnectionStatus('disconnected', 'Disconnected');
-                    this.toast.warning('Connection lost. Attempting to reconnect...');
-                },
-                // New pattern
-                () => {
-                    this.publish(Events.SOCKET.DISCONNECTED, {
-                        timestamp: Date.now(),
-                        status: 'disconnected',
-                        message: 'Connection lost. Attempting to reconnect...'
-                    });
-                }
-            );
+            this.publish(Events.SOCKET.DISCONNECTED, {
+                timestamp: Date.now(),
+                status: 'disconnected',
+                message: 'Connection lost. Attempting to reconnect...'
+            });
         };
         
         this.socket.onConnectionError = (error) => {
             console.error('Connection error:', error);
             
-            migrationHelper.execute(
-                'socket-error',
-                // Old pattern
-                () => {
-                    this.ui.updateConnectionStatus('error', 'Connection Error');
-                    this.toast.error('Failed to connect to server');
-                },
-                // New pattern
-                () => {
-                    this.publish(Events.SOCKET.ERROR, {
-                        error,
-                        timestamp: Date.now(),
-                        status: 'error',
-                        message: 'Failed to connect to server'
-                    });
-                }
-            );
+            this.publish(Events.SOCKET.ERROR, {
+                error,
+                timestamp: Date.now(),
+                status: 'error',
+                message: 'Failed to connect to server'
+            });
         };
         
         this.socket.onReconnect = () => {
             console.log('Reconnected to server');
             
-            migrationHelper.execute(
-                'socket-reconnected',
-                // Old pattern
-                () => {
-                    this.ui.updateConnectionStatus('connected', 'Connected');
-                    this.toast.success('Reconnected successfully!');
-                },
-                // New pattern
-                () => {
-                    this.publish(Events.SOCKET.CONNECTED, {
-                        timestamp: Date.now(),
-                        status: 'reconnected',
-                        message: 'Reconnected successfully!'
-                    });
-                }
-            );
+            this.publish(Events.SOCKET.CONNECTED, {
+                timestamp: Date.now(),
+                status: 'reconnected',
+                message: 'Reconnected successfully!'
+            });
             
             // Rejoin room if we were in one
             if (this.gameState.roomInfo.roomId && this.gameState.roomInfo.playerName) {
