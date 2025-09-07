@@ -11,6 +11,7 @@ import uuid
 import threading
 import time
 from contextlib import contextmanager
+from src.services.cache_service import get_cache_service
 
 
 class RoomManager:
@@ -32,6 +33,19 @@ class RoomManager:
         import os
         is_testing = os.environ.get('TESTING') == '1' or 'pytest' in os.environ.get('_', '')
         self._request_window = 0.01 if is_testing else 1.0  # Much shorter window for tests
+        
+        # Performance optimization: Initialize caching (optional)
+        try:
+            self.cache = get_cache_service({
+                'max_memory_size': 50 * 1024 * 1024,  # 50MB for room data
+                'default_ttl': 3600,  # 1 hour
+                'cleanup_interval': 300  # 5 minutes
+            })
+            self.cache_enabled = True
+        except Exception:
+            # Fallback: disable caching if service unavailable (e.g., during testing)
+            self.cache = None
+            self.cache_enabled = False
     
     def _get_room_lock(self, room_id: str) -> threading.RLock:
         """Get or create a lock for a specific room."""
@@ -177,7 +191,7 @@ class RoomManager:
     
     def get_room_state(self, room_id: str) -> Optional[Dict]:
         """
-        Get the current state of a room.
+        Get the current state of a room with caching optimization.
         
         Args:
             room_id: ID of the room
@@ -185,8 +199,27 @@ class RoomManager:
         Returns:
             Room data dict or None if room doesn't exist
         """
+        # Try cache first for read-heavy operations (if available)
+        if self.cache_enabled:
+            cache_key = f"room_state:{room_id}"
+            cached_state = self.cache.get(cache_key)
+            if cached_state is not None:
+                # Validate cached state is still current
+                room = self._rooms.get(room_id)
+                if room and room.get('last_activity') == cached_state.get('last_activity'):
+                    return cached_state
+        
         room = self._rooms.get(room_id)
-        return room.copy() if room else None
+        if room:
+            room_copy = room.copy()
+            
+            # Cache the room state for quick access (if available)
+            if self.cache_enabled:
+                cache_key = f"room_state:{room_id}"
+                self.cache.set(cache_key, room_copy, ttl=60)  # Cache for 1 minute
+            
+            return room_copy
+        return None
     
     def room_exists(self, room_id: str) -> bool:
         """

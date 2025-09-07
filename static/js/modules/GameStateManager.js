@@ -577,9 +577,5 @@ class GameStateManager extends EventBusModule {
     }
 }
 
-// Export for module system
-if (typeof module !== 'undefined' && module.exports) {
-    module.exports = GameStateManager;
-}
 
 export default GameStateManager;

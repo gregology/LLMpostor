@@ -546,9 +546,4 @@ class SocketManager {
     }
 }
 
-// Export for module system
-if (typeof module !== 'undefined' && module.exports) {
-    module.exports = SocketManager;
-}
-
 export default SocketManager;

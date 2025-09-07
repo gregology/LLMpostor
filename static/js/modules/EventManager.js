@@ -898,9 +898,5 @@ class EventManager extends EventBusModule {
     }
 }
 
-// Export for module system
-if (typeof module !== 'undefined' && module.exports) {
-    module.exports = EventManager;
-}
 
 export default EventManager;

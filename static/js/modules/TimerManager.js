@@ -337,9 +337,5 @@ class TimerManager extends EventBusModule {
     }
 }
 
-// Export for module system
-if (typeof module !== 'undefined' && module.exports) {
-    module.exports = TimerManager;
-}
 
 export default TimerManager;

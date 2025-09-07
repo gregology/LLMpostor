@@ -399,9 +399,5 @@ class ToastManager extends EventBusModule {
     }
 }
 
-// Export for module system
-if (typeof module !== 'undefined' && module.exports) {
-    module.exports = ToastManager;
-}
 
 export default ToastManager;
