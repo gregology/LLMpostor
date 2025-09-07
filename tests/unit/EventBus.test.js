@@ -428,13 +428,18 @@ describe('EventBus', () => {
 
         it('should call handlers with correct context', () => {
             const context = { name: 'TestContext' };
-            const handler = vi.fn();
+            let receivedContext = null;
+            
+            // Create a handler that captures its 'this' context
+            const handler = vi.fn(function(data, eventData) {
+                receivedContext = this;
+            });
             
             eventBus.subscribe('test-event', handler, { context });
             eventBus.publish('test-event', 'data');
             
             expect(handler).toHaveBeenCalledWith('data', expect.any(Object));
-            expect(handler.mock.contexts[0]).toBe(context);
+            expect(receivedContext).toBe(context);
         });
 
         it('should handle errors in event handlers gracefully', () => {
