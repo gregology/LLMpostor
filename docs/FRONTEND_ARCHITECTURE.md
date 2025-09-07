@@ -13,8 +13,17 @@ GameClient (Main Coordinator)
 ├── TimerManager (Timer Functionality)
 ├── ToastManager (Notifications)
 ├── UIManager (DOM Manipulation)
-└── EventManager (Business Logic & Coordination)
+├── EventManager (Business Logic & Coordination)
+└── EventBus (Central Communication Hub)
 ```
+
+### EventBus Architecture
+The modules communicate through a centralized EventBus system:
+- **Event-driven communication** replaces direct method calls
+- **Loose coupling** between modules for better maintainability  
+- **Type-safe events** with centralized event definitions
+- **Performance optimizations** with batched DOM updates and debounced handlers
+- **Memory management** with automatic cleanup of event subscriptions
 
 ## Modules
 
@@ -36,25 +45,28 @@ GameClient (Main Coordinator)
 - Player data management
 - Room information management
 - State validation
+- EventBus integration for state change notifications
 
 **Key Features:**
 - Centralized state management
 - Submission flag tracking
-- State change notifications
+- Event-driven state change notifications
 - Player sorting and filtering
+- Automatic event publishing for UI updates
 
 ### 3. TimerManager (`/static/js/modules/TimerManager.js`)
 **Responsibilities:**
 - Phase timer management
-- Timer UI updates
+- Timer UI updates via EventBus
 - Timer synchronization with server
-- Warning notifications
+- Warning notifications through events
 
 **Key Features:**
 - Multiple concurrent timers
-- Progress calculation
-- Auto-color coding based on remaining time
-- Time formatting utilities
+- Event-driven UI updates
+- Progress calculation and color coding
+- Automatic warning event publishing
+- Memory-efficient timer cleanup
 
 ### 4. ToastManager (`/static/js/modules/ToastManager.js`)
 **Responsibilities:**
@@ -72,29 +84,33 @@ GameClient (Main Coordinator)
 ### 5. UIManager (`/static/js/modules/UIManager.js`)
 **Responsibilities:**
 - DOM element caching and management
-- UI state transitions
+- UI state transitions via EventBus
 - Content rendering and updates
-- Form state management
+- Form state management with event publishing
+- Performance-optimized DOM operations
 
 **Key Features:**
-- Element caching for performance
-- Phase-based UI switching
-- Form validation
-- Event delegation
-- XSS protection
+- Batched DOM updates with requestAnimationFrame
+- Debounced input handlers for performance
+- Memory-efficient event listener management
+- Event-driven phase switching
+- XSS protection and form validation
+- Automatic cleanup on destroy
 
 ### 6. EventManager (`/static/js/modules/EventManager.js`)
 **Responsibilities:**
-- Module coordination
+- Module coordination via EventBus
 - Game event handling and routing
+- Socket event translation to EventBus events
 - Error handling and user feedback
 - Business logic orchestration
 
 **Key Features:**
-- Centralized event coordination
-- Error recovery and user feedback
+- EventBus integration for all socket events
+- Error recovery with event-driven feedback
 - Business logic encapsulation
-- Socket event routing
+- Automatic event routing and translation
+- Response filtering and guess submission logic
 
 ### 7. GameClient (`/static/js/modules/GameClient.js`)
 **Responsibilities:**
@@ -126,6 +142,20 @@ GameClient (Main Coordinator)
 
 The frontend was successfully migrated from a single 1,417-line monolithic file to 7 focused modules with clear separation of concerns. This provides better maintainability, testability, and extensibility while maintaining 100% functional parity.
 
+## Performance Enhancements
+
+### Frontend Optimizations
+- **AssetLoader** (`/static/js/utils/AssetLoader.js`): Intelligent asset loading with caching and preloading
+- **MemoryManager** (`/static/js/utils/MemoryManager.js`): Automatic cleanup of event listeners, timers, and DOM references
+- **PerformanceMonitor** (`/static/js/utils/PerformanceMonitor.js`): Web Vitals monitoring and performance metrics
+- **BundleOptimizer** (`/static/js/utils/BundleOptimizer.js`): Advanced module loading and code splitting
+
+### UI Performance Features
+- **Batched DOM Updates**: All DOM changes use requestAnimationFrame for optimal rendering
+- **Debounced Input Handlers**: Input events are debounced to reduce unnecessary processing
+- **Element Caching**: DOM queries are cached to avoid repeated lookups
+- **Memory Leak Prevention**: Automatic cleanup of all event listeners and timers
+
 ## Key Benefits
 
 1. **Maintainability**: Each module has a single, clear responsibility
@@ -133,7 +163,8 @@ The frontend was successfully migrated from a single 1,417-line monolithic file 
 3. **Testability**: Modules can be unit tested individually
 4. **Reusability**: Components can be reused across different contexts
 5. **Debugging**: Clear separation makes issues easier to trace and fix
-6. **Performance**: Better resource management and optimized DOM operations
+6. **Performance**: Optimized DOM operations, memory management, and asset loading
+7. **Event-Driven**: Loose coupling through centralized EventBus communication
 
 ## Bug Fixes
 
@@ -155,10 +186,12 @@ initialize() {
 
 ## Testing
 
-All 180 existing tests pass, ensuring complete functional parity:
-- 72 integration tests
-- 108 unit tests  
-- 100% backwards compatibility
+Comprehensive test coverage ensures stability and reliability:
+- **120 JavaScript unit tests** covering all modules and utilities
+- **143 Python unit tests** covering backend services and configuration
+- **Performance optimizations** with test environment detection
+- **EventBus integration** fully tested with mock event verification
+- **100% backwards compatibility** maintained
 
 ## Usage
 
@@ -205,14 +238,21 @@ The modular architecture makes it easy to add:
 static/js/
 ├── game-modular.js          # Main entry point with module loader
 ├── home.js                  # Home page functionality
-└── modules/
-    ├── SocketManager.js     # WebSocket communication
-    ├── GameStateManager.js  # State management  
-    ├── TimerManager.js      # Timer functionality
-    ├── ToastManager.js      # Notifications
-    ├── UIManager.js         # DOM manipulation
-    ├── EventManager.js      # Event coordination
-    └── GameClient.js        # Main coordinator
+├── modules/
+│   ├── EventBus.js          # Central event system with type definitions
+│   ├── EventBusMigration.js # EventBus base classes and utilities
+│   ├── SocketManager.js     # WebSocket communication
+│   ├── GameStateManager.js  # State management  
+│   ├── TimerManager.js      # Timer functionality
+│   ├── ToastManager.js      # Notifications
+│   ├── UIManager.js         # DOM manipulation with performance optimizations
+│   ├── EventManager.js      # Event coordination and business logic
+│   └── GameClient.js        # Main coordinator
+└── utils/
+    ├── AssetLoader.js       # Intelligent asset loading and caching
+    ├── MemoryManager.js     # Memory leak prevention and cleanup
+    ├── PerformanceMonitor.js# Web Vitals and performance monitoring
+    └── BundleOptimizer.js   # Advanced module loading (Phase 3)
 ```
 
 The modular architecture provides a solid foundation for future development while maintaining the excellent user experience of the original implementation.

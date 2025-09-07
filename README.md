@@ -19,6 +19,23 @@ A multiplayer guessing game where humans try to pass as robots.
 - **Room-based sessions** for private games with friends
 - **Random room joining** to find open games
 
+## Architecture
+
+LLMpostor features a modern, modular architecture:
+
+### Backend
+- **Service Container**: Dependency injection with singleton/transient lifecycle management
+- **Configuration Factory**: Type-safe configuration with environment-specific settings
+- **Performance Optimizations**: Multi-level caching, database optimization, payload compression
+- **Reliability Features**: Connection recovery, error handling, metrics collection
+
+### Frontend  
+- **Event-Driven Architecture**: Modular JavaScript with EventBus communication
+- **Performance Enhancements**: Asset loading optimization, memory management, DOM caching
+- **Modular Design**: 7 specialized modules (GameClient, SocketManager, UIManager, etc.)
+
+For detailed frontend architecture, see [`docs/FRONTEND_ARCHITECTURE.md`](docs/FRONTEND_ARCHITECTURE.md).
+
 ## Quick Start
 
 ### Development Server
@@ -73,10 +90,19 @@ prompts:
 
 ### Configuration
 
-Key environment variables:
+The application uses a Configuration Factory system with type-safe settings:
+
+**Core Settings:**
 - `PORT` - Server port (default: 8000)  
-- `SECRET_KEY` - Flask secret key
+- `SECRET_KEY` - Flask secret key (required in production)
 - `PROMPTS_FILE` - Prompts file path (default: prompts.yaml)
+- `MAX_PLAYERS_PER_ROOM` - Maximum players per room (default: 8)
+- `RESPONSE_TIME_LIMIT` - Response phase duration in seconds (default: 180)
+- `GUESSING_TIME_LIMIT` - Guessing phase duration in seconds (default: 120)
+
+**Performance Settings:**
+- `CACHE_TTL` - Cache time-to-live in seconds (default: 3600)
+- `MAX_RESPONSE_LENGTH` - Maximum response length (default: 500)
 
 ### Environment Configuration
 
