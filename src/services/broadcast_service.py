@@ -11,6 +11,7 @@ This service handles all Socket.IO emissions in a centralized way:
 
 import logging
 from typing import Dict, Any
+from src.services.payload_optimizer import get_payload_optimizer
 
 logger = logging.getLogger(__name__)
 
@@ -31,6 +32,18 @@ class BroadcastService:
         self.room_manager = room_manager
         self.game_manager = game_manager
         self.error_handler = error_handler
+        
+        # Performance optimization: Initialize payload optimizer (optional)
+        try:
+            self.payload_optimizer = get_payload_optimizer({
+                'compression_threshold': 512,  # Compress payloads > 512 bytes
+                'enable_caching': True
+            })
+            self.optimization_enabled = True
+        except Exception:
+            # Fallback: disable optimization if service unavailable
+            self.payload_optimizer = None
+            self.optimization_enabled = False
     
     # Core emission methods
     
@@ -93,7 +106,7 @@ class BroadcastService:
             logger.error(f'Error broadcasting player list update: {e}')
     
     def broadcast_room_state_update(self, room_id: str):
-        """Broadcast room state update to all players in room."""
+        """Broadcast optimized room state update to all players in room."""
         try:
             room_state = self.room_manager.get_room_state(room_id)
             if not room_state:
@@ -124,27 +137,24 @@ class BroadcastService:
                 safe_game_state['time_remaining'] = self.game_manager.get_phase_time_remaining(room_id)
             
             if game_state['phase'] == 'guessing':
-                # Add responses without revealing authors (for compatibility)
-                safe_game_state['responses'] = []
+                # Optimize responses payload
+                responses_data = []
                 for i, response in enumerate(game_state['responses']):
-                    safe_game_state['responses'].append({
+                    responses_data.append({
                         'index': i,
                         'text': response['text']
                     })
+                safe_game_state['responses'] = responses_data
                 safe_game_state['guess_count'] = len(game_state['guesses'])
                 safe_game_state['time_remaining'] = self.game_manager.get_phase_time_remaining(room_id)
             
-            # Transform player list
-            player_list = []
-            for player_id, player in players.items():
-                player_list.append({
-                    'player_id': player['player_id'],
-                    'name': player['name'],
-                    'score': player['score'],
-                    'connected': player['connected']
-                })
+            # Keep original format for backward compatibility
+            # TODO: Enable payload optimization in future version with client support
+            # optimized_payload, metadata = self.payload_optimizer.optimize_room_state(
+            #     safe_game_state, room_id
+            # )
             
-            # Broadcast the game state directly (for backward compatibility with tests)
+            # Broadcast the game state directly (maintaining backward compatibility)
             self.emit_to_room('room_state_updated', safe_game_state, room_id)
             logger.debug(f'Broadcasted room state update to room {room_id}')
             

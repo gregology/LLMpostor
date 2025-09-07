@@ -5,12 +5,14 @@ Provides comprehensive error handling, validation, and error response formatting
 """
 
 import logging
-import os
-from typing import Dict, Any, Optional, Tuple
+from typing import Dict, Any, Optional, Tuple, Union
 from enum import Enum
 from flask_socketio import emit
 import traceback
 import re
+import json
+import hashlib
+import html
 
 logger = logging.getLogger(__name__)
 
@@ -63,6 +65,14 @@ class ErrorCode(Enum):
     INTERNAL_ERROR = "INTERNAL_ERROR"
     SERVICE_UNAVAILABLE = "SERVICE_UNAVAILABLE"
     RATE_LIMITED = "RATE_LIMITED"
+    
+    # Data Integrity Errors
+    DATA_CHECKSUM_MISMATCH = "DATA_CHECKSUM_MISMATCH"
+    MALFORMED_PAYLOAD = "MALFORMED_PAYLOAD"
+    SUSPICIOUS_DATA_PATTERNS = "SUSPICIOUS_DATA_PATTERNS"
+    DATA_SIZE_EXCEEDED = "DATA_SIZE_EXCEEDED"
+    ENCODING_ERROR = "ENCODING_ERROR"
+    INJECTION_ATTEMPT = "INJECTION_ATTEMPT"
 
 
 class ValidationError(Exception):
@@ -81,8 +91,44 @@ class ErrorHandler:
     # Validation constants
     MAX_ROOM_ID_LENGTH = 50
     MAX_PLAYER_NAME_LENGTH = 20
-    MAX_RESPONSE_LENGTH = int(os.environ.get('MAX_RESPONSE_LENGTH', 100))
     MIN_RESPONSE_LENGTH = 1
+    MAX_PAYLOAD_SIZE = 10240  # 10KB max payload size
+    
+    # Security patterns
+    INJECTION_PATTERNS = [
+        r'<script[^>]*>.*?</script>',  # Script tags
+        r'javascript\s*:',  # JavaScript protocol
+        r'on\w+\s*=',  # Event handlers
+        r'<\s*iframe[^>]*>',  # Iframes
+        r'<\s*object[^>]*>',  # Objects
+        r'<\s*embed[^>]*>',  # Embeds
+        r'\.\./+',  # Path traversal
+        r'[;\'"]\s*(drop|delete|insert|update|create|alter)\s+',  # SQL keywords
+        r'union\s+select',  # SQL union
+        r'\x00',  # Null bytes
+    ]
+    
+    def __init__(self):
+        """Initialize ErrorHandler with configuration"""
+        self._config = None
+    
+    @classmethod
+    def get_max_response_length(cls):
+        """Get maximum response length from configuration"""
+        try:
+            from config_factory import get_config
+            config = get_config()
+            return config.max_response_length
+        except Exception:
+            # Fallback to environment variable if config not available
+            import os
+            try:
+                return int(os.environ.get('MAX_RESPONSE_LENGTH', 100))
+            except (ValueError, TypeError):
+                return 100
+    
+    # Keep backwards compatibility - this will be the default, overridden at runtime
+    MAX_RESPONSE_LENGTH = 100
     
     # Room ID pattern: alphanumeric, hyphens, underscores
     ROOM_ID_PATTERN = re.compile(r'^[a-zA-Z0-9_-]+$')
@@ -201,11 +247,12 @@ class ErrorHandler:
                 "Response is too short"
             )
         
-        if len(response_text) > ErrorHandler.MAX_RESPONSE_LENGTH:
+        max_length = ErrorHandler.get_max_response_length()
+        if len(response_text) > max_length:
             raise ValidationError(
                 ErrorCode.RESPONSE_TOO_LONG,
-                f"Response must be {ErrorHandler.MAX_RESPONSE_LENGTH} characters or less",
-                {"max_length": ErrorHandler.MAX_RESPONSE_LENGTH, "actual_length": len(response_text)}
+                f"Response must be {max_length} characters or less",
+                {"max_length": max_length, "actual_length": len(response_text)}
             )
         
         return response_text
@@ -297,6 +344,261 @@ class ErrorHandler:
                 )
         
         return data
+    
+    @staticmethod
+    def validate_payload_integrity(data: Union[str, bytes, Dict]) -> Dict:
+        """
+        Validate payload integrity and detect corruption/malicious content.
+        
+        Args:
+            data: Raw payload data
+            
+        Returns:
+            Validated and sanitized data
+            
+        Raises:
+            ValidationError: If payload is corrupted or malicious
+        """
+        # Handle different input types
+        if isinstance(data, (str, bytes)):
+            try:
+                if isinstance(data, bytes):
+                    data = data.decode('utf-8')
+                data = json.loads(data)
+            except (UnicodeDecodeError, json.JSONDecodeError) as e:
+                raise ValidationError(
+                    ErrorCode.MALFORMED_PAYLOAD,
+                    f"Invalid payload format: {str(e)}"
+                )
+        
+        if not isinstance(data, dict):
+            raise ValidationError(
+                ErrorCode.MALFORMED_PAYLOAD,
+                "Payload must be a JSON object"
+            )
+        
+        # Check payload size
+        payload_str = json.dumps(data)
+        if len(payload_str) > ErrorHandler.MAX_PAYLOAD_SIZE:
+            raise ValidationError(
+                ErrorCode.DATA_SIZE_EXCEEDED,
+                f"Payload size exceeds maximum allowed size of {ErrorHandler.MAX_PAYLOAD_SIZE} bytes",
+                {"size": len(payload_str), "max_size": ErrorHandler.MAX_PAYLOAD_SIZE}
+            )
+        
+        # Security validation
+        ErrorHandler._scan_for_injection_attempts(data)
+        
+        # Data structure validation
+        ErrorHandler._validate_data_structure(data)
+        
+        return data
+    
+    @staticmethod
+    def validate_text_integrity(text: str, field_name: str = "text") -> str:
+        """
+        Validate text field integrity and sanitize content.
+        
+        Args:
+            text: Raw text content
+            field_name: Name of the field for error reporting
+            
+        Returns:
+            Sanitized text
+            
+        Raises:
+            ValidationError: If text contains malicious content
+        """
+        if not isinstance(text, str):
+            raise ValidationError(
+                ErrorCode.INVALID_DATA,
+                f"{field_name} must be a string"
+            )
+        
+        # Check for encoding issues
+        try:
+            text.encode('utf-8')
+        except UnicodeEncodeError:
+            raise ValidationError(
+                ErrorCode.ENCODING_ERROR,
+                f"{field_name} contains invalid Unicode characters"
+            )
+        
+        # Scan for injection patterns
+        for pattern in ErrorHandler.INJECTION_PATTERNS:
+            if re.search(pattern, text, re.IGNORECASE | re.DOTALL):
+                logger.warning(f"Injection attempt detected in {field_name}: {pattern}")
+                raise ValidationError(
+                    ErrorCode.INJECTION_ATTEMPT,
+                    f"{field_name} contains potentially malicious content"
+                )
+        
+        # Basic HTML escaping for safety
+        sanitized_text = html.escape(text)
+        
+        return sanitized_text
+    
+    @staticmethod
+    def generate_data_checksum(data: Dict) -> str:
+        """
+        Generate a checksum for data integrity verification.
+        
+        Args:
+            data: Data dictionary
+            
+        Returns:
+            SHA256 checksum hex string
+        """
+        # Normalize data for consistent checksums
+        normalized = json.dumps(data, sort_keys=True, separators=(',', ':'))
+        return hashlib.sha256(normalized.encode('utf-8')).hexdigest()
+    
+    @staticmethod
+    def verify_data_checksum(data: Dict, expected_checksum: str) -> bool:
+        """
+        Verify data integrity against expected checksum.
+        
+        Args:
+            data: Data dictionary
+            expected_checksum: Expected SHA256 checksum
+            
+        Returns:
+            True if checksum matches, False otherwise
+            
+        Raises:
+            ValidationError: If checksum doesn't match
+        """
+        actual_checksum = ErrorHandler.generate_data_checksum(data)
+        if actual_checksum != expected_checksum:
+            raise ValidationError(
+                ErrorCode.DATA_CHECKSUM_MISMATCH,
+                "Data integrity check failed - checksum mismatch",
+                {
+                    "expected": expected_checksum,
+                    "actual": actual_checksum
+                }
+            )
+        return True
+    
+    @staticmethod
+    def _scan_for_injection_attempts(data: Dict, path: str = "") -> None:
+        """
+        Recursively scan data for injection attempts.
+        
+        Args:
+            data: Data to scan
+            path: Current path in data structure (for error reporting)
+            
+        Raises:
+            ValidationError: If injection attempt is detected
+        """
+        for key, value in data.items():
+            current_path = f"{path}.{key}" if path else key
+            
+            if isinstance(value, str):
+                ErrorHandler.validate_text_integrity(value, current_path)
+            elif isinstance(value, dict):
+                ErrorHandler._scan_for_injection_attempts(value, current_path)
+            elif isinstance(value, list):
+                for i, item in enumerate(value):
+                    if isinstance(item, str):
+                        ErrorHandler.validate_text_integrity(item, f"{current_path}[{i}]")
+                    elif isinstance(item, dict):
+                        ErrorHandler._scan_for_injection_attempts(item, f"{current_path}[{i}]")
+    
+    @staticmethod
+    def _validate_data_structure(data: Dict) -> None:
+        """
+        Validate basic data structure integrity.
+        
+        Args:
+            data: Data dictionary to validate
+            
+        Raises:
+            ValidationError: If structure is invalid
+        """
+        # Check for suspicious nested depth (potential DoS via deep recursion)
+        max_depth = 10
+        
+        def check_depth(obj, current_depth=0):
+            if current_depth > max_depth:
+                raise ValidationError(
+                    ErrorCode.SUSPICIOUS_DATA_PATTERNS,
+                    f"Data structure exceeds maximum nesting depth of {max_depth}"
+                )
+            
+            if isinstance(obj, dict):
+                for value in obj.values():
+                    check_depth(value, current_depth + 1)
+            elif isinstance(obj, list):
+                for item in obj:
+                    check_depth(item, current_depth + 1)
+        
+        check_depth(data)
+        
+        # Check for excessive key counts (potential DoS via memory exhaustion)
+        def count_keys(obj):
+            if isinstance(obj, dict):
+                count = len(obj)
+                for value in obj.values():
+                    count += count_keys(value)
+                return count
+            elif isinstance(obj, list):
+                count = 0
+                for item in obj:
+                    count += count_keys(item)
+                return count
+            return 0
+        
+        total_keys = count_keys(data)
+        if total_keys > 1000:  # Reasonable limit for game data
+            raise ValidationError(
+                ErrorCode.SUSPICIOUS_DATA_PATTERNS,
+                f"Data structure contains excessive number of keys: {total_keys}"
+            )
+    
+    @staticmethod
+    def sanitize_user_input(text: str, max_length: Optional[int] = None) -> str:
+        """
+        Sanitize user input with comprehensive cleaning.
+        
+        Args:
+            text: Raw user input
+            max_length: Optional maximum length to enforce
+            
+        Returns:
+            Sanitized text
+            
+        Raises:
+            ValidationError: If input is invalid after sanitization
+        """
+        if not isinstance(text, str):
+            raise ValidationError(
+                ErrorCode.INVALID_DATA,
+                "Input must be a string"
+            )
+        
+        # Basic sanitization
+        text = text.strip()
+        
+        # Remove null bytes and control characters (except newlines and tabs)
+        text = re.sub(r'[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]', '', text)
+        
+        # Normalize whitespace
+        text = re.sub(r'\s+', ' ', text)
+        
+        # Length validation
+        if max_length and len(text) > max_length:
+            text = text[:max_length]
+        
+        # Final validation
+        if not text:
+            raise ValidationError(
+                ErrorCode.EMPTY_RESPONSE,
+                "Input cannot be empty after sanitization"
+            )
+        
+        return text
     
     @staticmethod
     def emit_error(code: ErrorCode, message: str, details: Optional[Dict] = None):

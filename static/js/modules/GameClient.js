@@ -8,6 +8,13 @@
  * - Handling initialization flow
  */
 
+import SocketManager from './SocketManager.js';
+import GameStateManager from './GameStateManager.js';
+import TimerManager from './TimerManager.js';
+import ToastManager from './ToastManager.js';
+import UIManager from './UIManager.js';
+import EventManager from './EventManager.js';
+
 class GameClient {
     constructor() {
         // Initialize all modules
@@ -179,6 +186,45 @@ class GameClient {
         };
     }
     
+    /**
+     * Clean up resources and destroy the game client
+     */
+    destroy() {
+        console.log('Destroying GameClient...');
+        
+        // Destroy all modules that have destroy methods
+        if (this.timerManager && this.timerManager.destroy) {
+            this.timerManager.destroy();
+        }
+        if (this.toastManager && this.toastManager.destroy) {
+            this.toastManager.destroy();
+        }
+        if (this.gameStateManager && this.gameStateManager.destroy) {
+            this.gameStateManager.destroy();
+        }
+        if (this.eventManager && this.eventManager.destroy) {
+            this.eventManager.destroy();
+        }
+        if (this.uiManager && this.uiManager.destroy) {
+            this.uiManager.destroy();
+        }
+        if (this.socketManager && this.socketManager.destroy) {
+            this.socketManager.destroy();
+        }
+        
+        // Clear references
+        this.socketManager = null;
+        this.gameStateManager = null;
+        this.timerManager = null;
+        this.toastManager = null;
+        this.uiManager = null;
+        this.eventManager = null;
+        
+        this.isInitialized = false;
+        
+        console.log('GameClient destroyed');
+    }
+    
     // Private methods
     
     _setupConnectionFlow() {
@@ -221,8 +267,5 @@ class GameClient {
     }
 }
 
-// Export for module system
-if (typeof module !== 'undefined' && module.exports) {
-    module.exports = GameClient;
-}
+export default GameClient;
 

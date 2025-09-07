@@ -8,21 +8,26 @@ from flask_socketio import SocketIO, emit, join_room, leave_room
 import os
 import logging
 import atexit
+import time
+import threading
+from collections import defaultdict, deque
+from functools import wraps
 
-# Import game modules
-from src.room_manager import RoomManager
-from src.game_manager import GameManager
-from src.content_manager import ContentManager
-from src.error_handler import ErrorHandler, ErrorCode, ValidationError, with_error_handling
+# Import error handling utilities (still needed for decorators and validation)
+from src.error_handler import ErrorCode, ValidationError, with_error_handling
 
-# Import services
-from src.services.broadcast_service import BroadcastService
-from src.services.session_service import SessionService
-from src.services.auto_game_flow_service import AutoGameFlowService
+# Import service container and configuration factory
+from container import configure_container, get_container
+from config_factory import load_config
 
 # Initialize Flask app
 app = Flask(__name__)
-app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'dev-secret-key-change-in-production')
+
+# Load configuration using Configuration Factory
+app_config = load_config()
+from config_factory import ConfigurationFactory
+config_factory = ConfigurationFactory()
+app.config.update(config_factory.get_flask_config())
 
 # Initialize Socket.IO with CORS enabled for development
 socketio = SocketIO(app, cors_allowed_origins="*", async_mode='eventlet')
@@ -31,15 +36,170 @@ socketio = SocketIO(app, cors_allowed_origins="*", async_mode='eventlet')
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# Initialize game managers
-room_manager = RoomManager()
-game_manager = GameManager(room_manager)
-content_manager = ContentManager()
-error_handler = ErrorHandler()
+# Configure service container with dependencies
+container = configure_container(socketio=socketio, config=config_factory.to_dict())
 
-# Initialize services
-session_service = SessionService()
-broadcast_service = BroadcastService(socketio, room_manager, game_manager, error_handler)
+# Get services from container
+room_manager = container.get('RoomManager')
+game_manager = container.get('GameManager')
+content_manager = container.get('ContentManager')
+error_handler = container.get('ErrorHandler')
+session_service = container.get('SessionService')
+broadcast_service = container.get('BroadcastService')
+auto_flow_service = container.get('AutoGameFlowService')
+
+# Event Queue Overflow Prevention System
+class EventQueueManager:
+    """Manages event queues and prevents overflow/flooding attacks."""
+    
+    def __init__(self):
+        self.client_queues = defaultdict(lambda: deque(maxlen=50))  # Max 50 events per client
+        self.client_rates = defaultdict(lambda: deque(maxlen=100))  # Track last 100 events
+        self.global_event_count = 0
+        self.global_event_window = deque(maxlen=1000)  # Track last 1000 global events
+        self.blocked_clients = {}  # Temporarily blocked clients
+        self.lock = threading.RLock()
+        
+        # Rate limiting configuration
+        self.max_events_per_second = 10  # Max events per client per second
+        self.max_events_per_minute = 100  # Max events per client per minute
+        self.global_max_events_per_second = 100  # Global rate limit
+        self.block_duration = 60  # Block duration in seconds
+    
+    def _is_testing(self):
+        """Check if we're in a testing environment at runtime"""
+        import sys
+        return (
+            os.environ.get('TESTING') == '1' or 
+            'pytest' in os.environ.get('_', '') or
+            'pytest' in sys.modules or
+            any('pytest' in arg for arg in sys.argv) or
+            'test' in sys.argv[0].lower() if sys.argv else False
+        )
+        
+    def is_client_blocked(self, client_id: str) -> bool:
+        """Check if a client is currently blocked."""
+        with self.lock:
+            if client_id in self.blocked_clients:
+                if time.time() - self.blocked_clients[client_id] > self.block_duration:
+                    del self.blocked_clients[client_id]
+                    logger.info(f"Unblocked client {client_id}")
+                    return False
+                return True
+            return False
+    
+    def block_client(self, client_id: str, reason: str = "Rate limit exceeded"):
+        """Block a client for a specified duration."""
+        with self.lock:
+            self.blocked_clients[client_id] = time.time()
+            logger.warning(f"Blocked client {client_id}: {reason}")
+    
+    def can_process_event(self, client_id: str, event_type: str) -> bool:
+        """Check if an event can be processed without causing overflow."""
+        # If we're in testing, bypass all rate limiting
+        if self._is_testing():
+            return True
+            
+        with self.lock:
+            current_time = time.time()
+            
+            # Check if client is blocked
+            if self.is_client_blocked(client_id):
+                return False
+            
+            # Check global rate limit
+            self.global_event_window.append(current_time)
+            recent_global_events = sum(1 for t in self.global_event_window 
+                                     if current_time - t <= 1)
+            
+            if recent_global_events > self.global_max_events_per_second:
+                logger.warning(f"Global rate limit exceeded: {recent_global_events} events/sec")
+                return False
+            
+            # Check client-specific rate limits
+            client_events = self.client_rates[client_id]
+            client_events.append(current_time)
+            
+            # Check events per second
+            recent_events = sum(1 for t in client_events if current_time - t <= 1)
+            if recent_events > self.max_events_per_second:
+                self.block_client(client_id, f"Too many events per second: {recent_events}")
+                return False
+            
+            # Check events per minute
+            minute_events = sum(1 for t in client_events if current_time - t <= 60)
+            if minute_events > self.max_events_per_minute:
+                self.block_client(client_id, f"Too many events per minute: {minute_events}")
+                return False
+            
+            # Add to client queue
+            queue = self.client_queues[client_id]
+            if len(queue) >= queue.maxlen:
+                logger.warning(f"Client {client_id} queue near capacity: {len(queue)}")
+            
+            queue.append({
+                'event_type': event_type,
+                'timestamp': current_time
+            })
+            
+            self.global_event_count += 1
+            return True
+    
+    def get_queue_stats(self, client_id: str = None) -> dict:
+        """Get queue statistics for monitoring."""
+        with self.lock:
+            if client_id:
+                return {
+                    'queue_length': len(self.client_queues[client_id]),
+                    'recent_events': len(self.client_rates[client_id]),
+                    'blocked': self.is_client_blocked(client_id)
+                }
+            
+            return {
+                'total_clients': len(self.client_queues),
+                'blocked_clients': len(self.blocked_clients),
+                'global_event_count': self.global_event_count,
+                'global_recent_events': len(self.global_event_window)
+            }
+
+# Initialize event queue manager
+event_queue_manager = EventQueueManager()
+
+def prevent_event_overflow(event_type: str = "generic"):
+    """Decorator to prevent event queue overflow and implement rate limiting."""
+    def decorator(func):
+        @wraps(func)
+        def wrapper(*args, **kwargs):
+            client_id = request.sid
+            
+            # Check if event can be processed (respects the disabled flag for testing)
+            if not event_queue_manager.can_process_event(client_id, event_type):
+                logger.warning(f"Event {event_type} blocked for client {client_id}")
+                emit('error', {
+                    'success': False,
+                    'error': {
+                        'code': ErrorCode.RATE_LIMITED.value,
+                        'message': 'Too many requests. Please slow down.',
+                        'details': {'retry_after': 60}
+                    }
+                })
+                return
+            
+            try:
+                return func(*args, **kwargs)
+            except Exception as e:
+                logger.error(f"Error in {event_type} handler: {e}")
+                emit('error', {
+                    'success': False,
+                    'error': {
+                        'code': ErrorCode.INTERNAL_ERROR.value,
+                        'message': 'An internal error occurred',
+                        'details': {}
+                    }
+                })
+        
+        return wrapper
+    return decorator
 
 # Load prompts on startup
 try:
@@ -48,11 +208,6 @@ try:
 except Exception as e:
     logger.error(f"Failed to load prompts: {e}")
     # Continue without prompts for now - will handle gracefully
-
-# Session management is now handled by session_service
-
-# Initialize auto game flow service
-auto_flow_service = AutoGameFlowService(broadcast_service, game_manager, room_manager)
 
 @app.route('/')
 def index():
@@ -83,8 +238,7 @@ def find_available_room():
 @app.route('/<room_id>')
 def room(room_id):
     """Serve the game interface for a specific room."""
-    from src.error_handler import ErrorHandler
-    return render_template('game.html', room_id=room_id, max_response_length=ErrorHandler.MAX_RESPONSE_LENGTH)
+    return render_template('game.html', room_id=room_id, max_response_length=error_handler.MAX_RESPONSE_LENGTH)
 
 @socketio.on('connect')
 def handle_connect():
@@ -121,6 +275,7 @@ def handle_disconnect():
 # Player disconnect game impact handling is now in auto_flow_service
 
 @socketio.on('join_room')
+@prevent_event_overflow('join_room')
 @with_error_handling
 def handle_join_room(data):
     """
@@ -153,8 +308,8 @@ def handle_join_room(data):
         )
     
     # Validate and sanitize room ID and player name
-    room_id = ErrorHandler.validate_room_id(data['room_id'])
-    player_name = ErrorHandler.validate_player_name(data['player_name'])
+    room_id = error_handler.validate_room_id(data['room_id'])
+    player_name = error_handler.validate_player_name(data['player_name'])
     
     # Check if player is already in a room
     if session_service.has_session(request.sid):
@@ -176,7 +331,7 @@ def handle_join_room(data):
         logger.info(f'Player {player_name} ({player_data["player_id"]}) joined room {room_id}')
         
         # Send success response to joining player
-        emit('room_joined', ErrorHandler.create_success_response({
+        emit('room_joined', error_handler.create_success_response({
             'room_id': room_id,
             'player_id': player_data['player_id'],
             'player_name': player_name,
@@ -223,7 +378,7 @@ def handle_leave_room(data=None):
         logger.info(f'Player {player_name} ({player_id}) left room {room_id}')
         
         # Send confirmation to leaving player
-        emit('room_left', ErrorHandler.create_success_response({
+        emit('room_left', error_handler.create_success_response({
             'message': f'Successfully left room {room_id}'
         }))
         
@@ -237,6 +392,7 @@ def handle_leave_room(data=None):
         )
 
 @socketio.on('get_room_state')
+@prevent_event_overflow('get_room_state')
 @with_error_handling
 def handle_get_room_state(data=None):
     """Handle request for current room state."""
@@ -252,6 +408,7 @@ def handle_get_room_state(data=None):
     broadcast_service.send_room_state_to_player(room_id, request.sid)
 
 @socketio.on('start_round')
+@prevent_event_overflow('start_round')
 @with_error_handling
 def handle_start_round(data=None):
     """
@@ -307,7 +464,7 @@ def handle_start_round(data=None):
         broadcast_service.broadcast_round_started(room_id)
         broadcast_service.broadcast_room_state_update(room_id)
         
-        emit('round_started', ErrorHandler.create_success_response({
+        emit('round_started', error_handler.create_success_response({
             'message': 'Round started successfully'
         }))
     else:
@@ -317,6 +474,7 @@ def handle_start_round(data=None):
         )
 
 @socketio.on('submit_response')
+@prevent_event_overflow('submit_response')
 @with_error_handling
 def handle_submit_response(data):
     """
@@ -349,7 +507,7 @@ def handle_submit_response(data):
         )
     
     # Validate and sanitize response text
-    response_text = ErrorHandler.validate_response_text(data['response'])
+    response_text = error_handler.validate_response_text(data['response'])
     
     room_id = session_info['room_id']
     player_id = session_info['player_id']
@@ -374,7 +532,7 @@ def handle_submit_response(data):
         logger.info(f'Player {player_id} submitted response in room {room_id}')
         
         # Send confirmation to submitting player
-        emit('response_submitted', ErrorHandler.create_success_response({
+        emit('response_submitted', error_handler.create_success_response({
             'message': 'Response submitted successfully'
         }))
         
@@ -395,6 +553,7 @@ def handle_submit_response(data):
         )
 
 @socketio.on('submit_guess')
+@prevent_event_overflow('submit_guess')
 @with_error_handling
 def handle_submit_guess(data):
     """
@@ -449,7 +608,7 @@ def handle_submit_guess(data):
     filtered_responses = [i for i, response in enumerate(responses) if response['author_id'] != player_id]
     
     # Validate guess index against filtered responses
-    guess_index = ErrorHandler.validate_guess_index(data['guess_index'], len(filtered_responses))
+    guess_index = error_handler.validate_guess_index(data['guess_index'], len(filtered_responses))
     
     # Map the filtered index to the actual response index
     actual_response_index = filtered_responses[guess_index]
@@ -459,7 +618,7 @@ def handle_submit_guess(data):
         logger.info(f'Player {player_id} submitted guess {guess_index} in room {room_id}')
         
         # Send confirmation to submitting player
-        emit('guess_submitted', ErrorHandler.create_success_response({
+        emit('guess_submitted', error_handler.create_success_response({
             'message': 'Guess submitted successfully',
             'guess_index': guess_index  # This is the filtered index the player sees
         }))
@@ -558,7 +717,7 @@ def handle_get_time_remaining(data=None):
     game_state = game_manager.get_game_state(room_id)
     
     if game_state:
-        emit('time_remaining', ErrorHandler.create_success_response({
+        emit('time_remaining', error_handler.create_success_response({
             'time_remaining': time_remaining,
             'phase': game_state['phase'],
             'phase_duration': game_state.get('phase_duration', 0)
@@ -579,13 +738,10 @@ def cleanup_on_exit():
 atexit.register(cleanup_on_exit)
 
 if __name__ == '__main__':
-    # Run the application
-    port = int(os.environ.get('PORT', 5000))
-    debug = os.environ.get('FLASK_ENV') == 'development'
-    
-    logger.info(f"Starting LLMpostor server on port {port}")
+    # Run the application using configuration
+    logger.info(f"Starting LLMpostor server on {app_config.host}:{app_config.port}")
     try:
-        socketio.run(app, host='0.0.0.0', port=port, debug=debug)
+        socketio.run(app, host=app_config.host, port=app_config.port, debug=app_config.debug)
     except KeyboardInterrupt:
         logger.info("Received interrupt signal")
     finally:

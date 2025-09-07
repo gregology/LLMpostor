@@ -1,31 +1,55 @@
 /**
- * TimerManager - Handles all timer functionality
+ * TimerManager - Event-driven timer management system
  * 
  * Responsible for:
  * - Phase timer management
- * - Timer UI updates
+ * - Event-based timer notifications
  * - Timer synchronization with server
  * - Timer warning notifications
+ * 
+ * Migration Status: Updated to use EventBus with backward compatibility
  */
 
-class TimerManager {
+import { EventBusModule, migrationHelper } from './EventBusMigration.js';
+import { Events } from './EventBus.js';
+
+class TimerManager extends EventBusModule {
     constructor() {
+        super('TimerManager');
+        
         this.activeTimers = new Map();
-        this.timers = this.activeTimers;
+        this.timers = this.activeTimers; // Backward compatibility
+        
+        // Legacy callback support (for gradual migration)
         this.onTimerUpdate = null;
         this.onTimerWarning = null;
+        
+        // Subscribe to game events to start appropriate timers
+        this.subscribe(Events.GAME.ROUND_STARTED, this._handleRoundStarted.bind(this));
+        this.subscribe(Events.GAME.GUESSING_STARTED, this._handleGuessingStarted.bind(this));
+        this.subscribe(Events.GAME.RESULTS_STARTED, this._handleResultsStarted.bind(this));
+        this.subscribe(Events.GAME.PHASE_CHANGED, this._handlePhaseChanged.bind(this));
+        
+        console.log('TimerManager initialized with EventBus integration');
     }
     
     /**
      * Start a new timer for a phase
      * @param {string} phase - Phase name (response, guessing, results)
      * @param {number} duration - Duration in seconds
+     * @param {Function} callback - Legacy callback (optional)
      */
-    startTimer(phase, duration) {
+    startTimer(phase, duration, callback = null) {
         console.log('Starting timer for phase:', phase, 'duration:', duration);
         
         if (duration === undefined || duration === null || isNaN(duration)) {
             console.warn('startTimer called with invalid duration:', duration);
+            this.publish(Events.SYSTEM.ERROR, {
+                source: 'TimerManager',
+                error: 'Invalid timer duration',
+                phase,
+                duration
+            });
             return;
         }
         
@@ -47,10 +71,19 @@ class TimerManager {
             
             if (remaining <= 0) {
                 this.clearTimer(phase);
+                this._handleTimerExpired(phase);
+                if (callback) callback();
             }
         }, 1000);
         
         this.timers.set(phase, interval);
+        
+        // Publish timer started event
+        this.publish(Events.TIMER.STARTED, {
+            phase,
+            duration,
+            startTime
+        });
         
         // Initial update
         this._updateTimer(phase, duration, duration);
@@ -83,6 +116,11 @@ class TimerManager {
         if (interval) {
             clearInterval(interval);
             this.timers.delete(phase);
+            
+            this.publish(Events.TIMER.STOPPED, {
+                phase,
+                reason: 'manually_cleared'
+            });
         }
     }
     
@@ -90,9 +128,17 @@ class TimerManager {
      * Clear all active timers
      */
     clearAllTimers() {
-        for (const [phase] of this.timers) {
+        const phases = Array.from(this.timers.keys());
+        
+        for (const phase of phases) {
             this.clearTimer(phase);
         }
+        
+        this.publish(Events.TIMER.STOPPED, {
+            phase: 'all',
+            reason: 'all_cleared',
+            clearedPhases: phases
+        });
     }
     
     /**
@@ -140,7 +186,6 @@ class TimerManager {
         
         return Math.max(0, Math.min(100, (timeRemaining / totalDuration) * 100));
     }
-
     
     /**
      * Get progress bar color based on remaining time
@@ -157,38 +202,140 @@ class TimerManager {
         }
     }
     
+    // Event handlers for game state changes
+    
+    _handleRoundStarted(data) {
+        if (data && data.phase_duration) {
+            this.startTimer('response', data.phase_duration);
+        }
+    }
+    
+    _handleGuessingStarted(data) {
+        if (data && data.phase_duration) {
+            this.startTimer('guessing', data.phase_duration);
+        }
+    }
+    
+    _handleResultsStarted(data) {
+        const resultsDuration = data?.phase_duration || 30; // Default 30 seconds for results
+        this.startTimer('results', resultsDuration);
+    }
+    
+    _handlePhaseChanged(data) {
+        if (!data || !data.newPhase) return;
+        
+        const { newPhase, oldPhase } = data;
+        
+        // Clear old phase timer
+        if (oldPhase) {
+            this.clearTimer(oldPhase);
+        }
+        
+        // Start new phase timer if duration provided
+        if (data.duration) {
+            this.startTimer(newPhase, data.duration);
+        }
+    }
+    
+    _handleTimerExpired(phase) {
+        console.log(`Timer expired for phase: ${phase}`);
+        
+        this.publish(Events.TIMER.EXPIRED, {
+            phase,
+            expiredAt: Date.now()
+        });
+    }
+    
     // Private methods
     
     _updateTimer(phase, timeRemaining, totalDuration) {
-        if (this.onTimerUpdate) {
-            const progress = this.calculateProgress(timeRemaining, totalDuration);
-            this.onTimerUpdate({
-                phase,
-                timeText: this.formatTime(timeRemaining),
-                progress: Math.round(progress * 100) / 100, // Round to 2 decimal places
-                progressColor: this.getProgressColor(progress)
-            });
-        }
+        const progress = this.calculateProgress(timeRemaining, totalDuration);
+        const timerData = {
+            phase,
+            timeRemaining,
+            totalDuration,
+            timeText: this.formatTime(timeRemaining),
+            progress: Math.round(progress * 100) / 100, // Round to 2 decimal places
+            progressColor: this.getProgressColor(progress),
+            timestamp: Date.now()
+        };
+        
+        // Modern event-based approach
+        this.publish(Events.TIMER.UPDATED, timerData);
+        
+        // Legacy callback support (for gradual migration)
+        migrationHelper.execute(
+            'timer-updates',
+            // Old pattern
+            () => {
+                if (this.onTimerUpdate) {
+                    this.onTimerUpdate(timerData);
+                }
+            },
+            // New pattern (events already published above)
+            () => {
+                // Events already published - this is just for dual-mode support
+            },
+            timerData
+        );
     }
     
     _triggerWarning(phase, timeRemaining) {
-        if (this.onTimerWarning) {
-            let message;
-            if (timeRemaining === 30) {
-                message = '30 seconds remaining!';
-            } else if (timeRemaining === 10) {
-                message = '10 seconds remaining!';
-            }
-            
-            this.onTimerWarning({
-                phase,
-                message
-            });
+        let message;
+        if (timeRemaining === 30) {
+            message = '30 seconds remaining!';
+        } else if (timeRemaining === 10) {
+            message = '10 seconds remaining!';
         }
+        
+        const warningData = {
+            phase,
+            timeRemaining,
+            message,
+            severity: timeRemaining <= 10 ? 'high' : 'medium',
+            timestamp: Date.now()
+        };
+        
+        // Modern event-based approach
+        this.publish(Events.TIMER.WARNING, warningData);
+        
+        // Legacy callback support
+        migrationHelper.execute(
+            'timer-warnings',
+            // Old pattern
+            () => {
+                if (this.onTimerWarning) {
+                    this.onTimerWarning(warningData);
+                }
+            },
+            // New pattern (events already published)
+            () => {
+                // Events already published
+            },
+            warningData
+        );
+    }
+    
+    /**
+     * Legacy method to set callback handlers (for backward compatibility)
+     * @param {Function} onUpdate - Timer update callback
+     * @param {Function} onWarning - Timer warning callback
+     * @deprecated Use event subscriptions instead
+     */
+    setCallbacks(onUpdate, onWarning) {
+        console.warn('TimerManager.setCallbacks() is deprecated. Use EventBus subscriptions instead.');
+        this.onTimerUpdate = onUpdate;
+        this.onTimerWarning = onWarning;
+    }
+    
+    /**
+     * Clean up all timers and subscriptions
+     */
+    destroy() {
+        this.clearAllTimers();
+        this.cleanup(); // Clean up event subscriptions
     }
 }
 
-// Export for module system
-if (typeof module !== 'undefined' && module.exports) {
-    module.exports = TimerManager;
-}
+
+export default TimerManager;

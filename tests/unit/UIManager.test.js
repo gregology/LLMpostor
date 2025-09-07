@@ -340,7 +340,7 @@ describe('UIManager', () => {
     });
 
     it('should handle guess button clicks', () => {
-      uiManager.onSubmitGuess = vi.fn();
+      const publishSpy = vi.spyOn(uiManager, 'publish');
       
       const response = { index: 0, text: 'Test response' };
       const card = uiManager._createResponseCard(response, 0);
@@ -348,7 +348,11 @@ describe('UIManager', () => {
       const guessBtn = card.querySelector('.guess-btn');
       simulateClick(guessBtn);
       
-      expect(uiManager.onSubmitGuess).toHaveBeenCalledWith(0);
+      expect(publishSpy).toHaveBeenCalledWith('user:guess:submitted', {
+        guessIndex: 0,
+        response: response,
+        timestamp: expect.any(Number)
+      });
     });
   });
 

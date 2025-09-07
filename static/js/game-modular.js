@@ -5,6 +5,7 @@
  * It replaces the monolithic game.js with a clean, maintainable architecture.
  * 
  * Architecture:
+ * - EventBus: Centralized event communication system
  * - SocketManager: WebSocket communication
  * - GameStateManager: Game state and synchronization
  * - UIManager: DOM manipulation and rendering
@@ -14,51 +15,18 @@
  * - GameClient: Main coordinator
  */
 
-// Module loading and initialization
-(function() {
-    'use strict';
-    
-    // Check if we're in a module environment
-    const isModuleEnvironment = typeof module !== 'undefined' && module.exports;
-    
-    // Module loader for browser environment
-    function loadScript(src) {
-        return new Promise((resolve, reject) => {
-            const script = document.createElement('script');
-            script.src = src;
-            script.onload = resolve;
-            script.onerror = reject;
-            document.head.appendChild(script);
-        });
-    }
-    
-    // Load all modules in sequence
-    async function loadModules() {
-        const baseUrl = '/static/js/modules/';
-        const modules = [
-            'SocketManager.js',
-            'GameStateManager.js',
-            'TimerManager.js', 
-            'ToastManager.js',
-            'UIManager.js',
-            'EventManager.js',
-            'GameClient.js'
-        ];
-        
-        try {
-            for (const module of modules) {
-                await loadScript(baseUrl + module);
-            }
-            console.log('All modules loaded successfully');
-            return true;
-        } catch (error) {
-            console.error('Failed to load modules:', error);
-            return false;
-        }
-    }
-    
-    // Initialize game client
-    function initializeGameClient() {
+// Import all modules using ES6 imports
+import SocketManager from './modules/SocketManager.js';
+import GameStateManager from './modules/GameStateManager.js';
+import TimerManager from './modules/TimerManager.js';
+import ToastManager from './modules/ToastManager.js';
+import UIManager from './modules/UIManager.js';
+import EventManager from './modules/EventManager.js';
+import GameClient from './modules/GameClient.js';
+
+// Initialize game client
+function initializeGameClient() {
+    try {
         // Create global game client instance
         const gameClient = new GameClient();
         
@@ -67,47 +35,43 @@
         
         console.log('Modular LLMpostor game client initialized');
         return gameClient;
-    }
-    
-    // Main initialization
-    async function initialize() {
-        console.log('Loading modular LLMpostor game client...');
+    } catch (error) {
+        console.error('Failed to initialize game client:', error);
         
-        // Load all modules
-        const modulesLoaded = await loadModules();
-        if (!modulesLoaded) {
-            console.error('Failed to load game modules');
-            // Fallback error display
-            document.body.insertAdjacentHTML('beforeend', `
-                <div style="position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); 
-                            background: #fee; border: 2px solid #f00; padding: 20px; border-radius: 8px; 
-                            font-family: Arial, sans-serif; text-align: center; z-index: 10000;">
-                    <h3 style="color: #c00; margin-top: 0;">Failed to Load Game</h3>
-                    <p>Could not load game modules. Please refresh the page.</p>
-                    <button onclick="window.location.reload()" style="padding: 8px 16px; 
-                            background: #007cba; color: white; border: none; border-radius: 4px; cursor: pointer;">
-                        Refresh Page
-                    </button>
-                </div>
-            `);
-            return;
-        }
+        // Show error to user
+        document.body.insertAdjacentHTML('beforeend', `
+            <div style="position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); 
+                        background: #fee; border: 2px solid #f00; padding: 20px; border-radius: 8px; 
+                        font-family: Arial, sans-serif; text-align: center; z-index: 10000;">
+                <h3 style="color: #c00; margin-top: 0;">Failed to Load Game</h3>
+                <p>Could not initialize game modules: ${error.message}</p>
+                <button onclick="window.location.reload()" style="padding: 8px 16px; 
+                        background: #007cba; color: white; border: none; border-radius: 4px; cursor: pointer;">
+                    Refresh Page
+                </button>
+            </div>
+        `);
         
-        // Initialize game client
-        try {
-            const gameClient = initializeGameClient();
-            console.log('Game client ready');
-        } catch (error) {
-            console.error('Failed to initialize game client:', error);
-        }
+        throw error;
     }
+}
+
+// Main initialization
+function initialize() {
+    console.log('Loading modular LLMpostor game client...');
     
-    // Start initialization when DOM is ready
-    if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', initialize);
-    } else {
-        // DOM already loaded, initialize immediately
-        initialize();
+    try {
+        const gameClient = initializeGameClient();
+        console.log('Game client ready');
+    } catch (error) {
+        console.error('Failed to initialize game client:', error);
     }
-    
-})();
+}
+
+// Start initialization when DOM is ready
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initialize);
+} else {
+    // DOM already loaded, initialize immediately
+    initialize();
+}

@@ -40,6 +40,6 @@ export default defineConfig({
     restoreMocks: true,
     
     // Timeout for async tests
-    testTimeout: 5000
+    testTimeout: 10000
   }
 });

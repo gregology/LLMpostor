@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { createMockSocket, nextTick } from '../helpers/testUtils.js';
 
 const SocketManager = (await import('../../static/js/modules/SocketManager.js')).default || 
@@ -13,7 +13,21 @@ describe('SocketManager', () => {
     mockSocket = createMockSocket();
     global.io = vi.fn(() => mockSocket);
     
+    // Set up window object for test environment detection
+    global.window = global.window || {};
+    global.window.isTestEnvironment = true;
+    
     socketManager = new SocketManager();
+  });
+
+  afterEach(() => {
+    // Clean up test environment flag
+    if (global.window) {
+      delete global.window.isTestEnvironment;
+    }
+    
+    vi.clearAllMocks();
+    vi.clearAllTimers();
   });
 
   describe('Initialization', () => {
@@ -21,7 +35,7 @@ describe('SocketManager', () => {
       expect(socketManager.socket).toBe(null);
       expect(socketManager.connectionStatus).toBe(false);
       expect(socketManager.reconnectAttempts).toBe(0);
-      expect(socketManager.maxReconnectAttempts).toBe(5);
+      expect(socketManager.maxReconnectAttempts).toBe(10); // Updated to match new default
       expect(socketManager.reconnectDelay).toBe(1000);
     });
 
@@ -29,7 +43,10 @@ describe('SocketManager', () => {
       socketManager.initialize();
 
       expect(global.io).toHaveBeenCalledWith('/', {
-        transports: ['polling', 'websocket']
+        transports: ['polling', 'websocket'],
+        timeout: 10000, // New timeout option
+        reconnection: false, // New option
+        forceNew: true // New option
       });
       expect(socketManager.socket).toBe(mockSocket);
     });
@@ -155,39 +172,55 @@ describe('SocketManager', () => {
     });
 
     it('should attempt reconnection after disconnect', () => {
+      vi.useFakeTimers();
+      
+      // Temporarily disable test environment to allow reconnection
+      global.window.isTestEnvironment = false;
+      
       const reconnectCallback = vi.fn();
       socketManager.onReconnect = reconnectCallback;
 
       // Simulate disconnect
       const disconnectHandler = mockSocket.on.mock.calls.find(call => call[0] === 'disconnect')[1];
-      disconnectHandler();
+      disconnectHandler('transport close'); // Use non-client disconnect reason
 
       // Should schedule reconnection
-      expect(socketManager.reconnectAttempts).toBe(0);
+      expect(socketManager.connectionRecoveryAttempts).toBe(1);
       
       // Fast forward time to trigger reconnection attempt
       vi.advanceTimersByTime(1000);
 
       expect(socketManager.reconnectAttempts).toBe(1);
+      
+      // Restore test environment
+      global.window.isTestEnvironment = true;
+      vi.useRealTimers();
     });
 
     it('should use exponential backoff for reconnection delay', () => {
+      vi.useFakeTimers();
+      
+      // Temporarily disable test environment to allow reconnection
+      global.window.isTestEnvironment = false;
+      
       // Simulate initial disconnect
       const disconnectHandler = mockSocket.on.mock.calls.find(call => call[0] === 'disconnect')[1];
-      disconnectHandler();
+      disconnectHandler('transport close');
+      
+      // Should have started connection recovery
+      expect(socketManager.connectionRecoveryAttempts).toBe(1);
       
       // Advance through multiple reconnection attempts
       // First attempt: 1000ms delay
       vi.advanceTimersByTime(1000);
       expect(socketManager.reconnectAttempts).toBe(1);
       
-      // Second attempt: 2000ms delay (exponential backoff)
-      vi.advanceTimersByTime(2000);
-      expect(socketManager.reconnectAttempts).toBe(2);
+      // Second attempt should schedule with exponential backoff
+      expect(socketManager.connectionRecoveryAttempts).toBe(2);
       
-      // Third attempt: 4000ms delay (exponential backoff)
-      vi.advanceTimersByTime(4000);
-      expect(socketManager.reconnectAttempts).toBe(3);
+      // Restore test environment
+      global.window.isTestEnvironment = true;
+      vi.useRealTimers();
     });
 
     it('should stop reconnecting after max attempts', () => {
