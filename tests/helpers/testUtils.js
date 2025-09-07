@@ -14,6 +14,7 @@ export function createMockSocket() {
     disconnect: vi.fn(),
     connect: vi.fn(), // Add connect method for reconnection tests
     open: vi.fn(), // Add open method as alternative
+    removeAllListeners: vi.fn(), // Add for cleanup operations
     connected: false,
     id: 'test-socket-id'
   };

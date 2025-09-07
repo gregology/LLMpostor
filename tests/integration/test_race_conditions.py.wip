@@ -1,0 +1,495 @@
+"""
+Race Condition Tests
+Tests for handling concurrent operations and preventing race conditions.
+"""
+
+import pytest
+import threading
+import time
+from unittest.mock import patch
+from flask_socketio import SocketIOTestClient
+from app import app, socketio, room_manager, session_service
+
+
+class TestRaceConditions:
+    """Test race conditions and concurrent operation handling"""
+    
+    def setup_method(self):
+        """Set up test environment before each test."""
+        # Clear any existing state
+        room_manager._rooms.clear()
+        session_service._player_sessions.clear()
+    
+    def teardown_method(self):
+        """Clean up after each test."""
+        # Clean up state
+        room_manager._rooms.clear()
+        session_service._player_sessions.clear()
+    
+    def create_test_client(self):
+        """Create a Socket.IO test client"""
+        return SocketIOTestClient(app, socketio)
+    
+    def join_room(self, client, room_id, player_name):
+        """Helper to join a room"""
+        client.emit('join_room', {
+            'room_id': room_id,
+            'player_name': player_name
+        })
+        
+        # Get the response
+        received = client.get_received()
+        if received:
+            for response in received:
+                if response['name'] == 'room_joined':
+                    return response['args'][0]['data']
+        
+        return None
+
+    def test_simultaneous_room_joining(self):
+        """Test multiple clients joining the same room simultaneously"""
+        room_id = "race-room"
+        clients = []
+        join_results = []
+        
+        # Create clients
+        for i in range(5):
+            client = create_test_client(app)
+            clients.append(client)
+        
+        # Define joining function
+        def join_room_threaded(client, player_name):
+            try:
+                result = join_room(client, room_id, player_name)
+                join_results.append(result)
+            except Exception as e:
+                join_results.append({'error': str(e)})
+        
+        # Start simultaneous joins
+        threads = []
+        for i, client in enumerate(clients):
+            thread = threading.Thread(
+                target=join_room_threaded,
+                args=(client, f"Player{i}")
+            )
+            threads.append(thread)
+        
+        # Start all threads simultaneously
+        for thread in threads:
+            thread.start()
+        
+        # Wait for completion
+        for thread in threads:
+            thread.join()
+        
+        # Analyze results
+        successful_joins = [r for r in join_results if 'player_id' in r]
+        
+        # All joins should succeed
+        assert len(successful_joins) == 5
+        
+        # All player IDs should be unique
+        player_ids = [r['player_id'] for r in successful_joins]
+        assert len(set(player_ids)) == len(player_ids)
+        
+        # Verify room state is consistent
+        clients[0].emit('get_room_state')
+        response = clients[0].get_received()[0]
+        room_state = response['args'][0]
+        
+        assert room_state['total_count'] == 5
+        assert room_state['connected_count'] == 5
+
+    def test_concurrent_response_submission(self, app):
+        """Test concurrent response submissions by multiple players"""
+        # Setup room with multiple players
+        clients = []
+        room_id = "concurrent-room"
+        
+        for i in range(4):
+            client = create_test_client(app)
+            join_room(client, room_id, f"Player{i}")
+            clients.append(client)
+        
+        # Start round
+        clients[0].emit('start_round')
+        for client in clients:
+            client.get_received()  # Clear buffers
+        
+        # Prepare concurrent response submissions
+        responses = [f"Response from Player{i}" for i in range(4)]
+        submission_results = []
+        
+        def submit_response_threaded(client, response_text):
+            try:
+                client.emit('submit_response', {'response': response_text})
+                response = client.get_received()
+                submission_results.append(response)
+            except Exception as e:
+                submission_results.append({'error': str(e)})
+        
+        # Start concurrent submissions
+        threads = []
+        for i, client in enumerate(clients):
+            thread = threading.Thread(
+                target=submit_response_threaded,
+                args=(client, responses[i])
+            )
+            threads.append(thread)
+        
+        # Execute simultaneously
+        for thread in threads:
+            thread.start()
+        
+        for thread in threads:
+            thread.join()
+        
+        # Verify all responses were accepted
+        assert len(submission_results) == 4
+        
+        # Check that game advanced to guessing phase
+        clients[0].emit('get_room_state')
+        response = clients[0].get_received()[0]
+        game_state = response['args'][0]['game_state']
+        
+        assert game_state['phase'] == 'guessing'
+        assert len(game_state['responses']) == 4
+
+    def test_rapid_fire_user_actions(self, app):
+        """Test handling of rapid successive user actions"""
+        client1 = create_test_client(app)
+        client2 = create_test_client(app)
+        
+        join_room(client1, "rapid-room", "Player1")
+        join_room(client2, "rapid-room", "Player2")
+        
+        # Clear buffers
+        client1.get_received()
+        client2.get_received()
+        
+        # Rapid-fire room state requests
+        for i in range(10):
+            client1.emit('get_room_state')
+            time.sleep(0.01)  # Very small delay
+        
+        # Collect all responses
+        responses = client1.get_received()
+        
+        # Should handle all requests
+        state_responses = [r for r in responses if r['name'] == 'room_state_updated']
+        assert len(state_responses) >= 5  # At least some should succeed
+        
+        # All responses should be valid
+        for response in state_responses:
+            assert 'game_state' in response['args'][0]
+
+    def test_phase_transition_race_condition(self, app):
+        """Test race conditions during game phase transitions"""
+        clients = []
+        room_id = "phase-race-room"
+        
+        # Setup 3 players
+        for i in range(3):
+            client = create_test_client(app)
+            join_room(client, room_id, f"Player{i}")
+            clients.append(client)
+        
+        # Start round
+        clients[0].emit('start_round')
+        for client in clients:
+            client.get_received()
+        
+        # Submit responses to get to guessing phase
+        for i, client in enumerate(clients):
+            client.emit('submit_response', {'response': f'Response {i}'})
+            client.get_received()
+        
+        # Try to cause race condition during phase transition
+        # Attempt to submit another response after phase should have changed
+        def late_submission():
+            try:
+                clients[0].emit('submit_response', {'response': 'Late response'})
+                return clients[0].get_received()
+            except:
+                return None
+        
+        # Submit guess immediately while potential late response happening
+        def immediate_guess():
+            try:
+                clients[1].emit('submit_guess', {'guess_index': 0})
+                return clients[1].get_received()
+            except:
+                return None
+        
+        # Execute both actions simultaneously
+        thread1 = threading.Thread(target=late_submission)
+        thread2 = threading.Thread(target=immediate_guess)
+        
+        thread1.start()
+        thread2.start()
+        
+        thread1.join()
+        thread2.join()
+        
+        # Verify game is in consistent state
+        clients[2].emit('get_room_state')
+        response = clients[2].get_received()[0]
+        game_state = response['args'][0]['game_state']
+        
+        # Should be in guessing or results phase, not stuck
+        assert game_state['phase'] in ['guessing', 'results']
+
+    def test_concurrent_room_state_modifications(self, app):
+        """Test concurrent modifications to room state"""
+        room_id = "state-mod-room"
+        clients = []
+        
+        # Create multiple clients
+        for i in range(5):
+            client = create_test_client(app)
+            join_room(client, room_id, f"Player{i}")
+            clients.append(client)
+        
+        # Function to simulate leaving and rejoining rapidly
+        def leave_rejoin_cycle(client, player_name):
+            try:
+                # Leave room
+                client.emit('leave_room')
+                time.sleep(0.1)
+                
+                # Rejoin room
+                join_room(client, room_id, f"{player_name}_rejoined")
+            except Exception:
+                pass  # Some operations may fail due to race conditions
+        
+        # Start concurrent leave/rejoin operations
+        threads = []
+        for i in range(3):  # First 3 clients do leave/rejoin
+            thread = threading.Thread(
+                target=leave_rejoin_cycle,
+                args=(clients[i], f"Player{i}")
+            )
+            threads.append(thread)
+        
+        for thread in threads:
+            thread.start()
+        
+        # While others are leaving/rejoining, remaining clients request state
+        for _ in range(5):
+            clients[4].emit('get_room_state')
+            time.sleep(0.05)
+        
+        # Wait for all operations to complete
+        for thread in threads:
+            thread.join()
+        
+        # Verify final state is consistent
+        clients[4].emit('get_room_state')
+        response = clients[4].get_received()
+        
+        # Should get a valid response
+        assert len(response) > 0
+        final_response = next(r for r in response if r['name'] == 'room_state_updated')
+        room_state = final_response['args'][0]
+        
+        # Room should still exist and have at least 1 player
+        assert room_state['total_count'] >= 1
+
+    def test_timer_synchronization_race(self, app):
+        """Test timer synchronization under concurrent operations"""
+        client1 = create_test_client(app)
+        client2 = create_test_client(app)
+        
+        join_room(client1, "timer-race-room", "Player1")
+        join_room(client2, "timer-race-room", "Player2")
+        
+        # Clear buffers
+        client1.get_received()
+        client2.get_received()
+        
+        # Start round to begin timer
+        client1.emit('start_round')
+        client1.get_received()
+        client2.get_received()
+        
+        # Function to rapidly query time remaining
+        time_queries = []
+        
+        def query_time_remaining(client):
+            for _ in range(10):
+                client.emit('get_time_remaining')
+                time.sleep(0.01)
+            responses = client.get_received()
+            time_queries.extend(responses)
+        
+        # Start concurrent time queries from both clients
+        thread1 = threading.Thread(target=query_time_remaining, args=(client1,))
+        thread2 = threading.Thread(target=query_time_remaining, args=(client2,))
+        
+        thread1.start()
+        thread2.start()
+        
+        thread1.join()
+        thread2.join()
+        
+        # Filter time remaining responses
+        time_responses = [r for r in time_queries if r['name'] == 'time_remaining']
+        
+        # Should have received multiple time responses
+        assert len(time_responses) > 0
+        
+        # Time values should be decreasing and reasonable
+        times = [r['args'][0]['time_remaining'] for r in time_responses]
+        assert all(0 <= t <= 300 for t in times)  # Within reasonable bounds
+
+    def test_event_queue_overflow_prevention(self, app):
+        """Test prevention of event queue overflow"""
+        client = create_test_client(app)
+        join_room(client, "queue-test-room", "Player1")
+        
+        # Clear initial responses
+        client.get_received()
+        
+        # Flood with events rapidly
+        flood_count = 100
+        for i in range(flood_count):
+            client.emit('get_room_state')
+        
+        # Small delay to let events process
+        time.sleep(1)
+        
+        # Collect responses
+        responses = client.get_received()
+        
+        # System should handle the flood gracefully
+        # May not process all events, but should not crash
+        assert len(responses) > 0
+        
+        # Final state request should still work
+        client.emit('get_room_state')
+        final_response = client.get_received()
+        
+        assert len(final_response) > 0
+        assert final_response[0]['name'] == 'room_state_updated'
+
+    def test_duplicate_event_handling(self, app):
+        """Test handling of duplicate events"""
+        client1 = create_test_client(app)
+        client2 = create_test_client(app)
+        
+        join_room(client1, "duplicate-room", "Player1")
+        join_room(client2, "duplicate-room", "Player2")
+        
+        # Clear buffers
+        client1.get_received()
+        client2.get_received()
+        
+        # Start round
+        client1.emit('start_round')
+        client1.get_received()
+        client2.get_received()
+        
+        # Submit same response multiple times rapidly
+        response_text = "Duplicate response test"
+        
+        for _ in range(5):
+            client1.emit('submit_response', {'response': response_text})
+            time.sleep(0.01)
+        
+        # Collect all responses
+        responses = client1.get_received()
+        
+        # Should only have one successful submission
+        success_responses = [r for r in responses if r['name'] == 'response_submitted']
+        error_responses = [r for r in responses if r['name'] == 'error']
+        
+        # First should succeed, others should be rejected
+        assert len(success_responses) == 1
+        assert len(error_responses) >= 1  # Duplicate attempts should be rejected
+
+    def test_concurrent_player_limit_enforcement(self, app):
+        """Test enforcement of player limits under concurrent joining"""
+        room_id = "limit-test-room"
+        max_players = 8  # Default max players per room
+        
+        # Try to join more players than the limit
+        clients = []
+        join_results = []
+        
+        for i in range(max_players + 3):  # 3 more than limit
+            clients.append(create_test_client(app))
+        
+        def attempt_join(client, player_name):
+            try:
+                result = join_room(client, room_id, player_name)
+                join_results.append({'success': True, 'result': result})
+            except Exception as e:
+                join_results.append({'success': False, 'error': str(e)})
+        
+        # Start all join attempts simultaneously
+        threads = []
+        for i, client in enumerate(clients):
+            thread = threading.Thread(
+                target=attempt_join,
+                args=(client, f"Player{i}")
+            )
+            threads.append(thread)
+        
+        for thread in threads:
+            thread.start()
+        
+        for thread in threads:
+            thread.join()
+        
+        # Count successful joins
+        successful_joins = [r for r in join_results if r['success']]
+        failed_joins = [r for r in join_results if not r['success']]
+        
+        # Should enforce the player limit
+        assert len(successful_joins) <= max_players
+        assert len(failed_joins) >= 3  # At least 3 should fail
+        
+        # Verify room state reflects correct count
+        if successful_joins:
+            # Use first successful client to check room state
+            first_client = clients[0]
+            first_client.emit('get_room_state')
+            response = first_client.get_received()[0]
+            room_state = response['args'][0]
+            
+            assert room_state['total_count'] <= max_players
+
+    def test_message_ordering_guarantees(self, app):
+        """Test that message ordering is maintained under load"""
+        client1 = create_test_client(app)
+        client2 = create_test_client(app)
+        
+        join_room(client1, "ordering-room", "Player1")
+        join_room(client2, "ordering-room", "Player2")
+        
+        # Clear buffers
+        client1.get_received()
+        client2.get_received()
+        
+        # Send sequence of ordered operations
+        operations = [
+            ('start_round', {}),
+            ('submit_response', {'response': 'First response'}),
+        ]
+        
+        # Send operations in rapid succession
+        for event, data in operations:
+            client1.emit(event, data)
+            time.sleep(0.01)  # Small delay to maintain order
+        
+        # Let operations process
+        time.sleep(0.5)
+        
+        # Check final state
+        client1.emit('get_room_state')
+        response = client1.get_received()[0]
+        game_state = response['args'][0]['game_state']
+        
+        # Should be in responding phase with response submitted
+        # (exact phase depends on whether other player submitted)
+        assert game_state['phase'] in ['responding', 'guessing']
