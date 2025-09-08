@@ -51,8 +51,9 @@ class TestAutomaticGameFlow:
                 id="test_001",
                 prompt="What is artificial intelligence?",
                 model="GPT-4",
-                response="Artificial intelligence (AI) is a branch of computer science that aims to create intelligent machines."
+                responses=["Artificial intelligence (AI) is a branch of computer science that aims to create intelligent machines."]
             )
+            test_prompt.select_random_response()  # Ensure response is selected for tests
             mock_get_prompt.return_value = test_prompt
             yield mock_get_prompt
     

@@ -20,13 +20,14 @@ class TestPromptData:
             id="test_001",
             prompt="Test prompt",
             model="GPT-4",
-            response="Test response"
+            responses=["Test response"]
         )
         
         assert prompt.id == "test_001"
         assert prompt.prompt == "Test prompt"
         assert prompt.model == "GPT-4"
-        assert prompt.response == "Test response"
+        assert prompt.responses == ["Test response"]
+        assert prompt.selected_response is None
     
     def test_prompt_data_to_dict(self):
         """Test converting PromptData to dictionary."""
@@ -34,17 +35,49 @@ class TestPromptData:
             id="test_001",
             prompt="Test prompt",
             model="GPT-4",
-            response="Test response"
+            responses=["Test response"]
         )
         
         expected_dict = {
             'id': 'test_001',
             'prompt': 'Test prompt',
             'model': 'GPT-4',
-            'response': 'Test response'
+            'responses': ['Test response'],
+            'selected_response': None
         }
         
         assert prompt.to_dict() == expected_dict
+    
+    def test_prompt_data_get_response(self):
+        """Test get_response method."""
+        prompt = PromptData(
+            id="test_001",
+            prompt="Test prompt",
+            model="GPT-4",
+            responses=["Response 1", "Response 2", "Response 3"]
+        )
+        
+        # First call should select and return a response
+        response1 = prompt.get_response()
+        assert response1 in ["Response 1", "Response 2", "Response 3"]
+        assert prompt.selected_response == response1
+        
+        # Second call should return the same response
+        response2 = prompt.get_response()
+        assert response2 == response1
+    
+    def test_prompt_data_select_random_response(self):
+        """Test select_random_response method."""
+        prompt = PromptData(
+            id="test_001",
+            prompt="Test prompt",
+            model="GPT-4",
+            responses=["Response 1", "Response 2", "Response 3"]
+        )
+        
+        response = prompt.select_random_response()
+        assert response in ["Response 1", "Response 2", "Response 3"]
+        assert prompt.selected_response == response
 
 
 class TestContentManager:
@@ -58,13 +91,13 @@ class TestContentManager:
                     'id': 'test_001',
                     'prompt': 'What is AI?',
                     'model': 'GPT-4',
-                    'response': 'AI is artificial intelligence.'
+                    'responses': ['AI is artificial intelligence.']
                 },
                 {
                     'id': 'test_002',
                     'prompt': 'Explain quantum computing',
                     'model': 'Claude-3',
-                    'response': 'Quantum computing uses quantum mechanics.'
+                    'responses': ['Quantum computing uses quantum mechanics.']
                 }
             ]
         }
@@ -201,7 +234,7 @@ class TestContentManager:
                     'id': 123,  # Should be string
                     'prompt': 'What is AI?',
                     'model': 'GPT-4',
-                    'response': 'AI is artificial intelligence.'
+                    'responses': ['AI is artificial intelligence.']
                 }
             ]
         }
@@ -218,7 +251,7 @@ class TestContentManager:
                     'id': '',  # Empty string
                     'prompt': 'What is AI?',
                     'model': 'GPT-4',
-                    'response': 'AI is artificial intelligence.'
+                    'responses': ['AI is artificial intelligence.']
                 }
             ]
         }
@@ -235,13 +268,13 @@ class TestContentManager:
                     'id': 'duplicate_id',
                     'prompt': 'First prompt',
                     'model': 'GPT-4',
-                    'response': 'First response'
+                    'responses': ['First response']
                 },
                 {
                     'id': 'duplicate_id',  # Duplicate ID
                     'prompt': 'Second prompt',
                     'model': 'Claude-3',
-                    'response': 'Second response'
+                    'responses': ['Second response']
                 }
             ]
         }
@@ -329,7 +362,7 @@ class TestContentManager:
             assert all(isinstance(p, PromptData) for p in prompts)
             
             # Verify it returns a copy (not the original list)
-            prompts.append(PromptData('new', 'new', 'new', 'new'))
+            prompts.append(PromptData('new', 'new', 'new', ['new']))
             assert len(manager.get_all_prompts()) == 2
             
         finally:
@@ -350,7 +383,7 @@ class TestContentManager:
                     'id': '  test_001  ',
                     'prompt': '  What is AI?  ',
                     'model': '  GPT-4  ',
-                    'response': '  AI is artificial intelligence.  '
+                    'responses': ['  AI is artificial intelligence.  ']
                 }
             ]
         }
@@ -370,7 +403,133 @@ class TestContentManager:
             assert prompt.id == 'test_001'
             assert prompt.prompt == 'What is AI?'
             assert prompt.model == 'GPT-4'
-            assert prompt.response == 'AI is artificial intelligence.'
+            assert prompt.responses == ['AI is artificial intelligence.']
             
         finally:
             os.unlink(temp_file)
+    
+    
+    def test_multi_response_selection_consistency(self):
+        """Test that response selection is consistent within a prompt."""
+        multi_response_yaml = {
+            'prompts': [
+                {
+                    'id': 'multi_001',
+                    'prompt': 'Generate a greeting',
+                    'model': 'GPT-4',
+                    'responses': ['Hello!', 'Hi there!', 'Greetings!', 'Hey!']
+                }
+            ]
+        }
+        
+        yaml_content = yaml.dump(multi_response_yaml)
+        
+        with tempfile.NamedTemporaryFile(mode='w', suffix='.yaml', delete=False) as f:
+            f.write(yaml_content)
+            temp_file = f.name
+        
+        try:
+            manager = ContentManager(temp_file)
+            manager.load_prompts_from_yaml()
+            
+            prompt = manager.get_prompt_by_id('multi_001')
+            assert len(prompt.responses) == 4
+            
+            # First call selects a response
+            response1 = prompt.get_response()
+            assert response1 in ['Hello!', 'Hi there!', 'Greetings!', 'Hey!']
+            
+            # Subsequent calls return the same response
+            response2 = prompt.get_response()
+            response3 = prompt.get_response()
+            assert response1 == response2 == response3
+            
+            # Manual selection should update
+            new_response = prompt.select_random_response()
+            assert new_response in ['Hello!', 'Hi there!', 'Greetings!', 'Hey!']
+            assert prompt.get_response() == new_response
+            
+        finally:
+            os.unlink(temp_file)
+    
+    def test_get_random_prompt_response_selects_response(self):
+        """Test that get_random_prompt_response selects a response."""
+        yaml_data = {
+            'prompts': [
+                {
+                    'id': 'auto_select_001',
+                    'prompt': 'Generate a number',
+                    'model': 'GPT-4',
+                    'responses': ['One', 'Two', 'Three']
+                }
+            ]
+        }
+        
+        yaml_content = yaml.dump(yaml_data)
+        
+        with tempfile.NamedTemporaryFile(mode='w', suffix='.yaml', delete=False) as f:
+            f.write(yaml_content)
+            temp_file = f.name
+        
+        try:
+            manager = ContentManager(temp_file)
+            manager.load_prompts_from_yaml()
+            
+            # get_random_prompt_response should automatically select a response
+            prompt = manager.get_random_prompt_response()
+            assert prompt.selected_response is not None
+            assert prompt.selected_response in ['One', 'Two', 'Three']
+            
+        finally:
+            os.unlink(temp_file)
+    
+    def test_validate_yaml_structure_empty_responses_array(self):
+        """Test validation fails when responses array is empty."""
+        manager = ContentManager()
+        invalid_data = {
+            'prompts': [
+                {
+                    'id': 'test_001',
+                    'prompt': 'What is AI?',
+                    'model': 'GPT-4',
+                    'responses': []  # Empty array
+                }
+            ]
+        }
+        
+        with pytest.raises(ContentValidationError, match="responses.*cannot be empty"):
+            manager.validate_yaml_structure(invalid_data)
+    
+    def test_validate_yaml_structure_responses_not_list(self):
+        """Test validation fails when responses is not a list."""
+        manager = ContentManager()
+        invalid_data = {
+            'prompts': [
+                {
+                    'id': 'test_001',
+                    'prompt': 'What is AI?',
+                    'model': 'GPT-4',
+                    'responses': 'Single string instead of array'
+                }
+            ]
+        }
+        
+        with pytest.raises(ContentValidationError, match="responses.*must be a list"):
+            manager.validate_yaml_structure(invalid_data)
+    
+    def test_validate_yaml_structure_missing_responses_field(self):
+        """Test validation fails when responses field is missing."""
+        manager = ContentManager()
+        invalid_data = {
+            'prompts': [
+                {
+                    'id': 'test_001',
+                    'prompt': 'What is AI?',
+                    'model': 'GPT-4'
+                    # Missing 'responses' field
+                }
+            ]
+        }
+        
+        with pytest.raises(ContentValidationError, match="missing required fields"):
+            manager.validate_yaml_structure(invalid_data)

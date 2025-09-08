@@ -447,7 +447,7 @@ def handle_start_round(data=None):
             'id': prompt_data.id,
             'prompt': prompt_data.prompt,
             'model': prompt_data.model,
-            'llm_response': prompt_data.response
+            'llm_response': prompt_data.get_response()
         }
     except Exception as e:
         logger.error(f'Error getting random prompt: {e}')
