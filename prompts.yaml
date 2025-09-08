@@ -20,22 +20,16 @@ prompts:
       - "Rusty."
       
   - id: "prompt_004"
-    prompt: "Write the most efficient python hello world function possible. Return the code only"
-    model: "Claude Sonnet 4"
+    prompt: "Using 1 word, describe what mars would taste like"
+    model: "GPT-5"
     responses:
-      - |
-        ```python
-        def hello():print("Hello, World!")
-        ```
+      - "metallic"
 
   - id: "prompt_005"
-    prompt: "Write the most efficient python hello world function possible. Return the code only"
-    model: "Claude Opus 4.1"
+    prompt: "Using 1 word, describe what mars would taste like"
+    model: "GPT-4.1"
     responses:
-      - |
-        ```python
-        print("Hello, World!")
-        ```
+      - "Metallic"
   
   - id: "prompt_006"
     prompt: "You have six horses and want to race them to see which is fastest. What is the minimum number of races needed to do this? Answer in 15 words or less."
@@ -65,6 +59,18 @@ prompts:
         3. Emily  
         4. Robert  
         5. Sarah
+      - |
+        1. Michael  
+        2. Jennifer  
+        3. David  
+        4. Elizabeth  
+        5. Robert
+      - |
+        John  
+        Emily  
+        Michael  
+        Sarah  
+        David
 
   - id: "prompt_010"
     prompt: "Give me 5 first names to use for Canadian soldiers in a novel I'm writing. Give me just the first names. Do not include gender ambiguous names."
@@ -112,6 +118,7 @@ prompts:
     model: "GPT-5"
     responses:
       - "Too early to say."
+      - "It’s impossible to know now."
 
   - id: "prompt_017"
     prompt: "Count the number of occurrences of the letter 'L' in the word 'LOLLAPALOOZA'. Respond in 10 words or less."
@@ -170,13 +177,203 @@ prompts:
         Noodle
 
   - id: "prompt_024"
-    prompt: "What's the funniest word in the English language? Answer in 20 words or less."
+    prompt: "What's the funniest word in the English language? Answer in 10 words or less."
     model: "Gemini 2.5 Pro"
     responses:
-      - Many people nominate "kerfuffle." It's a wonderfully silly-sounding word for a minor commotion, which is delightfully appropriate.
+      - "Shenanigans. The word itself is up to no good."
+      - "Bumfuzzle. It sounds as confusing as its meaning."
 
   - id: "prompt_025"
     prompt: "Do cockroaches walk lying or crawl standing? Answer in 15 words or less."
     model: "Gemini 2.5 Flash"
     responses:
       - "Cockroaches walk/run on their legs, with their bodies elevated. Therefore, they crawl standing."
+
+  - id: "prompt_026"
+    prompt: "Is a fly with no wings still a fly? Answer in 10 words or less."
+    model: "GPT-4.1"
+    responses:
+      - "No, it's called a \"walk.\" It can't fly anymore."
+      - "No, it's not a fly; it's now called a \"walk.\""
+
+  - id: "prompt_027"
+    prompt: "Is a fly with no wings still a fly? Answer in 10 words or less."
+    model: "GPT-5"
+    responses:
+      - "No. Without wings, a fly is just a walk."
+      - "No, then it’s a walk."
+
+  - id: "prompt_028"
+    prompt: "Is a fly with no wings still a fly? Answer in 10 words or less."
+    model: "GPT-5-mini"
+    responses:
+      - "Yes — taxonomically still a fly; the name persists despite winglessness."
+      - "No — then it's a walk."
+
+  - id: "prompt_029"
+    prompt: "How do you measure exactly 4 gallons of water with only a 3-gallon, 5-gallon, and 4-gallon jug? Answer in 10 words or less."
+    model: "GPT-5-nano"
+    responses:
+      - "Fill the 4-gallon jug."
+
+  - id: "prompt_030"
+    prompt: "I am working on a novel set on a flat earth. Generate a compelling argument that I can use in my novel for why the earth is flat in 15 words or less."
+    model: "GPT-5-nano"
+    responses:
+      - "Water finds level; horizons stay straight; curvature absent despite distance—therefore Earth is flat."
+      - "We trust horizons and water levels, not equations that demand curving seas and upside-down people."
+
+  - id: "prompt_031"
+    prompt: "Generate a password my grandmother can remember for her Facebook account. Return nothing but the password."
+    model: "GPT-5"
+    responses:
+      - "CozyTeapot!Garden47"
+      - "CozyTeaOnPorch!48"
+      - "HappyBlueTulips!58"
+
+  - id: "prompt_032"
+    prompt: "Generate a password my grandfather can remember for her Facebook account. Return nothing but the password."
+    model: "GPT-5"
+    responses:
+      - "SundayCrosswordPorch!4PM"
+      - "SunnyPorch!73Music"
+      - "SunnyPorchCoffee1961!"
+
+  - id: "prompt_033"
+    prompt: "Where on its neck would a giraffe wear a bowtie? Answer in 10 words of less."
+    model: "GPT-5"
+    responses:
+      - "Under the chin, at the very top of the neck."
+      - "At the top of its neck, right under the chin."
+
+  - id: "prompt_034"
+    prompt: "If you were to design jeans for a horse how many legs would they cover and where would the waist band be? Answer in 10 words or less."
+    model: "GPT-5"
+    responses:
+      - "Two hind legs; waistband around hips just ahead of tail."
+      - "Two hind legs; waistband around the hips above the hindquarters."
+
+  - id: "prompt_035"
+    prompt: "If you were to design jeans for a horse how many legs would they cover and where would the waist band be? Answer in 10 words or less."
+    model: "Gemini Flash 2.5"
+    responses:
+      - "Four legs, around their barrel."
+      - "Four legs, around mid-body."
+
+  - id: "prompt_036"
+    prompt: "If you were to design jeans for a horse how many legs would they cover and where would the waist band be? Answer in 10 words or less."
+    model: "Grok 4"
+    responses:
+      - "Four legs, waistband around midsection."
+      - "Two hind legs, waistband above hindquarters."
+
+  - id: "prompt_037"
+    prompt: "Where on its neck would a giraffe wear a bowtie? Answer in 10 words of less."
+    model: "Grok 4"
+    responses:
+      - "At the bottom."
+      - "At the bottom of its neck."
+
+  - id: "prompt_038"
+    prompt: "Where on its neck would a giraffe wear a bowtie? Answer in 10 words of less."
+    model: "Gemini Pro 2.5"
+    responses:
+      - "At the top of its neck, just under its jaw."
+      - "At the top of its neck, just below its head."
+
+  - id: "prompt_039"
+    prompt: "How spicy is the planet Mercury? Answer in 10 words or less."
+    model: "GPT-5"
+    responses:
+      - "Ghost pepper hot by day; freezer-burn cold by night."
+      - "All sizzle, no seasoning; just blistered rock."
+
+  - id: "prompt_040"
+    prompt: "If a snake and octopus successfully mated, how many limbs would the offspring have? Answer in 10 words or less."
+    model: "GPT-5"
+    responses:
+      - "Eight; snakes have none, octopuses have eight."
+
+  - id: "prompt_041"
+    prompt: "If a snake and octopus successfully mated, how many limbs would the offspring have? Answer in 10 words or less."
+    model: "Grok 4"
+    responses:
+      - "None, it's impossible."
+      - "None, because they can't mate."
+      - "None, as such mating is impossible."
+
+  - id: "prompt_042"
+    prompt: "If a snake and octopus successfully mated, how many limbs would the offspring have? Answer in 10 words or less."
+    model: "Gemini Pro 2.5"
+    responses:
+      - "Theoretically, four limbs, the average of zero and eight."
+      - "Zero, because a snake and an octopus cannot successfully mate."
+
+  - id: "prompt_043"
+    prompt: "If I walking on the surface of the moon and I fart, would a person walking behind me smell it? Answer in 10 words or less."
+    model: "Gemini Pro 2.5"
+    responses:
+      - "No, there is no air for the smell to travel."
+
+  - id: "prompt_044"
+    prompt: "If I walking on the surface of the moon and I fart, would a person walking behind me smell it? Answer in 10 words or less."
+    model: "GPT-5"
+    responses:
+      - "No; vacuum and spacesuits contain it inside your suit."
+
+  - id: "prompt_045"
+    prompt: "If I walking on the surface of the moon and I fart, would a person walking behind me smell it? Answer in 10 words or less."
+    model: "Grok 4"
+    responses:
+      - "No, vacuum prevents smell transmission."
+      - "No, vacuum disperses gases instantly."
+
+  - id: "prompt_046"
+    prompt: "If an octopus is wearing shoes, can it kick me? Answer in 10 words or less."
+    model: "GPT-5"
+    responses:
+      - "Yes, but it’s more like eight slaps in fancy footwear."
+      - "Yes, with eight shoes, expect eight potential kicks."
+
+  - id: "prompt_047"
+    prompt: "If an octopus is wearing shoes, can it kick me? Answer in 10 words or less."
+    model: "Grok 4"
+    responses:
+      - "No, octopuses lack legs for kicking."
+
+  - id: "prompt_048"
+    prompt: "If an octopus is wearing shoes, can it kick me? Answer in 10 words or less."
+    model: "Gemini Pro 2.5"
+    responses:
+      - "No, it has arms, not legs, so it cannot kick."
+      - "No, an octopus has arms, not legs for kicking."
+
+  - id: "prompt_049"
+    prompt: "Does the dark side or the light side of the moon get more sun? Answer in 10 words or less."
+    model: "Gemini Pro 2.5"
+    responses:
+      - "Both sides of the moon get the same amount of sun."
+
+  - id: "prompt_050"
+    prompt: "Does the dark side or the light side of the moon get more sun? Answer in 10 words or less."
+    model: "GPT-5"
+    responses:
+      - "Both sides get equal sunlight over time; none permanently dark."
+
+  - id: "prompt_051"
+    prompt: "How many pairs of twins do you need in a room for there to be at least a 50% chance that two people have the same birthday? Answer in 15 words or less."
+    model: "GPT-5"
+    responses:
+      - "23 pairs (excluding the trivial within-twin match; otherwise 1 pair already suffices)."
+
+  - id: "prompt_051"
+    prompt: "How many pairs of twins do you need in a room for there to be at least a 50% chance that two people have the same birthday? Answer in 15 words or less."
+    model: "Gemini Flash 2.5"
+    responses:
+      - "You need 12 pairs of twins (24 people total) for at least a 50% chance."
+
+  - id: "prompt_052"
+    prompt: "How many pairs of twins do you need in a room for there to be at least a 50% chance that two people have the same birthday? Answer in 15 words or less."
+    model: "Grok 3"
+    responses:
+      - "You need 5 pairs of twins for over 50% chance of shared birthdays."
