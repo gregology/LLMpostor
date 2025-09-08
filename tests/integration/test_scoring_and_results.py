@@ -23,8 +23,9 @@ class TestScoringAndResults:
                 id="test_001",
                 prompt="What is artificial intelligence?",
                 model="GPT-4",
-                response="Artificial intelligence (AI) is a branch of computer science that aims to create intelligent machines."
+                responses=["Artificial intelligence (AI) is a branch of computer science that aims to create intelligent machines."]
             )
+            mock_prompt.select_random_response()  # Ensure response is selected for tests
             mock_cm.get_random_prompt_response.return_value = mock_prompt
             mock_cm.is_loaded.return_value = True
             mock_cm.get_prompt_count.return_value = 1

@@ -20,16 +20,29 @@ class PromptData:
     id: str
     prompt: str
     model: str
-    response: str
+    responses: List[str]
+    selected_response: Optional[str] = None
 
-    def to_dict(self) -> Dict[str, str]:
+    def to_dict(self) -> Dict[str, Any]:
         """Convert to dictionary for JSON serialization."""
         return {
             'id': self.id,
             'prompt': self.prompt,
             'model': self.model,
-            'response': self.response
+            'responses': self.responses,
+            'selected_response': self.selected_response
         }
+    
+    def get_response(self) -> str:
+        """Get the selected response, or select one randomly if none selected."""
+        if self.selected_response is None:
+            self.selected_response = random.choice(self.responses)
+        return self.selected_response
+    
+    def select_random_response(self) -> str:
+        """Select and return a random response from the available responses."""
+        self.selected_response = random.choice(self.responses)
+        return self.selected_response
 
 
 class ContentValidationError(Exception):
@@ -102,7 +115,7 @@ class ContentManager:
         if len(prompts) == 0:
             raise ContentValidationError("'prompts' list cannot be empty")
         
-        required_fields = {'id', 'prompt', 'model', 'response'}
+        required_fields = {'id', 'prompt', 'model', 'responses'}
         
         for i, prompt_item in enumerate(prompts):
             if not isinstance(prompt_item, dict):
@@ -114,8 +127,28 @@ class ContentManager:
                     f"Prompt item {i} missing required fields: {missing_fields}"
                 )
             
-            # Validate field types and content
-            for field in required_fields:
+            # Validate responses array
+            responses = prompt_item['responses']
+            if not isinstance(responses, list):
+                raise ContentValidationError(
+                    f"Prompt item {i} 'responses' must be a list"
+                )
+            if len(responses) == 0:
+                raise ContentValidationError(
+                    f"Prompt item {i} 'responses' list cannot be empty"
+                )
+            for j, response in enumerate(responses):
+                if not isinstance(response, str):
+                    raise ContentValidationError(
+                        f"Prompt item {i} response {j} must be a string"
+                    )
+                if not response.strip():
+                    raise ContentValidationError(
+                        f"Prompt item {i} response {j} cannot be empty"
+                    )
+            
+            # Validate other required fields
+            for field in ['id', 'prompt', 'model']:
                 if not isinstance(prompt_item[field], str):
                     raise ContentValidationError(
                         f"Prompt item {i} field '{field}' must be a string"
@@ -142,11 +175,13 @@ class ContentManager:
         """
         prompts = []
         for item in data['prompts']:
+            responses = [r.strip() for r in item['responses']]
+            
             prompt_data = PromptData(
                 id=item['id'].strip(),
                 prompt=item['prompt'].strip(),
                 model=item['model'].strip(),
-                response=item['response'].strip()
+                responses=responses
             )
             prompts.append(prompt_data)
         
@@ -154,10 +189,10 @@ class ContentManager:
     
     def get_random_prompt_response(self) -> PromptData:
         """
-        Get a random prompt/response pair.
+        Get a random prompt/response pair with a response selected.
         
         Returns:
-            Random PromptData object
+            Random PromptData object with selected_response set
             
         Raises:
             RuntimeError: If no prompts are loaded
@@ -165,7 +200,10 @@ class ContentManager:
         if not self._loaded or not self.prompts:
             raise RuntimeError("No prompts loaded. Call load_prompts_from_yaml() first.")
         
-        return random.choice(self.prompts)
+        prompt_data = random.choice(self.prompts)
+        # Select a random response for this game round
+        prompt_data.select_random_response()
+        return prompt_data
     
     def get_prompt_by_id(self, prompt_id: str) -> Optional[PromptData]:
         """
