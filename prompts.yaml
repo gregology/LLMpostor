@@ -366,13 +366,13 @@ prompts:
     responses:
       - "23 pairs (excluding the trivial within-twin match; otherwise 1 pair already suffices)."
 
-  - id: "prompt_051"
+  - id: "prompt_052"
     prompt: "How many pairs of twins do you need in a room for there to be at least a 50% chance that two people have the same birthday? Answer in 15 words or less."
     model: "Gemini Flash 2.5"
     responses:
       - "You need 12 pairs of twins (24 people total) for at least a 50% chance."
 
-  - id: "prompt_052"
+  - id: "prompt_053"
     prompt: "How many pairs of twins do you need in a room for there to be at least a 50% chance that two people have the same birthday? Answer in 15 words or less."
     model: "Grok 3"
     responses:
