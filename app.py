@@ -12,8 +12,11 @@ import time
 import threading
 from collections import defaultdict, deque
 from functools import wraps
+import sys
+import yaml
 
 # Import error handling utilities (still needed for decorators and validation)
+from src.content_manager import ContentValidationError
 from src.error_handler import ErrorCode, ValidationError, with_error_handling
 
 # Import service container and configuration factory
@@ -205,9 +208,9 @@ def prevent_event_overflow(event_type: str = "generic"):
 try:
     content_manager.load_prompts_from_yaml()
     logger.info(f"Loaded {content_manager.get_prompt_count()} prompts from YAML")
-except Exception as e:
-    logger.error(f"Failed to load prompts: {e}")
-    # Continue without prompts for now - will handle gracefully
+except (FileNotFoundError, yaml.YAMLError, ContentValidationError) as e:
+    logger.critical(f"FATAL: Prompt file validation failed, which is critical for game play. Server shutting down. Error: {e}")
+    sys.exit(1)
 
 @app.route('/')
 def index():
