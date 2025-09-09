@@ -59,13 +59,7 @@ class EventManager extends EventBusModule {
         
         this.socket.initialize();
         this.isInitialized = true;
-        
-        // Publish initialization event
-        this.publish(Events.SYSTEM.INFO, {
-            message: 'EventManager initialized',
-            roomId,
-            timestamp: Date.now()
-        });
+
     }
     
     /**
