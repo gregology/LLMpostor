@@ -32,8 +32,16 @@ from config_factory import ConfigurationFactory
 config_factory = ConfigurationFactory()
 app.config.update(config_factory.get_flask_config())
 
-# Initialize Socket.IO with CORS enabled for development
-socketio = SocketIO(app, cors_allowed_origins="*", async_mode='eventlet')
+# Initialize Socket.IO with environment-aware CORS
+# In production, restrict to explicitly allowed origins from env var SOCKETIO_CORS_ALLOWED_ORIGINS (comma-separated)
+allowed_origins_env = os.environ.get('SOCKETIO_CORS_ALLOWED_ORIGINS', '')
+if app_config.is_production:
+    _cors_allowed = [o.strip() for o in allowed_origins_env.split(',') if o.strip()]
+    # If none provided, default to same-origin only by providing empty list (no cross-origin)
+    socketio = SocketIO(app, cors_allowed_origins=_cors_allowed or [], async_mode='eventlet')
+else:
+    # Development/testing: permissive for local workflows
+    socketio = SocketIO(app, cors_allowed_origins="*", async_mode='eventlet')
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -245,8 +253,16 @@ def room(room_id):
 
 @socketio.on('connect')
 def handle_connect():
-    """Handle client connection."""
-    logger.info(f'Client connected: {request.sid}')
+    """Handle client connection with optional Origin enforcement in production."""
+    origin = request.headers.get('Origin')
+    # Enforce Origin in production if a CORS allowlist is configured
+    if app_config.is_production:
+        if allowed_origins_env:
+            allowed = {o.strip() for o in allowed_origins_env.split(',') if o.strip()}
+            if origin and origin not in allowed:
+                logger.warning(f'Rejecting connection from disallowed Origin: {origin}')
+                return False  # Reject the connection
+    logger.info(f'Client connected: {request.sid} from Origin: {origin}')
     emit('connected', {'status': 'Connected to LLMpostor server'})
 
 @socketio.on('disconnect')
