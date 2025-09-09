@@ -11,6 +11,14 @@ A multiplayer guessing game where humans try to pass as robots.
 - [LLMpostor.com](https://LLMpostor.com)
 - Add yours...
 
+## How to Play
+
+1. **Join a Room**: Navigate to a room URL (e.g., `/my-room`) or create one from the home page
+2. **Wait for Players**: Need at least 2 players to start a round
+3. **Write Responses**: When a round starts, write a response that mimics the target AI model
+4. **Guess the AI**: Try to identify which response was actually written by the AI
+5. **Score Points**: Earn 1 point for correctly guessing the AI response and 5 points when another player guesses your response is the AI
+
 ## Philosophy
 
 LLMpostor is a social game for a wide audience—from AI enthusiasts to AI skeptics to folks that think it's pronounced "A1". The core of the game is simple: **fail the Turing Test, win the game.** But beneath this simple premise lies a deeper purpose: to help people become more discerning directors and consumers of AI by honing their ability to distinguish between human and AI-generated content.
@@ -91,19 +99,6 @@ Or run specific test suites:
 make test-python    # Run Python tests only
 make test-js        # Run JavaScript tests only
 ```
-
-## How to Play
-
-1. **Join a Room**: Navigate to a room URL (e.g., `/my-room`) or create one from the home page
-2. **Wait for Players**: Need at least 2 players to start a round
-3. **Write Responses**: When a round starts, write a response that mimics the target AI model
-4. **Guess the AI**: Try to identify which response was actually written by the AI
-5. **Score Points**: Earn points for correct guesses and fooling other players
-
-## Scoring
-
-- **1 point** for correctly identifying the AI response
-- **5 points** for each player who mistakes your response for the AI
 
 ## Development
 
