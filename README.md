@@ -35,7 +35,7 @@ More importantly, the prompts are designed to reveal the hidden biases that are 
 
 ### Developed with AI
 
-LLMpostor is not just a game *about* human AI interactions; it's also a product *of* human AI interactions. The initial MVP was developed by a human with the help of [Kiro](https://kiro.dev/), and subsequent (and very necessary) refactoring and feature development have been assisted by [Claude Code](https://www.anthropic.com/claude-code) and [Gemini](https://codeassist.google/). If you notice any bugs please blame the AI and not the human that naively hit merge.
+LLMpostor is not just a game *about* human AI interactions; it's also a product *of* human AI interactions. The initial MVP was developed by a human with the help of [Kiro](https://kiro.dev/), and subsequent (and very necessary) refactoring, bug fixing, & feature development have been assisted by [Claude Code](https://www.anthropic.com/claude-code), [Gemini](https://codeassist.google/), & [Windsurf](https://windsurf.com/). If you notice any bugs please blame the AI and not the human that naively hit merge.
 
 ### An Open and Evolving Platform
 
