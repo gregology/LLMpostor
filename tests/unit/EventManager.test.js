@@ -31,6 +31,111 @@ describe('EventManager', () => {
     eventManager = new EventManager(mockSocket, mockGameState, mockUI, mockTimer, mockToast);
   });
 
+  describe('Counters initialization and updates', () => {
+    beforeEach(() => {
+      eventManager.initialize('test-room');
+      // Set up totals so EventManager can compute total players
+      eventManager.gameState.roomInfo = { totalCount: 2, connectedCount: 2 };
+      eventManager.gameState.players = [createMockPlayer(), createMockPlayer({ player_id: 'p2' })];
+    });
+
+    it('initializes submission counter to 0/total on round start', () => {
+      const data = {
+        id: 'prompt_001',
+        prompt: 'Test prompt',
+        model: 'GPT-4',
+        round_number: 1,
+        phase_duration: 180
+      };
+
+      eventManager._handleRoundStarted(data);
+
+      expect(mockUI.updateSubmissionCount).toHaveBeenCalledWith(0, 2);
+    });
+
+    it('prefers server response_count during responding state updates', () => {
+      const state = {
+        gameState: createMockGameState({ phase: 'responding', response_count: 1 }),
+        roomInfo: { totalCount: 2, connectedCount: 2 },
+        players: [createMockPlayer(), createMockPlayer({ player_id: 'p2' })],
+        hasSubmittedResponse: false,
+        roundsCompleted: 0
+      };
+
+      // Ensure a phase change occurs
+      mockUI.currentPhase = 'waiting';
+      eventManager._handleGameStateChange(state);
+
+      expect(mockUI.updateSubmissionCount).toHaveBeenCalledWith(1, 2);
+    });
+
+    it('falls back to local hasSubmittedResponse when server response_count is absent', () => {
+      const state = {
+        gameState: createMockGameState({ phase: 'responding' }), // default includes response_count: 0
+        roomInfo: { totalCount: 2, connectedCount: 2 },
+        players: [createMockPlayer(), createMockPlayer({ player_id: 'p2' })],
+        hasSubmittedResponse: true,
+        roundsCompleted: 0
+      };
+
+      mockUI.currentPhase = 'waiting';
+      // Simulate absence of server-provided count
+      delete state.gameState.response_count;
+      eventManager._handleGameStateChange(state);
+
+      expect(mockUI.updateSubmissionCount).toHaveBeenCalledWith(1, 2);
+    });
+
+    it('initializes guess counter to 0/total on guessing phase start', () => {
+      // No guess submitted yet
+      eventManager.gameState.hasSubmittedGuess = false;
+
+      const responses = createMockResponses(2);
+      const data = {
+        phase: 'guessing',
+        responses,
+        round_number: 1,
+        phase_duration: 120
+      };
+
+      eventManager._handleGuessingPhaseStarted(data);
+
+      expect(mockUI.updateGuessCount).toHaveBeenCalledWith(0, 2);
+    });
+
+    it('prefers server guess_count during guessing state updates', () => {
+      const state = {
+        gameState: createMockGameState({ phase: 'guessing', guess_count: 1 }),
+        roomInfo: { totalCount: 2, connectedCount: 2 },
+        players: [createMockPlayer(), createMockPlayer({ player_id: 'p2' })],
+        hasSubmittedGuess: false,
+        roundsCompleted: 0
+      };
+
+      mockUI.currentPhase = 'responding';
+      eventManager._handleGameStateChange(state);
+
+      expect(mockUI.updateGuessCount).toHaveBeenCalledWith(1, 2);
+    });
+
+    it('falls back to local hasSubmittedGuess when server guess_count is absent', () => {
+      const state = {
+        gameState: createMockGameState({ phase: 'guessing' }), // default includes guess_count: 0
+        roomInfo: { totalCount: 2, connectedCount: 2 },
+        players: [createMockPlayer(), createMockPlayer({ player_id: 'p2' })],
+        hasSubmittedGuess: true,
+        roundsCompleted: 0
+      };
+
+      mockUI.currentPhase = 'responding';
+      // Simulate absence of server-provided count
+      delete state.gameState.guess_count;
+      eventManager._handleGameStateChange(state);
+
+      expect(mockUI.updateGuessCount).toHaveBeenCalledWith(1, 2);
+    });
+  });
+
   describe('Initialization', () => {
     it('should initialize with default state', () => {
       expect(eventManager.isInitialized).toBe(false);

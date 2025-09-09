@@ -479,8 +479,23 @@ class EventManager extends EventBusModule {
                     if (state.gameState.current_prompt) {
                         this.ui.updatePromptDisplay(state.gameState.current_prompt);
                     }
+                    // Initialize submission counter while respecting server-provided counts
+                    // Prefer response_count from room_state updates to avoid overwriting broadcast increments
+                    {
+                        const totalPlayers = state.roomInfo?.totalCount || state.roomInfo?.connectedCount || (Array.isArray(state.players) ? state.players.length : 0) || 0;
+                        const serverCount = typeof state.gameState?.response_count === 'number' ? state.gameState.response_count : null;
+                        const submittedSoFar = serverCount !== null ? serverCount : (state.hasSubmittedResponse ? 1 : 0);
+                        this.ui.updateSubmissionCount(submittedSoFar, totalPlayers);
+                    }
                     break;
                 case 'guessing':
+                    // Initialize guess counter while respecting server-provided counts
+                    {
+                        const totalPlayers = state.roomInfo?.totalCount || state.roomInfo?.connectedCount || (Array.isArray(state.players) ? state.players.length : 0) || 0;
+                        const serverGuessCount = typeof state.gameState?.guess_count === 'number' ? state.gameState.guess_count : null;
+                        const guessedSoFar = serverGuessCount !== null ? serverGuessCount : (state.hasSubmittedGuess ? 1 : 0);
+                        this.ui.updateGuessCount(guessedSoFar, totalPlayers);
+                    }
                     if (state.gameState.responses && !state.hasSubmittedGuess) {
                         // Filter out current player's response based on submitted text
                         const submittedResponseText = this.gameState.submittedResponseText;
@@ -575,6 +590,13 @@ class EventManager extends EventBusModule {
         this.toast.info(`Round ${data.round_number} started!`);
         this.ui.updatePromptDisplay(data);
         this.ui.switchToPhase('responding', data);
+        // Initialize submission counts at the start of the responding phase
+        // Prevents showing 0/0 on first round and avoids carrying over previous round's values
+        {
+            const roomInfo = this.gameState.roomInfo || {};
+            const totalPlayers = roomInfo.totalCount || roomInfo.connectedCount || (Array.isArray(this.gameState.players) ? this.gameState.players.length : 0) || 0;
+            this.ui.updateSubmissionCount(0, totalPlayers);
+        }
         this.timer.startTimer('response', data.phase_duration);
     }
     
@@ -655,6 +677,14 @@ class EventManager extends EventBusModule {
         console.log('Index mapping:', originalIndexMapping);
         this.ui.displayResponsesForGuessing(filteredResponses);
         this.ui.switchToPhase('guessing', data);
+        // Initialize guess counts at the start of the guessing phase
+        // Prevents showing 0/0 and avoids carrying over previous round values
+        {
+            const roomInfo = this.gameState.roomInfo || {};
+            const totalPlayers = roomInfo.totalCount || roomInfo.connectedCount || (Array.isArray(this.gameState.players) ? this.gameState.players.length : 0) || 0;
+            const guessedSoFar = this.gameState.hasSubmittedGuess ? 1 : 0;
+            this.ui.updateGuessCount(guessedSoFar, totalPlayers);
+        }
         this.timer.startTimer('guessing', data.phase_duration);
     }
     
