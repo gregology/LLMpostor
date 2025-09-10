@@ -4,10 +4,12 @@ version = "0.1.0"
 description = "Add your description here"
 requires-python = ">=3.13"
 dependencies = [
+    "complexipy>=4.1.0",
     "eventlet>=0.40.3",
     "flask>=3.1.2",
     "flask-socketio>=5.5.1",
     "gunicorn>=23.0.0",
+    "lizard>=1.17.31",
     "python-engineio>=4.12.2",
     "python-socketio>=5.13.0",
     "pyyaml>=6.0.2",
