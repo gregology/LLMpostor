@@ -1,0 +1,32 @@
+on: pull_request
+
+jobs:
+  complexity-delta:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up tools
+        run: |
+          pip install complexipy
+
+      - name: Analyze base commit
+        run: |
+          git checkout ${{ github.event.pull_request.base.sha }}
+          complexipy . --output-json --quiet || true
+          mv complexipy.json base_complexipy.json
+
+      - name: Analyze PR commit
+        run: |
+          git checkout ${{ github.sha }}
+          complexipy . --output-json --quiet || true
+          mv complexipy.json pr_complexipy.json
+
+      - name: Compare and comment
+        run: |
+          python scripts/compare_complexity.py base_complexipy.json pr_complexipy.json > diff.txt
+          gh pr comment ${{ github.event.pull_request.number }} --body-file diff.txt
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
