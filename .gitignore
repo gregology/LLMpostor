@@ -207,3 +207,6 @@ __marimo__/
 
 # npm
 node_modules/
+
+# Complexity tracking
+complexipy.json
