@@ -12,6 +12,7 @@ import logging
 import threading
 import time
 from typing import Dict
+from src.services.room_state_presenter import RoomStatePresenter
 
 logger = logging.getLogger(__name__)
 
@@ -32,6 +33,9 @@ class AutoGameFlowService:
         self.room_manager = room_manager
         self.running = True
         self.check_interval = 1  # Check every second
+        
+        # Initialize room state presenter for consistent timeout phase broadcasts
+        self.room_state_presenter = RoomStatePresenter(game_manager)
         
         # Start background thread for automatic phase management
         self.timer_thread = threading.Thread(target=self._timer_loop, daemon=True)
@@ -175,23 +179,11 @@ class AutoGameFlowService:
             if not room_state:
                 return
             
-            game_state = room_state['game_state']
+            # Use presenter to create consistent guessing phase data (no player filtering for timeout)
+            guessing_info = self.room_state_presenter.create_guessing_phase_data(room_state, room_id)
             
-            guessing_info = {
-                'phase': 'guessing',
-                'responses': [],
-                'round_number': game_state['round_number'],
-                'phase_duration': game_state['phase_duration'],
-                'time_remaining': self.game_manager.get_phase_time_remaining(room_id),
-                'timeout_reason': 'Response time expired'
-            }
-            
-            # Add anonymized responses
-            for i, response in enumerate(game_state['responses']):
-                guessing_info['responses'].append({
-                    'index': i,
-                    'text': response['text']
-                })
+            # Add timeout-specific information
+            guessing_info['timeout_reason'] = 'Response time expired'
             
             self.broadcast_service.emit_to_room('guessing_phase_started', guessing_info, room_id)
             logger.debug(f'Broadcasted guessing phase start (timeout) to room {room_id}')

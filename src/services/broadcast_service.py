@@ -12,6 +12,7 @@ This service handles all Socket.IO emissions in a centralized way:
 import logging
 from typing import Dict, Any
 from src.services.payload_optimizer import get_payload_optimizer
+from src.services.room_state_presenter import RoomStatePresenter
 
 logger = logging.getLogger(__name__)
 
@@ -32,6 +33,9 @@ class BroadcastService:
         self.room_manager = room_manager
         self.game_manager = game_manager
         self.error_handler = error_handler
+        
+        # Initialize room state presenter for consistent payload transformations
+        self.room_state_presenter = RoomStatePresenter(game_manager)
         
         # Performance optimization: Initialize payload optimizer (optional)
         try:
@@ -80,24 +84,10 @@ class BroadcastService:
             if not room_state:
                 return
             
-            players = room_state['players']
             connected_players = self.room_manager.get_connected_players(room_id)
             
-            # Transform players data for broadcast
-            player_list = []
-            for player_id, player in players.items():
-                player_list.append({
-                    'player_id': player['player_id'],
-                    'name': player['name'],
-                    'score': player['score'],
-                    'connected': player['connected']
-                })
-            
-            player_info = {
-                'players': player_list,
-                'connected_count': len(connected_players),
-                'total_count': len(players)
-            }
+            # Use presenter to create consistent player list payload
+            player_info = self.room_state_presenter.create_player_list_update(room_state, connected_players)
             
             self.emit_to_room('player_list_updated', player_info, room_id)
             logger.debug(f'Broadcasted player list update to room {room_id}')
@@ -112,41 +102,8 @@ class BroadcastService:
             if not room_state:
                 return
             
-            players = room_state['players']
-            
-            # Create safe game state for broadcast
-            game_state = room_state['game_state']
-            safe_game_state = {
-                'phase': game_state['phase'],
-                'round_number': game_state['round_number'],
-                'phase_start_time': game_state['phase_start_time'].isoformat() if game_state['phase_start_time'] else None,
-                'phase_duration': game_state['phase_duration']
-            }
-            
-            # Add phase-specific data
-            if game_state['phase'] in ['responding', 'guessing', 'results']:
-                if game_state['current_prompt']:
-                    safe_game_state['current_prompt'] = {
-                        'id': game_state['current_prompt']['id'],
-                        'prompt': game_state['current_prompt']['prompt'],
-                        'model': game_state['current_prompt']['model']
-                    }
-            
-            if game_state['phase'] == 'responding':
-                safe_game_state['response_count'] = len(game_state['responses'])
-                safe_game_state['time_remaining'] = self.game_manager.get_phase_time_remaining(room_id)
-            
-            if game_state['phase'] == 'guessing':
-                # Optimize responses payload
-                responses_data = []
-                for i, response in enumerate(game_state['responses']):
-                    responses_data.append({
-                        'index': i,
-                        'text': response['text']
-                    })
-                safe_game_state['responses'] = responses_data
-                safe_game_state['guess_count'] = len(game_state['guesses'])
-                safe_game_state['time_remaining'] = self.game_manager.get_phase_time_remaining(room_id)
+            # Use presenter to create consistent safe game state
+            safe_game_state = self.room_state_presenter.create_safe_game_state(room_state, room_id)
             
             # Keep original format for backward compatibility
             # TODO: Enable payload optimization in future version with client support
@@ -174,53 +131,10 @@ class BroadcastService:
                 self.emit_error_to_player(error_response, socket_id)
                 return
             
-            players = room_state['players']
             connected_players = self.room_manager.get_connected_players(room_id)
             
-            # Transform player list
-            player_list = []
-            for player_id, player in players.items():
-                player_list.append({
-                    'player_id': player['player_id'],
-                    'name': player['name'],
-                    'score': player['score'],
-                    'connected': player['connected']
-                })
-            
-            # Get game state
-            game_state = room_state['game_state']
-            safe_game_state = {
-                'phase': game_state['phase'],
-                'round_number': game_state['round_number'],
-                'phase_start_time': game_state['phase_start_time'].isoformat() if game_state['phase_start_time'] else None,
-                'phase_duration': game_state['phase_duration']
-            }
-            
-            # Add phase-specific data
-            if game_state['phase'] in ['responding', 'guessing', 'results']:
-                if game_state['current_prompt']:
-                    safe_game_state['current_prompt'] = {
-                        'id': game_state['current_prompt']['id'],
-                        'prompt': game_state['current_prompt']['prompt'],
-                        'model': game_state['current_prompt']['model']
-                    }
-            
-            if game_state['phase'] == 'responding':
-                safe_game_state['response_count'] = len(game_state['responses'])
-                safe_game_state['time_remaining'] = self.game_manager.get_phase_time_remaining(room_id)
-            
-            # Get leaderboard for room state
-            leaderboard = self.game_manager.get_leaderboard(room_id)
-            
-            # Send comprehensive room state
-            room_state_data = {
-                'room_id': room_id,
-                'players': player_list,
-                'connected_count': len(connected_players),
-                'total_count': len(players),
-                'game_state': safe_game_state,
-                'leaderboard': leaderboard
-            }
+            # Use presenter to create consistent room state payload
+            room_state_data = self.room_state_presenter.create_room_state_for_player(room_state, room_id, connected_players)
             
             self.emit_to_player('room_state', room_state_data, socket_id)
             logger.debug(f'Sent room state to player {socket_id} in room {room_id}')
@@ -302,30 +216,14 @@ class BroadcastService:
             if not room_state:
                 return
             
-            game_state = room_state['game_state']
-            
             # Send personalized responses to each player (excluding their own response)
             for player_id in room_state['players']:
                 player = room_state['players'][player_id]
                 if not player.get('connected', False):
                     continue
-                    
-                # Filter out this player's own response
-                filtered_responses = []
-                for i, response in enumerate(game_state['responses']):
-                    if response['author_id'] != player_id:
-                        filtered_responses.append({
-                            'index': i,
-                            'text': response['text']
-                        })
                 
-                guessing_info = {
-                    'phase': 'guessing',
-                    'responses': filtered_responses,
-                    'round_number': game_state['round_number'],
-                    'phase_duration': game_state['phase_duration'],
-                    'time_remaining': self.game_manager.get_phase_time_remaining(room_id)
-                }
+                # Use presenter to create personalized guessing phase data
+                guessing_info = self.room_state_presenter.create_guessing_phase_data(room_state, room_id, player_id)
                 
                 self.emit_to_player('guessing_phase_started', guessing_info, player['socket_id'])
             
