@@ -94,9 +94,10 @@ class TestScoringAndResults:
             event_data = results_events[0]['args'][0]
             
             assert event_data['success'] is True
-            assert 'results' in event_data
+            assert 'data' in event_data
+            assert 'results' in event_data['data']
             
-            results = event_data['results']
+            results = event_data['data']['results']
             assert 'round_number' in results
             assert 'llm_response_index' in results
             assert 'responses' in results
@@ -129,7 +130,8 @@ class TestScoringAndResults:
             
             assert len(error_events) == 1
             error_data = error_events[0]['args'][0]
-            assert error_data['code'] == 'NO_RESULTS_AVAILABLE'
+            assert error_data['success'] is False
+            assert error_data['error']['code'] == 'NO_RESULTS_AVAILABLE'
             
         finally:
             client.disconnect()
@@ -158,10 +160,11 @@ class TestScoringAndResults:
             event_data = leaderboard_events[0]['args'][0]
             
             assert event_data['success'] is True
-            assert 'leaderboard' in event_data
-            assert 'scoring_summary' in event_data
+            assert 'data' in event_data
+            assert 'leaderboard' in event_data['data']
+            assert 'scoring_summary' in event_data['data']
             
-            leaderboard = event_data['leaderboard']
+            leaderboard = event_data['data']['leaderboard']
             assert len(leaderboard) == 2
             
             # Check leaderboard structure
@@ -172,7 +175,7 @@ class TestScoringAndResults:
                 assert 'rank' in player
             
             # Check scoring summary
-            scoring_summary = event_data['scoring_summary']
+            scoring_summary = event_data['data']['scoring_summary']
             assert 'scoring_rules' in scoring_summary
             assert 'game_stats' in scoring_summary
             
@@ -334,7 +337,7 @@ class TestScoringAndResults:
             
             # Find leaderboard event
             leaderboard_events = [event for event in received if event['name'] == 'leaderboard']
-            first_round_leaderboard = leaderboard_events[0]['args'][0]['leaderboard']
+            first_round_leaderboard = leaderboard_events[0]['args'][0]['data']['leaderboard']
             
             # Start second round
             client.emit('start_round')
@@ -357,7 +360,7 @@ class TestScoringAndResults:
             received = client.get_received()
             
             leaderboard_events = [event for event in received if event['name'] == 'leaderboard']
-            second_round_leaderboard = leaderboard_events[0]['args'][0]['leaderboard']
+            second_round_leaderboard = leaderboard_events[0]['args'][0]['data']['leaderboard']
             
             # Scores should have potentially increased from first round
             # (depending on correct guesses and deception points)

@@ -461,66 +461,48 @@ def handle_submit_guess(data):
         )
 
 
+@with_error_handling
 def handle_get_round_results(data=None):
     """Handle request for detailed round results."""
-    try:
-        session_info = session_service.get_session(request.sid)
-        if not session_info:
-            emit('error', {
-                'code': 'NOT_IN_ROOM',
-                'message': 'You are not currently in a room'
-            })
-            return
-        
-        room_id = session_info['room_id']
-        round_results = game_manager.get_round_results(room_id)
-        
-        if round_results:
-            emit('round_results', {
-                'success': True,
-                'results': round_results
-            })
-        else:
-            emit('error', {
-                'code': 'NO_RESULTS_AVAILABLE',
-                'message': 'No round results available. Game must be in results phase.'
-            })
-            
-    except Exception as e:
-        logger.error(f'Error in get_round_results: {e}')
-        emit('error', {
-            'code': 'INTERNAL_ERROR',
-            'message': 'An internal error occurred'
-        })
+    session_info = session_service.get_session(request.sid)
+    if not session_info:
+        raise ValidationError(
+            ErrorCode.NOT_IN_ROOM,
+            'You are not currently in a room'
+        )
+    
+    room_id = session_info['room_id']
+    round_results = game_manager.get_round_results(room_id)
+    
+    if round_results:
+        emit('round_results', error_handler.create_success_response({
+            'results': round_results
+        }))
+    else:
+        raise ValidationError(
+            ErrorCode.NO_RESULTS_AVAILABLE,
+            'No round results available. Game must be in results phase.'
+        )
 
 
+@with_error_handling
 def handle_get_leaderboard(data=None):
     """Handle request for current leaderboard."""
-    try:
-        session_info = session_service.get_session(request.sid)
-        if not session_info:
-            emit('error', {
-                'code': 'NOT_IN_ROOM',
-                'message': 'You are not currently in a room'
-            })
-            return
-        
-        room_id = session_info['room_id']
-        leaderboard = game_manager.get_leaderboard(room_id)
-        scoring_summary = game_manager.get_scoring_summary(room_id)
-        
-        emit('leaderboard', {
-            'success': True,
-            'leaderboard': leaderboard,
-            'scoring_summary': scoring_summary
-        })
-            
-    except Exception as e:
-        logger.error(f'Error in get_leaderboard: {e}')
-        emit('error', {
-            'code': 'INTERNAL_ERROR',
-            'message': 'An internal error occurred'
-        })
+    session_info = session_service.get_session(request.sid)
+    if not session_info:
+        raise ValidationError(
+            ErrorCode.NOT_IN_ROOM,
+            'You are not currently in a room'
+        )
+    
+    room_id = session_info['room_id']
+    leaderboard = game_manager.get_leaderboard(room_id)
+    scoring_summary = game_manager.get_scoring_summary(room_id)
+    
+    emit('leaderboard', error_handler.create_success_response({
+        'leaderboard': leaderboard,
+        'scoring_summary': scoring_summary
+    }))
 
 
 @with_error_handling
