@@ -122,6 +122,8 @@ class ServiceContainer:
         from src.game_manager import GameManager
         from src.content_manager import ContentManager
         from src.error_handler import ErrorHandler
+        from src.services.validation_service import ValidationService
+        from src.services.error_response_factory import ErrorResponseFactory
         from src.services.session_service import SessionService
         from src.services.broadcast_service import BroadcastService
         from src.services.auto_game_flow_service import AutoGameFlowService
@@ -130,7 +132,11 @@ class ServiceContainer:
         from config_factory import ConfigurationFactory
         self.register('ConfigurationFactory', ConfigurationFactory)
         
-        # Core managers - no dependencies
+        # Validation and error handling services - no dependencies
+        self.register('ValidationService', ValidationService)
+        self.register('ErrorResponseFactory', ErrorResponseFactory)
+        
+        # Core managers - no dependencies (ErrorHandler now wraps the new services)
         self.register('RoomManager', RoomManager)
         self.register('ContentManager', ContentManager)
         self.register('ErrorHandler', ErrorHandler)

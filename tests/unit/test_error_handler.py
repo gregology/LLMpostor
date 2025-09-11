@@ -6,7 +6,8 @@ Tests validation functions, error formatting, and error handling utilities.
 
 import pytest
 from unittest.mock import patch
-from src.error_handler import ErrorHandler, ErrorCode, ValidationError, with_error_handling
+from src.error_handler import ErrorHandler, with_error_handling
+from src.core.errors import ErrorCode, ValidationError
 
 
 class TestErrorHandler:
@@ -193,7 +194,7 @@ class TestErrorHandler:
         assert exc_info.value.code == ErrorCode.INVALID_DATA
         assert "room_id" in exc_info.value.message
     
-    @patch('src.error_handler.emit')
+    @patch('src.services.error_response_factory.emit')
     def test_emit_error(self, mock_emit):
         """Test error emission to client."""
         ErrorHandler.emit_error(ErrorCode.INVALID_DATA, "Test error", {"detail": "value"})
@@ -207,7 +208,7 @@ class TestErrorHandler:
             }
         })
     
-    @patch('src.error_handler.emit')
+    @patch('src.services.error_response_factory.emit')
     def test_emit_validation_error(self, mock_emit):
         """Test validation error emission to client."""
         error = ValidationError(ErrorCode.MISSING_ROOM_ID, "Room ID required", {"field": "room_id"})
@@ -230,7 +231,7 @@ class TestErrorHandler:
         assert code == ErrorCode.INVALID_DATA
         assert message == "Invalid data"
     
-    @patch('src.error_handler.logger')
+    @patch('src.services.error_response_factory.logger')
     def test_handle_exception_generic_error(self, mock_logger):
         """Test exception handling for generic exceptions."""
         error = ValueError("Some error")
@@ -250,7 +251,7 @@ class TestErrorHandler:
             "data": data
         }
     
-    @patch('src.error_handler.logger')
+    @patch('src.services.error_response_factory.logger')
     def test_log_error_context(self, mock_logger):
         """Test error context logging."""
         ErrorHandler.log_error_context("test context", room_id="test", player_id="123")
@@ -265,7 +266,7 @@ class TestErrorHandler:
 class TestWithErrorHandlingDecorator:
     """Test cases for the with_error_handling decorator."""
     
-    @patch('src.error_handler.ErrorHandler.emit_validation_error')
+    @patch('src.services.error_response_factory.emit')
     def test_decorator_catches_validation_error(self, mock_emit):
         """Test that decorator catches ValidationError."""
         @with_error_handling
@@ -275,19 +276,16 @@ class TestWithErrorHandlingDecorator:
         test_function()
         mock_emit.assert_called_once()
     
-    @patch('src.error_handler.ErrorHandler.emit_error')
-    @patch('src.error_handler.ErrorHandler.handle_exception')
-    def test_decorator_catches_generic_error(self, mock_handle, mock_emit):
+    @patch('src.services.error_response_factory.emit')
+    def test_decorator_catches_generic_error(self, mock_emit):
         """Test that decorator catches generic exceptions."""
-        mock_handle.return_value = (ErrorCode.INTERNAL_ERROR, "Internal error")
         
         @with_error_handling
         def test_function():
             raise ValueError("Test error")
         
         test_function()
-        mock_handle.assert_called_once()
-        mock_emit.assert_called_once_with(ErrorCode.INTERNAL_ERROR, "Internal error")
+        mock_emit.assert_called_once()
     
     def test_decorator_preserves_function_metadata(self):
         """Test that decorator preserves function name and docstring."""

@@ -6,7 +6,8 @@ import logging
 from flask import request
 from flask_socketio import emit, join_room, leave_room
 
-from src.error_handler import ErrorCode, ValidationError, with_error_handling
+from src.core.errors import ErrorCode, ValidationError
+from src.error_handler import with_error_handling
 from src.services.rate_limit_service import prevent_event_overflow
 
 logger = logging.getLogger(__name__)

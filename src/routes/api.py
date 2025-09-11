@@ -52,6 +52,10 @@ def create_api_blueprint(services):
     @api.route('/<room_id>')
     def room(room_id):
         """Serve the game interface for a specific room."""
-        return render_template('game.html', room_id=room_id, max_response_length=error_handler.MAX_RESPONSE_LENGTH)
+        # Get max response length from validation service
+        from src.services.validation_service import ValidationService
+        validation_service = ValidationService()
+        max_response_length = validation_service.get_max_response_length()
+        return render_template('game.html', room_id=room_id, max_response_length=max_response_length)
     
     return api

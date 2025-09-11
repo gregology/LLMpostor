@@ -11,7 +11,7 @@ from functools import wraps
 from flask import request
 from flask_socketio import emit
 
-from src.error_handler import ErrorCode
+from src.core.errors import ErrorCode
 
 logger = logging.getLogger(__name__)
 
