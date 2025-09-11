@@ -14,6 +14,7 @@ import TimerManager from './TimerManager.js';
 import ToastManager from './ToastManager.js';
 import UIManager from './UIManager.js';
 import EventManager from './EventManager.js';
+import { getBootstrapValue } from '../utils/Bootstrap.js';
 
 class GameClient {
     constructor() {
@@ -61,7 +62,7 @@ class GameClient {
         this._setupConnectionFlow();
         
         // Initialize event manager
-        const roomId = typeof window.roomId !== 'undefined' ? window.roomId : null;
+        const roomId = getBootstrapValue('roomId', null);
         this.eventManager.initialize(roomId);
         
         this.isInitialized = true;
@@ -234,7 +235,7 @@ class GameClient {
             this.uiManager.updateConnectionStatus('connected', 'Connected');
             
             // Auto-join room if we have room ID
-            const roomId = typeof window.roomId !== 'undefined' ? window.roomId : null;
+            const roomId = getBootstrapValue('roomId', null);
             if (roomId) {
                 this.eventManager.autoJoinRoom(roomId);
             }

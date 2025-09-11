@@ -13,6 +13,7 @@
 
 import { EventBusModule, migrationHelper } from './EventBusMigration.js';
 import { Events } from './EventBus.js';
+import SocketEventDispatcher from './SocketEventDispatcher.js';
 
 class EventManager extends EventBusModule {
     constructor(socketManager, gameStateManager, uiManager, timerManager, toastManager) {
@@ -41,6 +42,9 @@ class EventManager extends EventBusModule {
         this._setupUICallbacks();
         this._setupGameStateCallbacks();
         this._setupTimerCallbacks();
+        
+        // Delegate socket event registration to dispatcher to reduce responsibilities
+        this.dispatcher = new SocketEventDispatcher(this.socket);
         this._registerSocketEvents();
         
         console.log('EventManager initialized with EventBus coordination');
@@ -315,32 +319,33 @@ class EventManager extends EventBusModule {
     
     _registerSocketEvents() {
         // Connection events are handled by socket callbacks
-        
-        // Room event handlers
-        this.socket.on('room_joined', (data) => this._handleRoomJoined(data));
-        this.socket.on('room_left', (data) => this._handleRoomLeft(data));
-        this.socket.on('player_list_updated', (data) => this._handlePlayerListUpdated(data));
-        this.socket.on('room_state_updated', (data) => this._handleRoomStateUpdated(data));
-        this.socket.on('room_state', (data) => this._handleRoomState(data));
-        
-        // Game phase event handlers
-        this.socket.on('round_started', (data) => this._handleRoundStarted(data));
-        this.socket.on('response_submitted', (data) => this._handleResponseSubmitted(data));
-        this.socket.on('guessing_phase_started', (data) => this._handleGuessingPhaseStarted(data));
-        this.socket.on('guess_submitted', (data) => this._handleGuessSubmitted(data));
-        this.socket.on('results_phase_started', (data) => this._handleResultsPhaseStarted(data));
-        
-        // Timer and countdown handlers
-        this.socket.on('countdown_update', (data) => this._handleCountdownUpdate(data));
-        this.socket.on('time_warning', (data) => this._handleTimeWarning(data));
-        
-        // Game flow handlers
-        this.socket.on('game_paused', (data) => this._handleGamePaused(data));
-        this.socket.on('round_ended', (data) => this._handleRoundEnded(data));
-        
-        // Server events
-        this.socket.on('server_connected', (data) => this._handleServerConnected(data));
-        this.socket.on('server_error', (error) => this._handleServerError(error));
+        this.dispatcher.register({
+            // Room event handlers
+            'room_joined': (data) => this._handleRoomJoined(data),
+            'room_left': (data) => this._handleRoomLeft(data),
+            'player_list_updated': (data) => this._handlePlayerListUpdated(data),
+            'room_state_updated': (data) => this._handleRoomStateUpdated(data),
+            'room_state': (data) => this._handleRoomState(data),
+            
+            // Game phase event handlers
+            'round_started': (data) => this._handleRoundStarted(data),
+            'response_submitted': (data) => this._handleResponseSubmitted(data),
+            'guessing_phase_started': (data) => this._handleGuessingPhaseStarted(data),
+            'guess_submitted': (data) => this._handleGuessSubmitted(data),
+            'results_phase_started': (data) => this._handleResultsPhaseStarted(data),
+            
+            // Timer and countdown handlers
+            'countdown_update': (data) => this._handleCountdownUpdate(data),
+            'time_warning': (data) => this._handleTimeWarning(data),
+            
+            // Game flow handlers
+            'game_paused': (data) => this._handleGamePaused(data),
+            'round_ended': (data) => this._handleRoundEnded(data),
+            
+            // Server events
+            'server_connected': (data) => this._handleServerConnected(data),
+            'server_error': (error) => this._handleServerError(error)
+        });
     }
     
     _setupSocketCallbacks() {

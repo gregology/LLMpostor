@@ -171,21 +171,7 @@
 <script id="bootstrapData" type="application/json">
   {{ {'roomId': room_id, 'maxResponseLength': max_response_length} | tojson }}
 </script>
-<script>
-  // Read bootstrap configuration safely from JSON script tag
-  (function() {
-    const el = document.getElementById('bootstrapData');
-    if (el) {
-      try {
-        const data = JSON.parse(el.textContent);
-        window.roomId = data.roomId;
-        window.maxResponseLength = data.maxResponseLength;
-      } catch (e) {
-        console.error('Failed to parse bootstrap data', e);
-      }
-    }
-  })();
-  </script>
+<!-- Globals are no longer exposed; modules read JSON bootstrap data directly. -->
 {% endblock %}
 
 {% block scripts %}

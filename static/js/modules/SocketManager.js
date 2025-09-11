@@ -8,6 +8,9 @@
  * - Server communication abstraction
  */
 
+import ConnectionMetrics from './connection/ConnectionMetrics.js';
+import ConnectionReliability from './connection/ConnectionReliability.js';
+
 class SocketManager {
     constructor() {
         this.socket = null;
@@ -21,19 +24,14 @@ class SocketManager {
         this.eventListeners = new Map();
         
         // Enhanced reliability features
-        this.connectionTimeoutTimer = null;
+        this.connectionTimeoutTimer = null; // maintained for backward compatibility
         this.connectionTimeout = 10000; // 10 seconds
-        this.heartbeatInterval = null;
+        this.heartbeatInterval = null; // maintained for backward compatibility
         this.heartbeatTimer = 30000; // 30 seconds
         this.lastHeartbeat = null;
         this.connectionQuality = 'unknown'; // 'good', 'poor', 'bad', 'unknown'
-        this.connectionMetrics = {
-            reconnectCount: 0,
-            totalDowntime: 0,
-            lastDisconnectTime: null,
-            averageLatency: null,
-            latencyHistory: []
-        };
+        this.connectionMetrics = new ConnectionMetrics();
+        this.reliability = new ConnectionReliability();
         
         // Pending requests queue for reliability
         this.pendingRequests = new Map();
@@ -183,14 +181,7 @@ class SocketManager {
      * @returns {Object} Connection metrics and quality info
      */
     getConnectionMetrics() {
-        return {
-            quality: this.connectionQuality,
-            isConnected: this.isConnected,
-            reconnectCount: this.connectionMetrics.reconnectCount,
-            totalDowntime: this.connectionMetrics.totalDowntime,
-            averageLatency: this.connectionMetrics.averageLatency,
-            pendingRequestCount: this.pendingRequests.size
-        };
+        return this.connectionMetrics.getSummary(this.pendingRequests.size, this.connectionQuality, this.isConnected);
     }
     
     /**
@@ -225,10 +216,8 @@ class SocketManager {
         
         // Calculate downtime if this is a reconnection
         const isReconnection = this.connectionRecoveryAttempts > 0;
-        if (isReconnection && this.connectionMetrics.lastDisconnectTime) {
-            const downtime = Date.now() - this.connectionMetrics.lastDisconnectTime;
-            this.connectionMetrics.totalDowntime += downtime;
-            this.connectionMetrics.reconnectCount++;
+        if (isReconnection) {
+            this.connectionMetrics.markReconnected();
         }
         
         this.reconnectAttempts = 0;
@@ -265,7 +254,7 @@ class SocketManager {
         
         this.isConnected = false;
         this.connectionStatus = false;
-        this.connectionMetrics.lastDisconnectTime = Date.now();
+        this.connectionMetrics.markDisconnected();
         
         // Stop heartbeat monitoring
         this._stopHeartbeat();
@@ -309,41 +298,41 @@ class SocketManager {
     
     _startConnectionRecovery() {
         this._clearRecoveryTimer();
-        
         this.connectionRecoveryAttempts++;
-        
-        // Exponential backoff: 1s, 2s, 4s, 8s, 16s, then 30s max
-        const delay = Math.min(Math.pow(2, this.connectionRecoveryAttempts - 1) * 1000, 30000);
-        
-        if (typeof window === 'undefined' || !window.isTestEnvironment) {
-            console.log(`Connection recovery attempt ${this.connectionRecoveryAttempts} in ${delay}ms`);
-        }
-        
-        this.connectionRecoveryTimer = setTimeout(() => {
-            if (!this.isConnected && this.socket) {
-                // Increment reconnectAttempts each time timer executes
-                this.reconnectAttempts++;
-                
+        this.reliability.startConnectionRecovery(
+            this.connectionRecoveryAttempts,
+            () => this.isConnected,
+            () => {
+                if (!this.isConnected && this.socket) {
+                    this.reconnectAttempts++;
+                    if (typeof window === 'undefined' || !window.isTestEnvironment) {
+                        console.log('Attempting to reconnect...');
+                    }
+                    if (typeof this.socket.connect === 'function') {
+                        this.socket.connect();
+                    } else if (typeof this.socket.open === 'function') {
+                        this.socket.open();
+                    } else {
+                        this.initialize();
+                    }
+                    if (this.connectionRecoveryAttempts < this.maxReconnectAttempts) {
+                        this._startConnectionRecovery();
+                    }
+                }
+            },
+            this.maxReconnectAttempts,
+            1000,
+            30000,
+            (delay, attempt) => {
                 if (typeof window === 'undefined' || !window.isTestEnvironment) {
-                    console.log('Attempting to reconnect...');
-                }
-                if (typeof this.socket.connect === 'function') {
-                    this.socket.connect();
-                } else if (typeof this.socket.open === 'function') {
-                    this.socket.open();
-                } else {
-                    this.initialize();
-                }
-                
-                // Continue recovery if still not connected and haven't exceeded max attempts
-                if (this.connectionRecoveryAttempts < this.maxReconnectAttempts) {
-                    this._startConnectionRecovery();
+                    console.log(`Connection recovery attempt ${attempt} in ${delay}ms`);
                 }
             }
-        }, delay);
+        );
     }
     
     _clearRecoveryTimer() {
+        this.reliability.clearRecoveryTimer();
         if (this.connectionRecoveryTimer) {
             clearTimeout(this.connectionRecoveryTimer);
             this.connectionRecoveryTimer = null;
@@ -407,17 +396,18 @@ class SocketManager {
     
     _startConnectionTimeout() {
         this._clearConnectionTimeout();
-        this.connectionTimeoutTimer = setTimeout(() => {
+        this.reliability.startConnectionTimeout(this.connectionTimeout, () => {
             if (!this.isConnected) {
                 if (typeof window === 'undefined' || !window.isTestEnvironment) {
                     console.error('Connection timeout');
                 }
                 this._handleConnectionError(new Error('Connection timeout'));
             }
-        }, this.connectionTimeout);
+        });
     }
     
     _clearConnectionTimeout() {
+        this.reliability.clearConnectionTimeout();
         if (this.connectionTimeoutTimer) {
             clearTimeout(this.connectionTimeoutTimer);
             this.connectionTimeoutTimer = null;
@@ -426,20 +416,23 @@ class SocketManager {
     
     _startHeartbeat() {
         this._stopHeartbeat();
-        this.heartbeatInterval = setInterval(() => {
-            if (this.isConnected && this.socket) {
-                const timestamp = Date.now();
-                this.socket.emit('ping', { timestamp });
-                
-                // Check if previous heartbeat response is overdue
-                if (this.lastHeartbeat && (timestamp - this.lastHeartbeat) > (this.heartbeatTimer * 2)) {
+        this.reliability.startHeartbeat(
+            this.heartbeatTimer,
+            () => this.isConnected && !!this.socket,
+            (timestamp) => this.socket.emit('ping', { timestamp }),
+            () => {
+                const now = Date.now();
+                if (this.lastHeartbeat && (now - this.lastHeartbeat) > (this.heartbeatTimer * 2)) {
                     this._updateConnectionQuality('poor');
+                    return true;
                 }
+                return false;
             }
-        }, this.heartbeatTimer);
+        );
     }
     
     _stopHeartbeat() {
+        this.reliability.stopHeartbeat();
         if (this.heartbeatInterval) {
             clearInterval(this.heartbeatInterval);
             this.heartbeatInterval = null;
@@ -457,21 +450,12 @@ class SocketManager {
     }
     
     _recordLatency(latency) {
-        this.connectionMetrics.latencyHistory.push(latency);
-        
-        // Keep only last 10 measurements
-        if (this.connectionMetrics.latencyHistory.length > 10) {
-            this.connectionMetrics.latencyHistory.shift();
-        }
-        
-        // Calculate average latency
-        const sum = this.connectionMetrics.latencyHistory.reduce((a, b) => a + b, 0);
-        this.connectionMetrics.averageLatency = sum / this.connectionMetrics.latencyHistory.length;
+        const average = this.connectionMetrics.recordLatency(latency);
         
         // Update connection quality based on latency
-        if (this.connectionMetrics.averageLatency < 100) {
+        if (average < 100) {
             this._updateConnectionQuality('good');
-        } else if (this.connectionMetrics.averageLatency < 500) {
+        } else if (average < 500) {
             this._updateConnectionQuality('poor');
         } else {
             this._updateConnectionQuality('bad');
@@ -500,6 +484,7 @@ class SocketManager {
         this._clearConnectionTimeout();
         this._clearRecoveryTimer();
         this._stopHeartbeat();
+        this.reliability.clearAll();
         this._handleDisconnectedRequests();
         
         if (this.socket) {
