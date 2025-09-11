@@ -13,6 +13,7 @@ import logging
 from typing import Dict, Any
 from src.services.payload_optimizer import get_payload_optimizer
 from src.services.room_state_presenter import RoomStatePresenter
+from config_factory import get_config
 
 logger = logging.getLogger(__name__)
 
@@ -39,8 +40,9 @@ class BroadcastService:
         
         # Performance optimization: Initialize payload optimizer (optional)
         try:
+            config = get_config()
             self.payload_optimizer = get_payload_optimizer({
-                'compression_threshold': 512,  # Compress payloads > 512 bytes
+                'compression_threshold': config.compression_threshold_bytes,
                 'enable_caching': True
             })
             self.optimization_enabled = True
@@ -246,12 +248,13 @@ class BroadcastService:
             # Get scoring summary
             scoring_summary = self.game_manager.get_scoring_summary(room_id)
             
+            config = get_config()
             results_info = {
                 'phase': 'results',
                 'round_results': round_results,
                 'leaderboard': leaderboard,
                 'scoring_summary': scoring_summary,
-                'phase_duration': 30  # Results phase duration
+                'phase_duration': config.results_display_time
             }
             
             self.emit_to_room('results_phase_started', results_info, room_id)

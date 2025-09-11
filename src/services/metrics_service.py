@@ -21,6 +21,7 @@ from collections import defaultdict, deque
 from datetime import datetime, timedelta
 from dataclasses import dataclass
 from contextlib import contextmanager
+from config_factory import get_config
 
 logger = logging.getLogger(__name__)
 
@@ -52,9 +53,10 @@ class Alert:
 class MetricsCollector:
     """Collects and stores performance metrics."""
     
-    def __init__(self, max_points: int = 10000):
-        self.max_points = max_points
-        self.metrics: Dict[str, deque] = defaultdict(lambda: deque(maxlen=max_points))
+    def __init__(self, max_points: int = None):
+        config = get_config()
+        self.max_points = max_points if max_points is not None else config.metrics_max_data_points
+        self.metrics: Dict[str, deque] = defaultdict(lambda: deque(maxlen=self.max_points))
         self.lock = threading.RLock()
         
     def record(self, name: str, value: Union[int, float], tags: Dict[str, str] = None):
@@ -96,8 +98,11 @@ class MetricsCollector:
         
         return values[index]
     
-    def clear_old_metrics(self, max_age_seconds: int = 3600):
+    def clear_old_metrics(self, max_age_seconds: int = None):
         """Clear metrics older than specified age."""
+        if max_age_seconds is None:
+            config = get_config()
+            max_age_seconds = config.metrics_cleanup_max_age_seconds
         cutoff_time = time.time() - max_age_seconds
         
         with self.lock:

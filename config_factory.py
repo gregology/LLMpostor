@@ -42,6 +42,38 @@ class AppConfig:
     guessing_time_limit: int = 120  # seconds
     results_display_time: int = 30  # seconds
     max_response_length: int = 100  # characters
+    min_players_required: int = 2  # minimum players to start/continue game
+    
+    # Auto Game Flow settings
+    game_flow_check_interval: int = 1  # seconds between checks
+    countdown_broadcast_interval: int = 10  # seconds between countdown updates
+    room_status_broadcast_interval: int = 60  # seconds between room status broadcasts
+    warning_threshold_seconds: int = 30  # seconds for first warning
+    final_warning_threshold_seconds: int = 10  # seconds for final warning
+    room_cleanup_inactive_minutes: int = 60  # minutes before cleaning up inactive rooms
+    
+    # Rate Limiting settings
+    max_events_per_client_queue: int = 50  # max events in client queue
+    max_events_rate_tracking: int = 100  # max events for rate tracking
+    max_global_events_tracking: int = 1000  # max global events to track
+    max_events_per_second: int = 10  # max events per client per second
+    max_events_per_minute: int = 100  # max events per client per minute
+    rate_limit_window_seconds: int = 60  # time window for rate calculations
+    
+    # Broadcast settings
+    compression_threshold_bytes: int = 512  # compress payloads larger than this
+    
+    # Cache settings
+    cache_max_memory_bytes: int = 50 * 1024 * 1024  # 50MB default
+    cache_default_ttl_seconds: int = 60  # 1 minute default TTL
+    
+    # Metrics settings
+    metrics_max_data_points: int = 10000  # max data points to store
+    metrics_cleanup_max_age_seconds: int = 3600  # 1 hour max age for cleanup
+    
+    # Database Optimizer settings
+    db_optimizer_max_cache_size: int = 1000  # max cached queries
+    db_optimizer_default_ttl_seconds: int = 300  # 5 minutes default TTL
     
     # File paths
     prompts_file: str = 'prompts.yaml'
@@ -75,6 +107,43 @@ class AppConfig:
         
         if self.max_response_length < 10 or self.max_response_length > 1000:
             raise ConfigError(f"Invalid max_response_length: {self.max_response_length}")
+        
+        if self.min_players_required < 1 or self.min_players_required > self.max_players_per_room:
+            raise ConfigError(f"Invalid min_players_required: {self.min_players_required}")
+        
+        # Auto Game Flow validations
+        if self.game_flow_check_interval < 1 or self.game_flow_check_interval > 60:
+            raise ConfigError(f"Invalid game_flow_check_interval: {self.game_flow_check_interval}")
+        
+        if self.countdown_broadcast_interval < 1 or self.countdown_broadcast_interval > 300:
+            raise ConfigError(f"Invalid countdown_broadcast_interval: {self.countdown_broadcast_interval}")
+        
+        if self.warning_threshold_seconds < 1 or self.warning_threshold_seconds > 300:
+            raise ConfigError(f"Invalid warning_threshold_seconds: {self.warning_threshold_seconds}")
+        
+        if self.final_warning_threshold_seconds < 1 or self.final_warning_threshold_seconds >= self.warning_threshold_seconds:
+            raise ConfigError(f"Invalid final_warning_threshold_seconds: {self.final_warning_threshold_seconds}")
+        
+        # Rate Limiting validations
+        if self.max_events_per_client_queue < 1 or self.max_events_per_client_queue > 1000:
+            raise ConfigError(f"Invalid max_events_per_client_queue: {self.max_events_per_client_queue}")
+        
+        if self.max_events_per_second < 1 or self.max_events_per_second > 1000:
+            raise ConfigError(f"Invalid max_events_per_second: {self.max_events_per_second}")
+        
+        if self.max_events_per_minute < self.max_events_per_second or self.max_events_per_minute > 10000:
+            raise ConfigError(f"Invalid max_events_per_minute: {self.max_events_per_minute}")
+        
+        # Cache validations
+        if self.cache_max_memory_bytes < 1024 * 1024 or self.cache_max_memory_bytes > 1024 * 1024 * 1024:  # 1MB to 1GB
+            raise ConfigError(f"Invalid cache_max_memory_bytes: {self.cache_max_memory_bytes}")
+        
+        if self.cache_default_ttl_seconds < 1 or self.cache_default_ttl_seconds > 86400:  # 1 second to 1 day
+            raise ConfigError(f"Invalid cache_default_ttl_seconds: {self.cache_default_ttl_seconds}")
+        
+        # Metrics validations
+        if self.metrics_max_data_points < 100 or self.metrics_max_data_points > 100000:
+            raise ConfigError(f"Invalid metrics_max_data_points: {self.metrics_max_data_points}")
         
         if self.environment == Environment.PRODUCTION and self.secret_key == 'dev-secret-key-change-in-production':
             raise ConfigError("Production environment requires a secure SECRET_KEY")
@@ -187,6 +256,38 @@ class ConfigurationFactory:
             guessing_time_limit=get_env_var('GUESSING_TIME_LIMIT', 120, int),
             results_display_time=get_env_var('RESULTS_DISPLAY_TIME', 30, int),
             max_response_length=get_env_var('MAX_RESPONSE_LENGTH', 100, int),
+            min_players_required=get_env_var('MIN_PLAYERS_REQUIRED', 2, int),
+            
+            # Auto Game Flow settings
+            game_flow_check_interval=get_env_var('GAME_FLOW_CHECK_INTERVAL', 1, int),
+            countdown_broadcast_interval=get_env_var('COUNTDOWN_BROADCAST_INTERVAL', 10, int),
+            room_status_broadcast_interval=get_env_var('ROOM_STATUS_BROADCAST_INTERVAL', 60, int),
+            warning_threshold_seconds=get_env_var('WARNING_THRESHOLD_SECONDS', 30, int),
+            final_warning_threshold_seconds=get_env_var('FINAL_WARNING_THRESHOLD_SECONDS', 10, int),
+            room_cleanup_inactive_minutes=get_env_var('ROOM_CLEANUP_INACTIVE_MINUTES', 60, int),
+            
+            # Rate Limiting settings
+            max_events_per_client_queue=get_env_var('MAX_EVENTS_PER_CLIENT_QUEUE', 50, int),
+            max_events_rate_tracking=get_env_var('MAX_EVENTS_RATE_TRACKING', 100, int),
+            max_global_events_tracking=get_env_var('MAX_GLOBAL_EVENTS_TRACKING', 1000, int),
+            max_events_per_second=get_env_var('MAX_EVENTS_PER_SECOND', 10, int),
+            max_events_per_minute=get_env_var('MAX_EVENTS_PER_MINUTE', 100, int),
+            rate_limit_window_seconds=get_env_var('RATE_LIMIT_WINDOW_SECONDS', 60, int),
+            
+            # Broadcast settings
+            compression_threshold_bytes=get_env_var('COMPRESSION_THRESHOLD_BYTES', 512, int),
+            
+            # Cache settings
+            cache_max_memory_bytes=get_env_var('CACHE_MAX_MEMORY_BYTES', 50 * 1024 * 1024, int),
+            cache_default_ttl_seconds=get_env_var('CACHE_DEFAULT_TTL_SECONDS', 60, int),
+            
+            # Metrics settings
+            metrics_max_data_points=get_env_var('METRICS_MAX_DATA_POINTS', 10000, int),
+            metrics_cleanup_max_age_seconds=get_env_var('METRICS_CLEANUP_MAX_AGE_SECONDS', 3600, int),
+            
+            # Database Optimizer settings
+            db_optimizer_max_cache_size=get_env_var('DB_OPTIMIZER_MAX_CACHE_SIZE', 1000, int),
+            db_optimizer_default_ttl_seconds=get_env_var('DB_OPTIMIZER_DEFAULT_TTL_SECONDS', 300, int),
             
             # File paths
             prompts_file=get_env_var('PROMPTS_FILE', 'prompts.yaml'),
@@ -301,6 +402,7 @@ class ConfigurationFactory:
             'GUESSING_TIME_LIMIT': self._config.guessing_time_limit,
             'RESULTS_DISPLAY_TIME': self._config.results_display_time,
             'MAX_RESPONSE_LENGTH': self._config.max_response_length,
+            'MIN_PLAYERS_REQUIRED': self._config.min_players_required,
             'PROMPTS_FILE': self._config.prompts_file,
         }
 

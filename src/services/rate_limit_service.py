@@ -12,6 +12,7 @@ from flask import request
 from flask_socketio import emit
 
 from src.core.errors import ErrorCode
+from config_factory import get_config
 
 logger = logging.getLogger(__name__)
 
@@ -20,18 +21,21 @@ class EventQueueManager:
     """Manages event queues and prevents overflow/flooding attacks."""
     
     def __init__(self):
-        self.client_queues = defaultdict(lambda: deque(maxlen=50))  # Max 50 events per client
-        self.client_rates = defaultdict(lambda: deque(maxlen=100))  # Track last 100 events
+        config = get_config()
+        
+        self.client_queues = defaultdict(lambda: deque(maxlen=config.max_events_per_client_queue))
+        self.client_rates = defaultdict(lambda: deque(maxlen=config.max_events_rate_tracking))
         self.global_event_count = 0
-        self.global_event_window = deque(maxlen=1000)  # Track last 1000 global events
+        self.global_event_window = deque(maxlen=config.max_global_events_tracking)
         self.blocked_clients = {}  # Temporarily blocked clients
         self.lock = threading.RLock()
         
-        # Rate limiting configuration
-        self.max_events_per_second = 10  # Max events per client per second
-        self.max_events_per_minute = 100  # Max events per client per minute
-        self.global_max_events_per_second = 100  # Global rate limit
-        self.block_duration = 60  # Block duration in seconds
+        # Rate limiting configuration from config
+        self.max_events_per_second = config.max_events_per_second
+        self.max_events_per_minute = config.max_events_per_minute
+        self.global_max_events_per_second = 100  # Global rate limit (not yet configurable)
+        self.rate_limit_window_seconds = config.rate_limit_window_seconds
+        self.block_duration = 60  # Block duration in seconds (not yet configurable)
     
     def _is_testing(self):
         """Check if we're in a testing environment at runtime"""
@@ -94,7 +98,7 @@ class EventQueueManager:
                 return False
             
             # Check events per minute
-            minute_events = sum(1 for t in client_events if current_time - t <= 60)
+            minute_events = sum(1 for t in client_events if current_time - t <= self.rate_limit_window_seconds)
             if minute_events > self.max_events_per_minute:
                 self.block_client(client_id, f"Too many events per minute: {minute_events}")
                 return False

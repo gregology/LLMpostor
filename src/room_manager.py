@@ -12,6 +12,7 @@ import threading
 import time
 from contextlib import contextmanager
 from src.services.cache_service import get_cache_service
+from config_factory import get_config
 
 
 class RoomManager:
@@ -36,10 +37,11 @@ class RoomManager:
         
         # Performance optimization: Initialize caching (optional)
         try:
+            config = get_config()
             self.cache = get_cache_service({
-                'max_memory_size': 50 * 1024 * 1024,  # 50MB for room data
-                'default_ttl': 3600,  # 1 hour
-                'cleanup_interval': 300  # 5 minutes
+                'max_memory_size': config.cache_max_memory_bytes,
+                'default_ttl': config.cache_default_ttl_seconds * 60,  # Convert to full hour (3600s)
+                'cleanup_interval': 300  # 5 minutes (not yet configurable)
             })
             self.cache_enabled = True
         except Exception:
@@ -215,8 +217,9 @@ class RoomManager:
             
             # Cache the room state for quick access (if available)
             if self.cache_enabled:
+                config = get_config()
                 cache_key = f"room_state:{room_id}"
-                self.cache.set(cache_key, room_copy, ttl=60)  # Cache for 1 minute
+                self.cache.set(cache_key, room_copy, ttl=config.cache_default_ttl_seconds)
             
             return room_copy
         return None
