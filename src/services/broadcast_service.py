@@ -11,7 +11,7 @@ This service handles all Socket.IO emissions in a centralized way:
 
 import logging
 from typing import Dict, Any
-from src.services.payload_optimizer import get_payload_optimizer
+# Payload optimizer will be injected via dependency container if needed
 from src.services.room_state_presenter import RoomStatePresenter
 from config_factory import get_config
 
@@ -38,18 +38,10 @@ class BroadcastService:
         # Initialize room state presenter for consistent payload transformations
         self.room_state_presenter = RoomStatePresenter(game_manager)
         
-        # Performance optimization: Initialize payload optimizer (optional)
-        try:
-            config = get_config()
-            self.payload_optimizer = get_payload_optimizer({
-                'compression_threshold': config.compression_threshold_bytes,
-                'enable_caching': True
-            })
-            self.optimization_enabled = True
-        except Exception:
-            # Fallback: disable optimization if service unavailable
-            self.payload_optimizer = None
-            self.optimization_enabled = False
+        # Payload optimizer will be injected via dependency container if needed
+        # For now, optimization is disabled - can be re-enabled via DI container
+        self.payload_optimizer = None
+        self.optimization_enabled = False
     
     # Core emission methods
     

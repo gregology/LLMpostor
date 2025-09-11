@@ -127,6 +127,10 @@ class ServiceContainer:
         from src.services.session_service import SessionService
         from src.services.broadcast_service import BroadcastService
         from src.services.auto_game_flow_service import AutoGameFlowService
+        from src.services.cache_service import CacheService
+        from src.services.metrics_service import MetricsService
+        from src.services.payload_optimizer import PayloadOptimizer
+        from src.services.database_optimizer import DatabaseOptimizer
         
         # Configuration Factory (highest priority - no dependencies)
         from config_factory import ConfigurationFactory
@@ -142,6 +146,24 @@ class ServiceContainer:
         self.register('ErrorHandler', ErrorHandler)
         self.register('SessionService', SessionService)
         
+        # Optional services - only register if enabled in config
+        config = self._get_app_config()
+        
+        # Cache service - always available
+        self.register('CacheService', CacheService)
+        
+        # Metrics service - optional, disabled by default in testing
+        if self._should_enable_metrics(config):
+            self.register('MetricsService', MetricsService)
+        
+        # Payload optimizer - optional, disabled by default in testing
+        if self._should_enable_payload_optimizer(config):
+            self.register('PayloadOptimizer', PayloadOptimizer)
+        
+        # Database optimizer - optional, disabled by default
+        if self._should_enable_database_optimizer(config):
+            self.register('DatabaseOptimizer', DatabaseOptimizer)
+        
         # Game manager - depends on room manager
         self.register('GameManager', GameManager, dependencies=['RoomManager'])
         
@@ -153,6 +175,47 @@ class ServiceContainer:
         self.register('AutoGameFlowService', AutoGameFlowService, dependencies=['BroadcastService', 'GameManager', 'RoomManager'])
         
         return self
+    
+    def _get_app_config(self):
+        """Get application configuration"""
+        try:
+            from config_factory import get_config
+            return get_config()
+        except:
+            # Fallback if config not available
+            return None
+    
+    def _should_enable_metrics(self, config) -> bool:
+        """Determine if metrics service should be enabled"""
+        if config is None:
+            return False
+        
+        # Disable in testing mode by default
+        if getattr(config, 'is_testing', False):
+            return False
+        
+        # Check explicit config flag
+        return getattr(config, 'enable_metrics', False)
+    
+    def _should_enable_payload_optimizer(self, config) -> bool:
+        """Determine if payload optimizer should be enabled"""
+        if config is None:
+            return False
+        
+        # Disable in testing mode by default
+        if getattr(config, 'is_testing', False):
+            return False
+        
+        # Check explicit config flag
+        return getattr(config, 'enable_payload_optimizer', False)
+    
+    def _should_enable_database_optimizer(self, config) -> bool:
+        """Determine if database optimizer should be enabled"""
+        if config is None:
+            return False
+        
+        # Disable by default - must be explicitly enabled
+        return getattr(config, 'enable_database_optimizer', False)
     
     def set_external_dependency(self, name: str, instance: Any) -> 'ServiceContainer':
         """

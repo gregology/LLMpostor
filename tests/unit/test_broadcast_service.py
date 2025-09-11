@@ -25,41 +25,37 @@ class TestBroadcastService:
         self.mock_game_manager = Mock()
         self.mock_error_handler = Mock()
         
-        # Mock payload optimizer to avoid dependency issues
-        with patch('src.services.broadcast_service.get_payload_optimizer') as mock_optimizer:
-            mock_optimizer.return_value = Mock()
-            self.broadcast_service = BroadcastService(
-                socketio=self.mock_socketio,
-                room_manager=self.mock_room_manager,
-                game_manager=self.mock_game_manager,
-                error_handler=self.mock_error_handler
-            )
+        # Create broadcast service (payload optimizer is now disabled by default)
+        self.broadcast_service = BroadcastService(
+            socketio=self.mock_socketio,
+            room_manager=self.mock_room_manager,
+            game_manager=self.mock_game_manager,
+            error_handler=self.mock_error_handler
+        )
 
     def test_initialization_with_optimization(self):
-        """Test service initialization with payload optimization enabled"""
-        with patch('src.services.broadcast_service.get_payload_optimizer') as mock_optimizer:
-            mock_optimizer.return_value = Mock()
-            service = BroadcastService(
-                socketio=self.mock_socketio,
-                room_manager=self.mock_room_manager,
-                game_manager=self.mock_game_manager,
-                error_handler=self.mock_error_handler
-            )
-            assert service.optimization_enabled is True
-            assert service.payload_optimizer is not None
+        """Test service initialization (optimization now disabled by default)"""
+        service = BroadcastService(
+            socketio=self.mock_socketio,
+            room_manager=self.mock_room_manager,
+            game_manager=self.mock_game_manager,
+            error_handler=self.mock_error_handler
+        )
+        # Optimization is now disabled by default since we removed singleton
+        assert service.optimization_enabled is False
+        assert service.payload_optimizer is None
 
     def test_initialization_without_optimization(self):
-        """Test service initialization fallback when optimization fails"""
-        with patch('src.services.broadcast_service.get_payload_optimizer') as mock_optimizer:
-            mock_optimizer.side_effect = Exception("Optimizer unavailable")
-            service = BroadcastService(
-                socketio=self.mock_socketio,
-                room_manager=self.mock_room_manager,
-                game_manager=self.mock_game_manager,
-                error_handler=self.mock_error_handler
-            )
-            assert service.optimization_enabled is False
-            assert service.payload_optimizer is None
+        """Test service initialization without optimization (default behavior now)"""
+        service = BroadcastService(
+            socketio=self.mock_socketio,
+            room_manager=self.mock_room_manager,
+            game_manager=self.mock_game_manager,
+            error_handler=self.mock_error_handler
+        )
+        # Optimization is disabled by default now
+        assert service.optimization_enabled is False
+        assert service.payload_optimizer is None
 
     def test_emit_to_room_success(self):
         """Test successful emission to room"""
@@ -346,14 +342,13 @@ class TestBroadcastServiceEdgeCases:
         self.mock_game_manager = Mock()
         self.mock_error_handler = Mock()
         
-        with patch('src.services.broadcast_service.get_payload_optimizer') as mock_optimizer:
-            mock_optimizer.return_value = Mock()
-            self.broadcast_service = BroadcastService(
-                socketio=self.mock_socketio,
-                room_manager=self.mock_room_manager,
-                game_manager=self.mock_game_manager,
-                error_handler=self.mock_error_handler
-            )
+        # Create broadcast service (payload optimizer is now disabled by default)
+        self.broadcast_service = BroadcastService(
+            socketio=self.mock_socketio,
+            room_manager=self.mock_room_manager,
+            game_manager=self.mock_game_manager,
+            error_handler=self.mock_error_handler
+        )
 
     def test_broadcast_with_empty_players(self):
         """Test broadcast with empty player list"""

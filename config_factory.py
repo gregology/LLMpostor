@@ -75,6 +75,11 @@ class AppConfig:
     db_optimizer_max_cache_size: int = 1000  # max cached queries
     db_optimizer_default_ttl_seconds: int = 300  # 5 minutes default TTL
     
+    # Optional services configuration
+    enable_metrics: bool = False  # Enable metrics collection service
+    enable_payload_optimizer: bool = False  # Enable payload optimization
+    enable_database_optimizer: bool = False  # Enable database query optimization
+    
     # File paths
     prompts_file: str = 'prompts.yaml'
     

@@ -11,7 +11,7 @@ import uuid
 import threading
 import time
 from contextlib import contextmanager
-from src.services.cache_service import get_cache_service
+# Cache service will be injected via dependency container if needed
 from config_factory import get_config
 
 
@@ -35,19 +35,10 @@ class RoomManager:
         is_testing = os.environ.get('TESTING') == '1' or 'pytest' in os.environ.get('_', '')
         self._request_window = 0.01 if is_testing else 1.0  # Much shorter window for tests
         
-        # Performance optimization: Initialize caching (optional)
-        try:
-            config = get_config()
-            self.cache = get_cache_service({
-                'max_memory_size': config.cache_max_memory_bytes,
-                'default_ttl': config.cache_default_ttl_seconds * 60,  # Convert to full hour (3600s)
-                'cleanup_interval': 300  # 5 minutes (not yet configurable)
-            })
-            self.cache_enabled = True
-        except Exception:
-            # Fallback: disable caching if service unavailable (e.g., during testing)
-            self.cache = None
-            self.cache_enabled = False
+        # Cache service will be injected via dependency container if needed
+        # For now, caching is disabled - can be re-enabled via DI container
+        self.cache = None
+        self.cache_enabled = False
     
     def _get_room_lock(self, room_id: str) -> threading.RLock:
         """Get or create a lock for a specific room."""

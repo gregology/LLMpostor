@@ -20,11 +20,12 @@ from typing import Any, Dict, Optional, List, Union, Callable
 from datetime import datetime, timedelta
 import hashlib
 import pickle
+from .base_service import BaseService
 
 logger = logging.getLogger(__name__)
 
 
-class CacheService:
+class CacheService(BaseService):
     """High-performance multi-level caching service."""
     
     def __init__(self, config: Dict[str, Any] = None):
@@ -33,12 +34,15 @@ class CacheService:
         Args:
             config: Cache configuration dictionary
         """
-        self.config = config or {}
-        
+        # Initialize parent BaseService
+        super().__init__(config)
+    
+    def _initialize(self) -> None:
+        """Initialize service-specific components."""
         # Memory cache (L1)
         self.memory_cache: Dict[str, Dict] = {}
         self.memory_cache_lock = threading.RLock()
-        self.max_memory_size = self.config.get('max_memory_size', 100 * 1024 * 1024)  # 100MB
+        self.max_memory_size = self.get_config_value('max_memory_size', 100 * 1024 * 1024)  # 100MB
         self.current_memory_size = 0
         
         # Cache metadata
@@ -56,20 +60,20 @@ class CacheService:
         }
         
         # Default TTL settings
-        self.default_ttl = self.config.get('default_ttl', 3600)  # 1 hour
-        self.max_ttl = self.config.get('max_ttl', 86400)  # 24 hours
+        self.default_ttl = self.get_config_value('default_ttl', 3600)  # 1 hour
+        self.max_ttl = self.get_config_value('max_ttl', 86400)  # 24 hours
         
         # Cache warming
-        self.warming_enabled = self.config.get('warming_enabled', True)
+        self.warming_enabled = self.get_config_value('warming_enabled', True)
         self.warming_lock = threading.Lock()
         
         # Background cleanup
-        self.cleanup_interval = self.config.get('cleanup_interval', 300)  # 5 minutes
+        self.cleanup_interval = self.get_config_value('cleanup_interval', 300)  # 5 minutes
         self.cleanup_thread = None
         self.shutdown_event = threading.Event()
         
         self._start_background_tasks()
-        logger.info(f'CacheService initialized with memory limit: {self.max_memory_size} bytes')
+        self.log_info(f'CacheService initialized with memory limit: {self.max_memory_size} bytes')
     
     def get(self, key: str, default: Any = None) -> Any:
         """Get value from cache.
@@ -508,10 +512,8 @@ class CacheService:
             return wrapper
         return decorator
     
-    def shutdown(self) -> None:
-        """Shutdown cache service and cleanup resources."""
-        logger.info('Shutting down CacheService...')
-        
+    def _cleanup(self) -> None:
+        """Service-specific cleanup logic."""
         # Signal shutdown to background threads
         self.shutdown_event.set()
         
@@ -521,26 +523,7 @@ class CacheService:
         
         # Clear all cache data
         self.clear()
-        
-        logger.info('CacheService shutdown complete')
 
 
-# Global cache instance
-_cache_instance: Optional[CacheService] = None
-
-
-def get_cache_service(config: Optional[Dict[str, Any]] = None) -> CacheService:
-    """Get global cache service instance.
-    
-    Args:
-        config: Cache configuration (only used for first initialization)
-        
-    Returns:
-        CacheService instance
-    """
-    global _cache_instance
-    
-    if _cache_instance is None:
-        _cache_instance = CacheService(config)
-    
-    return _cache_instance
+# Removed global singleton pattern - use DI container instead
+# Services should be obtained via the dependency injection container

@@ -14,14 +14,20 @@ Features:
 import time
 import threading
 import logging
-import psutil
 import os
+try:
+    import psutil
+    HAS_PSUTIL = True
+except ImportError:
+    HAS_PSUTIL = False
+    psutil = None
 from typing import Dict, List, Any, Optional, Callable, Union
 from collections import defaultdict, deque
 from datetime import datetime, timedelta
 from dataclasses import dataclass
 from contextlib import contextmanager
 from config_factory import get_config
+from .base_service import BaseService
 
 logger = logging.getLogger(__name__)
 
@@ -54,8 +60,12 @@ class MetricsCollector:
     """Collects and stores performance metrics."""
     
     def __init__(self, max_points: int = None):
-        config = get_config()
-        self.max_points = max_points if max_points is not None else config.metrics_max_data_points
+        try:
+            config = get_config()
+            default_max_points = config.metrics_max_data_points
+        except:
+            default_max_points = 10000  # fallback
+        self.max_points = max_points if max_points is not None else default_max_points
         self.metrics: Dict[str, deque] = defaultdict(lambda: deque(maxlen=self.max_points))
         self.lock = threading.RLock()
         
@@ -101,8 +111,11 @@ class MetricsCollector:
     def clear_old_metrics(self, max_age_seconds: int = None):
         """Clear metrics older than specified age."""
         if max_age_seconds is None:
-            config = get_config()
-            max_age_seconds = config.metrics_cleanup_max_age_seconds
+            try:
+                config = get_config()
+                max_age_seconds = config.metrics_cleanup_max_age_seconds
+            except:
+                max_age_seconds = 3600  # 1 hour fallback
         cutoff_time = time.time() - max_age_seconds
         
         with self.lock:
@@ -117,10 +130,13 @@ class SystemMonitor:
     
     def __init__(self, collector: MetricsCollector):
         self.collector = collector
-        self.process = psutil.Process()
+        self.process = psutil.Process() if HAS_PSUTIL else None
         
     def collect_system_metrics(self):
         """Collect system performance metrics."""
+        if not HAS_PSUTIL:
+            return  # Skip if psutil is not available
+            
         try:
             # CPU metrics
             cpu_percent = psutil.cpu_percent(interval=None)
@@ -133,28 +149,29 @@ class SystemMonitor:
             self.collector.record('system.memory.used_bytes', memory.used)
             
             # Process-specific metrics
-            process_memory = self.process.memory_info()
-            self.collector.record('process.memory.rss_bytes', process_memory.rss)
-            self.collector.record('process.memory.vms_bytes', process_memory.vms)
-            
-            process_cpu = self.process.cpu_percent()
-            self.collector.record('process.cpu.usage_percent', process_cpu)
-            
-            # File descriptors (Unix systems)
-            if hasattr(self.process, 'num_fds'):
+            if self.process:
+                process_memory = self.process.memory_info()
+                self.collector.record('process.memory.rss_bytes', process_memory.rss)
+                self.collector.record('process.memory.vms_bytes', process_memory.vms)
+                
+                process_cpu = self.process.cpu_percent()
+                self.collector.record('process.cpu.usage_percent', process_cpu)
+                
+                # File descriptors (Unix systems)
+                if hasattr(self.process, 'num_fds'):
+                    try:
+                        num_fds = self.process.num_fds()
+                        self.collector.record('process.file_descriptors', num_fds)
+                    except (psutil.NoSuchProcess, psutil.AccessDenied):
+                        pass
+                
+                # Thread count
                 try:
-                    num_fds = self.process.num_fds()
-                    self.collector.record('process.file_descriptors', num_fds)
+                    thread_count = self.process.num_threads()
+                    self.collector.record('process.threads', thread_count)
                 except (psutil.NoSuchProcess, psutil.AccessDenied):
                     pass
-            
-            # Thread count
-            try:
-                thread_count = self.process.num_threads()
-                self.collector.record('process.threads', thread_count)
-            except (psutil.NoSuchProcess, psutil.AccessDenied):
-                pass
-                
+                    
         except Exception as e:
             logger.error(f'Error collecting system metrics: {e}')
 
@@ -328,14 +345,17 @@ class AlertManager:
                    if alert.timestamp >= cutoff_time]
 
 
-class MetricsService:
+class MetricsService(BaseService):
     """Main metrics service."""
     
     def __init__(self, config: Dict[str, Any] = None):
-        self.config = config or {}
-        
+        # Initialize parent BaseService
+        super().__init__(config)
+    
+    def _initialize(self) -> None:
+        """Initialize service-specific components."""
         # Initialize components
-        max_points = self.config.get('max_metric_points', 10000)
+        max_points = self.get_config_value('max_metric_points', 10000)
         self.collector = MetricsCollector(max_points)
         
         self.system_monitor = SystemMonitor(self.collector)
@@ -344,7 +364,7 @@ class MetricsService:
         self.alert_manager = AlertManager(self.collector)
         
         # Background collection
-        self.collection_interval = self.config.get('collection_interval', 30)  # seconds
+        self.collection_interval = self.get_config_value('collection_interval', 30)  # seconds
         self.collection_thread = None
         self.shutdown_event = threading.Event()
         
@@ -352,9 +372,10 @@ class MetricsService:
         self._setup_default_alerts()
         
         # Start background collection
-        self.start_collection()
+        if not self.is_testing_mode():
+            self.start_collection()
         
-        logger.info('MetricsService initialized')
+        self.log_info('MetricsService initialized')
     
     def _setup_default_alerts(self):
         """Set up default performance alert rules."""
@@ -509,28 +530,14 @@ class MetricsService:
         else:
             raise ValueError(f'Unsupported export format: {format}')
     
-    def shutdown(self):
-        """Shutdown the metrics service."""
-        logger.info('Shutting down MetricsService...')
-        
+    def _cleanup(self) -> None:
+        """Service-specific cleanup logic."""
         self.stop_collection()
         
         # Clear all metrics
         with self.collector.lock:
             self.collector.metrics.clear()
-        
-        logger.info('MetricsService shutdown complete')
 
 
-# Global metrics instance
-_metrics_instance: Optional[MetricsService] = None
-
-
-def get_metrics_service(config: Optional[Dict[str, Any]] = None) -> MetricsService:
-    """Get global metrics service instance."""
-    global _metrics_instance
-    
-    if _metrics_instance is None:
-        _metrics_instance = MetricsService(config)
-    
-    return _metrics_instance
+# Removed global singleton pattern - use DI container instead
+# Services should be obtained via the dependency injection container

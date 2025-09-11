@@ -22,6 +22,7 @@ from datetime import datetime
 import hashlib
 from dataclasses import dataclass
 from enum import Enum
+from .base_service import BaseService
 
 logger = logging.getLogger(__name__)
 
@@ -51,22 +52,25 @@ class PayloadStats:
         return ((self.original_size - self.compressed_size) / self.original_size) * 100
 
 
-class PayloadOptimizer:
+class PayloadOptimizer(BaseService):
     """Optimizes network payloads for better performance."""
     
     def __init__(self, config: Dict[str, Any] = None):
-        self.config = config or {}
-        
+        # Initialize parent BaseService
+        super().__init__(config)
+    
+    def _initialize(self) -> None:
+        """Initialize service-specific components."""
         # Optimization thresholds
-        self.compression_threshold = self.config.get('compression_threshold', 1024)  # 1KB
-        self.max_payload_size = self.config.get('max_payload_size', 1024 * 1024)  # 1MB
+        self.compression_threshold = self.get_config_value('compression_threshold', 1024)  # 1KB
+        self.max_payload_size = self.get_config_value('max_payload_size', 1024 * 1024)  # 1MB
         
         # Compression settings
-        self.gzip_level = self.config.get('gzip_level', 6)
-        self.zlib_level = self.config.get('zlib_level', 6)
+        self.gzip_level = self.get_config_value('gzip_level', 6)
+        self.zlib_level = self.get_config_value('zlib_level', 6)
         
         # Caching
-        self.enable_caching = self.config.get('enable_caching', True)
+        self.enable_caching = self.get_config_value('enable_caching', True)
         self.payload_cache: Dict[str, bytes] = {}
         self.cache_hit_ratio = {'hits': 0, 'misses': 0}
         
@@ -83,7 +87,7 @@ class PayloadOptimizer:
             'cache_misses': 0
         }
         
-        logger.info(f'PayloadOptimizer initialized with compression threshold: {self.compression_threshold} bytes')
+        self.log_info(f'PayloadOptimizer initialized with compression threshold: {self.compression_threshold} bytes')
     
     def optimize_outbound(self, data: Any, context: str = 'default', 
                          force_compression: bool = False) -> Tuple[bytes, Dict[str, Any]]:
@@ -559,8 +563,8 @@ class PayloadOptimizer:
         
         logger.info('Payload optimizer cache cleared')
     
-    def cleanup(self):
-        """Clean up optimizer resources."""
+    def _cleanup(self) -> None:
+        """Service-specific cleanup logic."""
         self.clear_cache()
         
         # Reset stats
@@ -572,26 +576,7 @@ class PayloadOptimizer:
             'cache_hits': 0,
             'cache_misses': 0
         }
-        
-        logger.info('PayloadOptimizer cleanup complete')
 
 
-# Global optimizer instance
-_optimizer_instance: Optional[PayloadOptimizer] = None
-
-
-def get_payload_optimizer(config: Optional[Dict[str, Any]] = None) -> PayloadOptimizer:
-    """Get global payload optimizer instance.
-    
-    Args:
-        config: Configuration dictionary (only used on first call)
-        
-    Returns:
-        PayloadOptimizer instance
-    """
-    global _optimizer_instance
-    
-    if _optimizer_instance is None:
-        _optimizer_instance = PayloadOptimizer(config)
-    
-    return _optimizer_instance
+# Removed global singleton pattern - use DI container instead
+# Services should be obtained via the dependency injection container
