@@ -8,17 +8,32 @@ import sys
 import os
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..'))
 
-from app import app, socketio
 from src.content_manager import PromptData
+# Service imports
+from tests.migration_compat import app, socketio, room_manager, game_manager, content_manager, session_service
 
 
 class TestScoringAndResults:
     """Test cases for scoring system and results display integration."""
     
+    @pytest.fixture(autouse=True)
+    def setup_test_environment(self):
+        """Set up test environment before each test."""
+        # Clear any existing state
+        room_manager._rooms.clear()
+        session_service._player_sessions.clear()
+        app.config['TESTING'] = True
+        yield
+        # Cleanup after test
+        room_manager._rooms.clear()
+        session_service._player_sessions.clear()
+    
     @pytest.fixture
     def mock_content_manager(self):
         """Mock content manager with test prompt."""
-        with patch('app.content_manager') as mock_cm:
+        with patch.object(content_manager, 'is_loaded', return_value=True), \
+             patch.object(content_manager, 'get_prompt_count', return_value=1), \
+             patch.object(content_manager, 'get_random_prompt_response') as mock_get_prompt:
             mock_prompt = PromptData(
                 id="test_001",
                 prompt="What is artificial intelligence?",
@@ -26,10 +41,8 @@ class TestScoringAndResults:
                 responses=["Artificial intelligence (AI) is a branch of computer science that aims to create intelligent machines."]
             )
             mock_prompt.select_random_response()  # Ensure response is selected for tests
-            mock_cm.get_random_prompt_response.return_value = mock_prompt
-            mock_cm.is_loaded.return_value = True
-            mock_cm.get_prompt_count.return_value = 1
-            yield mock_cm
+            mock_get_prompt.return_value = mock_prompt
+            yield mock_get_prompt
     
     def _setup_complete_round(self, client1, client2, mock_content_manager):
         """Helper to set up a complete round with responses and guesses."""
@@ -94,9 +107,10 @@ class TestScoringAndResults:
             event_data = results_events[0]['args'][0]
             
             assert event_data['success'] is True
-            assert 'results' in event_data
+            assert 'data' in event_data
+            assert 'results' in event_data['data']
             
-            results = event_data['results']
+            results = event_data['data']['results']
             assert 'round_number' in results
             assert 'llm_response_index' in results
             assert 'responses' in results
@@ -129,7 +143,8 @@ class TestScoringAndResults:
             
             assert len(error_events) == 1
             error_data = error_events[0]['args'][0]
-            assert error_data['code'] == 'NO_RESULTS_AVAILABLE'
+            assert error_data['success'] is False
+            assert error_data['error']['code'] == 'NO_RESULTS_AVAILABLE'
             
         finally:
             client.disconnect()
@@ -158,10 +173,11 @@ class TestScoringAndResults:
             event_data = leaderboard_events[0]['args'][0]
             
             assert event_data['success'] is True
-            assert 'leaderboard' in event_data
-            assert 'scoring_summary' in event_data
+            assert 'data' in event_data
+            assert 'leaderboard' in event_data['data']
+            assert 'scoring_summary' in event_data['data']
             
-            leaderboard = event_data['leaderboard']
+            leaderboard = event_data['data']['leaderboard']
             assert len(leaderboard) == 2
             
             # Check leaderboard structure
@@ -172,7 +188,7 @@ class TestScoringAndResults:
                 assert 'rank' in player
             
             # Check scoring summary
-            scoring_summary = event_data['scoring_summary']
+            scoring_summary = event_data['data']['scoring_summary']
             assert 'scoring_rules' in scoring_summary
             assert 'game_stats' in scoring_summary
             
@@ -334,7 +350,7 @@ class TestScoringAndResults:
             
             # Find leaderboard event
             leaderboard_events = [event for event in received if event['name'] == 'leaderboard']
-            first_round_leaderboard = leaderboard_events[0]['args'][0]['leaderboard']
+            first_round_leaderboard = leaderboard_events[0]['args'][0]['data']['leaderboard']
             
             # Start second round
             client.emit('start_round')
@@ -357,7 +373,7 @@ class TestScoringAndResults:
             received = client.get_received()
             
             leaderboard_events = [event for event in received if event['name'] == 'leaderboard']
-            second_round_leaderboard = leaderboard_events[0]['args'][0]['leaderboard']
+            second_round_leaderboard = leaderboard_events[0]['args'][0]['data']['leaderboard']
             
             # Scores should have potentially increased from first round
             # (depending on correct guesses and deception points)

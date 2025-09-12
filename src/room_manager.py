@@ -11,7 +11,8 @@ import uuid
 import threading
 import time
 from contextlib import contextmanager
-from src.services.cache_service import get_cache_service
+# Cache service will be injected via dependency container if needed
+from config_factory import get_config
 
 
 class RoomManager:
@@ -19,14 +20,12 @@ class RoomManager:
     
     def __init__(self):
         self._rooms: Dict[str, Dict] = {}
-        # Global lock for room operations
-        self._global_lock = threading.RLock()
+        # Global lock only for room map operations (create/delete)
+        self._rooms_lock = threading.RLock()
         # Per-room locks for fine-grained control
         self._room_locks: Dict[str, threading.RLock] = {}
         # Lock for managing room locks themselves
         self._locks_lock = threading.Lock()
-        # Operation tracking for race condition detection
-        self._active_operations: Dict[str, Dict] = {}
         # Request deduplication - more lenient during testing
         self._recent_requests: Dict[str, float] = {}
         # Adjust window based on testing environment
@@ -34,18 +33,112 @@ class RoomManager:
         is_testing = os.environ.get('TESTING') == '1' or 'pytest' in os.environ.get('_', '')
         self._request_window = 0.01 if is_testing else 1.0  # Much shorter window for tests
         
-        # Performance optimization: Initialize caching (optional)
+        # Cache service will be injected via dependency container if needed
+        # For now, caching is disabled - can be re-enabled via DI container
+        self.cache = None
+        self.cache_enabled = False
+    
+    def _create_initial_room_data(self, room_id: str) -> Dict:
+        """Create initial room data structure."""
+        return {
+            "room_id": room_id,
+            "players": {},
+            "game_state": {
+                "phase": "waiting",
+                "current_prompt": None,
+                "responses": [],
+                "guesses": {},
+                "round_number": 0,
+                "phase_start_time": None,
+                "phase_duration": 0
+            },
+            "created_at": datetime.now(),
+            "last_activity": datetime.now()
+        }
+    
+    def _ensure_room_exists(self, room_id: str) -> None:
+        """Ensure room exists, creating it if necessary."""
+        if room_id not in self._rooms:
+            # Need to acquire global lock to modify room map
+            with self._rooms_lock:
+                # Double-check after acquiring lock
+                if room_id not in self._rooms:
+                    room_data = self._create_initial_room_data(room_id)
+                    self._rooms[room_id] = room_data
+    
+    def _validate_room_consistency(self, room_id: str) -> None:
+        """Validate room state consistency, raising ValueError if invalid."""
+        if not self._validate_room_state_consistency(room_id):
+            raise ValueError(f"Room {room_id} is in an inconsistent state")
+    
+    def _validate_player_addition(self, room: Dict, player_name: str) -> None:
+        """Validate that a player can be added to the room."""
+        # Check if player name is already taken
+        for player in room["players"].values():
+            if player["name"] == player_name:
+                raise ValueError(f"Player name '{player_name}' is already taken in room {room['room_id']}")
+        
+        # Check room capacity (prevent DoS)
+        if len(room["players"]) >= 8:  # Max players per room
+            raise ValueError(f"Room {room['room_id']} is full")
+    
+    def _create_player_data(self, player_name: str, socket_id: str) -> Dict:
+        """Create player data structure."""
+        return {
+            "player_id": str(uuid.uuid4()),
+            "name": player_name,
+            "score": 0,
+            "socket_id": socket_id,
+            "connected": True
+        }
+    
+    def _add_player_to_room_state(self, room: Dict, player_data: Dict) -> None:
+        """Add player to room state."""
+        room["players"][player_data["player_id"]] = player_data
+        room["last_activity"] = datetime.now()
+    
+    def _remove_player_from_room_state(self, room: Dict, player_id: str) -> None:
+        """Remove player from room state."""
+        del room["players"][player_id]
+        room["last_activity"] = datetime.now()
+    
+    def _validate_game_state_transition(self, room: Dict, game_state: Dict, room_id: str) -> bool:
+        """Validate that a game state transition is valid."""
+        current_phase = room["game_state"].get("phase", "waiting")
+        new_phase = game_state.get("phase", current_phase)
+        
+        # Define valid phase transitions to prevent invalid state changes
+        valid_transitions = {
+            "waiting": ["responding", "waiting"],
+            "responding": ["guessing", "waiting", "responding"],
+            "guessing": ["results", "responding", "waiting"],
+            "results": ["waiting", "responding"]
+        }
+        
+        if new_phase not in valid_transitions.get(current_phase, []):
+            import logging
+            logging.warning(f"Invalid game state transition in room {room_id}: {current_phase} -> {new_phase}")
+            return False
+        
+        # Validate game state consistency
         try:
-            self.cache = get_cache_service({
-                'max_memory_size': 50 * 1024 * 1024,  # 50MB for room data
-                'default_ttl': 3600,  # 1 hour
-                'cleanup_interval': 300  # 5 minutes
-            })
-            self.cache_enabled = True
-        except Exception:
-            # Fallback: disable caching if service unavailable (e.g., during testing)
-            self.cache = None
-            self.cache_enabled = False
+            required_fields = ['phase', 'current_prompt', 'responses', 'guesses', 'round_number']
+            for field in required_fields:
+                if field not in game_state:
+                    import logging
+                    logging.warning(f"Missing required field {field} in game state update for room {room_id}")
+                    return False
+        except Exception as e:
+            import logging
+            logging.error(f"Game state validation error for room {room_id}: {e}")
+            return False
+        
+        return True
+    
+    def _update_room_game_state(self, room: Dict, game_state: Dict) -> None:
+        """Update room's game state."""
+        room["game_state"] = game_state.copy()
+        room["last_activity"] = datetime.now()
     
     def _get_room_lock(self, room_id: str) -> threading.RLock:
         """Get or create a lock for a specific room."""
@@ -61,31 +154,11 @@ class RoomManager:
                 del self._room_locks[room_id]
     
     @contextmanager
-    def _room_operation(self, room_id: str, operation_type: str = "generic"):
+    def _room_operation(self, room_id: str):
         """Context manager for thread-safe room operations."""
         room_lock = self._get_room_lock(room_id)
-        operation_id = f"{room_id}:{operation_type}:{threading.current_thread().ident}"
-        
-        # Track active operation
-        with self._global_lock:
-            if room_id not in self._active_operations:
-                self._active_operations[room_id] = {}
-            self._active_operations[room_id][operation_id] = {
-                'start_time': time.time(),
-                'thread_id': threading.current_thread().ident,
-                'operation_type': operation_type
-            }
-        
-        try:
-            with room_lock:
-                yield room_lock
-        finally:
-            # Clean up operation tracking
-            with self._global_lock:
-                if room_id in self._active_operations:
-                    self._active_operations[room_id].pop(operation_id, None)
-                    if not self._active_operations[room_id]:
-                        del self._active_operations[room_id]
+        with room_lock:
+            yield
     
     def _check_duplicate_request(self, request_key: str) -> bool:
         """Check if this is a duplicate request within the time window."""
@@ -149,26 +222,11 @@ class RoomManager:
         Raises:
             ValueError: If room already exists
         """
-        with self._room_operation(room_id, "create_room"):
+        with self._rooms_lock:
             if room_id in self._rooms:
                 raise ValueError(f"Room {room_id} already exists")
             
-            room_data = {
-                "room_id": room_id,
-                "players": {},
-                "game_state": {
-                    "phase": "waiting",
-                    "current_prompt": None,
-                    "responses": [],
-                    "guesses": {},
-                    "round_number": 0,
-                    "phase_start_time": None,
-                    "phase_duration": 0
-                },
-                "created_at": datetime.now(),
-                "last_activity": datetime.now()
-            }
-            
+            room_data = self._create_initial_room_data(room_id)
             self._rooms[room_id] = room_data
             return room_data.copy()
     
@@ -182,7 +240,7 @@ class RoomManager:
         Returns:
             True if room was deleted, False if room didn't exist
         """
-        with self._room_operation(room_id, "delete_room"):
+        with self._rooms_lock:
             if room_id in self._rooms:
                 del self._rooms[room_id]
                 self._cleanup_room_lock(room_id)
@@ -215,8 +273,9 @@ class RoomManager:
             
             # Cache the room state for quick access (if available)
             if self.cache_enabled:
+                config = get_config()
                 cache_key = f"room_state:{room_id}"
-                self.cache.set(cache_key, room_copy, ttl=60)  # Cache for 1 minute
+                self.cache.set(cache_key, room_copy, ttl=config.cache_default_ttl_seconds)
             
             return room_copy
         return None
@@ -274,41 +333,22 @@ class RoomManager:
                         return player.copy()
             # If no existing player found, it might be a legitimate retry, so continue
         
-        with self._room_operation(room_id, "add_player"):
-            # Create room if it doesn't exist
+        with self._room_operation(room_id):
+            # Create room if it doesn't exist (requires global lock)
             if room_id not in self._rooms:
-                self.create_room(room_id)
-            
+                # Temporarily release room lock to acquire global lock
+                pass  # Will be handled by new create_room_if_needed helper
+        
+        # Re-acquire room lock for the actual operation
+        with self._room_operation(room_id):
+            self._ensure_room_exists(room_id)
             room = self._rooms[room_id]
             
-            # Validate room state consistency
-            if not self._validate_room_state_consistency(room_id):
-                raise ValueError(f"Room {room_id} is in an inconsistent state")
+            self._validate_room_consistency(room_id)
+            self._validate_player_addition(room, player_name)
             
-            # Check if player name is already taken
-            for player in room["players"].values():
-                if player["name"] == player_name:
-                    raise ValueError(f"Player name '{player_name}' is already taken in room {room_id}")
-            
-            # Check room capacity (prevent DoS)
-            if len(room["players"]) >= 8:  # Max players per room
-                raise ValueError(f"Room {room_id} is full")
-            
-            # Generate unique player ID
-            player_id = str(uuid.uuid4())
-            
-            # Create player data
-            player_data = {
-                "player_id": player_id,
-                "name": player_name,
-                "score": 0,
-                "socket_id": socket_id,
-                "connected": True
-            }
-            
-            # Add player to room
-            room["players"][player_id] = player_data
-            room["last_activity"] = datetime.now()
+            player_data = self._create_player_data(player_name, socket_id)
+            self._add_player_to_room_state(room, player_data)
             
             return player_data.copy()
     
@@ -323,20 +363,22 @@ class RoomManager:
         Returns:
             True if player was removed, False if player or room didn't exist
         """
-        room = self._rooms.get(room_id)
-        if not room:
-            return False
-        
-        if player_id in room["players"]:
-            del room["players"][player_id]
-            room["last_activity"] = datetime.now()
+        with self._room_operation(room_id):
+            room = self._rooms.get(room_id)
+            if not room or player_id not in room["players"]:
+                return False
             
-            # Clean up empty room
+            self._remove_player_from_room_state(room, player_id)
+            
+            # Clean up empty room (requires global lock)
             if len(room["players"]) == 0:
-                del self._rooms[room_id]
+                with self._rooms_lock:
+                    # Double-check room is still empty after acquiring global lock
+                    if room_id in self._rooms and len(self._rooms[room_id]["players"]) == 0:
+                        del self._rooms[room_id]
+                        self._cleanup_room_lock(room_id)
             
             return True
-        return False
     
     def update_player_connection(self, room_id: str, player_id: str, connected: bool, socket_id: Optional[str] = None) -> bool:
         """
@@ -351,20 +393,21 @@ class RoomManager:
         Returns:
             True if player was updated, False if player or room didn't exist
         """
-        room = self._rooms.get(room_id)
-        if not room:
-            return False
-        
-        player = room["players"].get(player_id)
-        if not player:
-            return False
-        
-        player["connected"] = connected
-        if socket_id is not None:
-            player["socket_id"] = socket_id
-        
-        room["last_activity"] = datetime.now()
-        return True
+        with self._room_operation(room_id):
+            room = self._rooms.get(room_id)
+            if not room:
+                return False
+            
+            player = room["players"].get(player_id)
+            if not player:
+                return False
+            
+            player["connected"] = connected
+            if socket_id is not None:
+                player["socket_id"] = socket_id
+            
+            room["last_activity"] = datetime.now()
+            return True
     
     def get_room_players(self, room_id: str) -> List[Dict]:
         """
@@ -408,12 +451,13 @@ class RoomManager:
         Returns:
             True if room was updated, False if room doesn't exist
         """
-        room = self._rooms.get(room_id)
-        if not room:
-            return False
-        
-        room["last_activity"] = datetime.now()
-        return True
+        with self._room_operation(room_id):
+            room = self._rooms.get(room_id)
+            if not room:
+                return False
+            
+            room["last_activity"] = datetime.now()
+            return True
     
     def update_game_state(self, room_id: str, game_state: Dict) -> bool:
         """
@@ -426,47 +470,18 @@ class RoomManager:
         Returns:
             True if room was updated, False if room doesn't exist
         """
-        with self._room_operation(room_id, "update_game_state"):
+        with self._room_operation(room_id):
             room = self._rooms.get(room_id)
             if not room:
                 return False
             
-            # Validate state transition is valid
-            current_phase = room["game_state"].get("phase", "waiting")
-            new_phase = game_state.get("phase", current_phase)
-            
-            # Define valid phase transitions to prevent invalid state changes
-            valid_transitions = {
-                "waiting": ["responding", "waiting"],
-                "responding": ["guessing", "waiting", "responding"],
-                "guessing": ["results", "responding", "waiting"],
-                "results": ["waiting", "responding"]
-            }
-            
-            if new_phase not in valid_transitions.get(current_phase, []):
-                # Log invalid transition attempt
-                import logging
-                logging.warning(f"Invalid game state transition in room {room_id}: {current_phase} -> {new_phase}")
+            if not self._validate_game_state_transition(room, game_state, room_id):
                 return False
             
-            # Validate game state consistency
-            try:
-                required_fields = ['phase', 'current_prompt', 'responses', 'guesses', 'round_number']
-                for field in required_fields:
-                    if field not in game_state:
-                        logging.warning(f"Missing required field {field} in game state update for room {room_id}")
-                        return False
-            except Exception as e:
-                logging.error(f"Game state validation error for room {room_id}: {e}")
-                return False
+            self._update_room_game_state(room, game_state)
             
-            # Update with validated state
-            room["game_state"] = game_state.copy()
-            room["last_activity"] = datetime.now()
-            
-            # Validate room state after update
             if not self._validate_room_state_consistency(room_id):
-                # Rollback if state becomes inconsistent
+                import logging
                 logging.error(f"Room state became inconsistent after game state update in {room_id}")
                 return False
             
@@ -505,66 +520,6 @@ class RoomManager:
         
         return len(rooms_to_delete)
     
-    def get_active_operations(self, room_id: Optional[str] = None) -> Dict:
-        """
-        Get information about active operations for debugging race conditions.
-        
-        Args:
-            room_id: Optional room ID to filter by
-            
-        Returns:
-            Dict of active operations
-        """
-        with self._global_lock:
-            if room_id:
-                return self._active_operations.get(room_id, {}).copy()
-            return {k: v.copy() for k, v in self._active_operations.items()}
-    
-    def detect_potential_race_conditions(self, room_id: str) -> Dict:
-        """
-        Detect potential race conditions in a specific room.
-        
-        Args:
-            room_id: Room ID to analyze
-            
-        Returns:
-            Dict containing race condition analysis
-        """
-        with self._global_lock:
-            active_ops = self._active_operations.get(room_id, {})
-            
-            analysis = {
-                "concurrent_operations": len(active_ops),
-                "operation_types": [op["operation_type"] for op in active_ops.values()],
-                "thread_ids": list(set(op["thread_id"] for op in active_ops.values())),
-                "long_running_operations": [],
-                "potential_conflicts": []
-            }
-            
-            current_time = time.time()
-            
-            # Check for long-running operations (>5 seconds)
-            for op_id, op_info in active_ops.items():
-                duration = current_time - op_info["start_time"]
-                if duration > 5:
-                    analysis["long_running_operations"].append({
-                        "operation_id": op_id,
-                        "duration": duration,
-                        "type": op_info["operation_type"]
-                    })
-            
-            # Check for conflicting operation types
-            conflicting_pairs = [
-                ("create_room", "delete_room"),
-                ("add_player", "remove_player"),
-                ("update_game_state", "delete_room")
-            ]
-            
-            for pair in conflicting_pairs:
-                if pair[0] in analysis["operation_types"] and pair[1] in analysis["operation_types"]:
-                    analysis["potential_conflicts"].append(pair)
-            
-            return analysis
     
     def update_player_score(self, room_id: str, player_id: str, score: int) -> bool:
         """
@@ -578,14 +533,11 @@ class RoomManager:
         Returns:
             True if update was successful, False otherwise
         """
-        if room_id not in self._rooms:
-            return False
-        
-        room = self._rooms[room_id]
-        
-        if player_id not in room["players"]:
-            return False
-        
-        room["players"][player_id]["score"] = score
-        room["last_activity"] = datetime.now()
-        return True
+        with self._room_operation(room_id):
+            room = self._rooms.get(room_id)
+            if not room or player_id not in room["players"]:
+                return False
+            
+            room["players"][player_id]["score"] = score
+            room["last_activity"] = datetime.now()
+            return True

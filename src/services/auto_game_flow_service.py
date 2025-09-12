@@ -12,6 +12,8 @@ import logging
 import threading
 import time
 from typing import Dict
+from src.services.room_state_presenter import RoomStatePresenter
+from config_factory import get_config
 
 logger = logging.getLogger(__name__)
 
@@ -31,7 +33,19 @@ class AutoGameFlowService:
         self.game_manager = game_manager
         self.room_manager = room_manager
         self.running = True
-        self.check_interval = 1  # Check every second
+        
+        # Get configuration values
+        config = get_config()
+        self.check_interval = config.game_flow_check_interval
+        self.countdown_broadcast_interval = config.countdown_broadcast_interval
+        self.room_status_broadcast_interval = config.room_status_broadcast_interval
+        self.warning_threshold_seconds = config.warning_threshold_seconds
+        self.final_warning_threshold_seconds = config.final_warning_threshold_seconds
+        self.room_cleanup_inactive_minutes = config.room_cleanup_inactive_minutes
+        self.min_players_required = config.min_players_required
+        
+        # Initialize room state presenter for consistent timeout phase broadcasts
+        self.room_state_presenter = RoomStatePresenter(game_manager)
         
         # Start background thread for automatic phase management
         self.timer_thread = threading.Thread(target=self._timer_loop, daemon=True)
@@ -61,7 +75,7 @@ class AutoGameFlowService:
                 self._broadcast_countdown_updates(current_time, last_countdown_broadcast)
                 
                 # Clean up inactive rooms (less frequently)
-                if int(current_time) % 60 == 0:  # Every minute
+                if int(current_time) % self.room_status_broadcast_interval == 0:
                     self._cleanup_inactive_rooms()
                 
                 time.sleep(self.check_interval)
@@ -75,8 +89,8 @@ class AutoGameFlowService:
         
         for room_id in room_ids:
             try:
-                # Only broadcast every 10 seconds to avoid spam
-                if room_id in last_broadcast and current_time - last_broadcast[room_id] < 10:
+                # Only broadcast every configured interval to avoid spam
+                if room_id in last_broadcast and current_time - last_broadcast[room_id] < self.countdown_broadcast_interval:
                     continue
                 
                 room_state = self.room_manager.get_room_state(room_id)
@@ -101,14 +115,14 @@ class AutoGameFlowService:
                     last_broadcast[room_id] = current_time
                     
                     # Special warnings for low time
-                    if time_remaining <= 30 and time_remaining > 25:
+                    if time_remaining <= self.warning_threshold_seconds and time_remaining > (self.warning_threshold_seconds - 5):
                         self.broadcast_service.emit_to_room('time_warning', {
-                            'message': '30 seconds remaining!',
+                            'message': f'{self.warning_threshold_seconds} seconds remaining!',
                             'time_remaining': time_remaining
                         }, room_id)
-                    elif time_remaining <= 10 and time_remaining > 5:
+                    elif time_remaining <= self.final_warning_threshold_seconds and time_remaining > (self.final_warning_threshold_seconds - 5):
                         self.broadcast_service.emit_to_room('time_warning', {
-                            'message': '10 seconds remaining!',
+                            'message': f'{self.final_warning_threshold_seconds} seconds remaining!',
                             'time_remaining': time_remaining
                         }, room_id)
                 
@@ -161,8 +175,8 @@ class AutoGameFlowService:
     def _cleanup_inactive_rooms(self):
         """Clean up rooms that have been inactive for too long."""
         try:
-            # Clean up rooms inactive for more than 1 hour
-            cleaned_count = self.room_manager.cleanup_inactive_rooms(max_inactive_minutes=60)
+            # Clean up rooms inactive for configured duration
+            cleaned_count = self.room_manager.cleanup_inactive_rooms(max_inactive_minutes=self.room_cleanup_inactive_minutes)
             if cleaned_count > 0:
                 logger.info(f"Cleaned up {cleaned_count} inactive rooms")
         except Exception as e:
@@ -175,23 +189,11 @@ class AutoGameFlowService:
             if not room_state:
                 return
             
-            game_state = room_state['game_state']
+            # Use presenter to create consistent guessing phase data (no player filtering for timeout)
+            guessing_info = self.room_state_presenter.create_guessing_phase_data(room_state, room_id)
             
-            guessing_info = {
-                'phase': 'guessing',
-                'responses': [],
-                'round_number': game_state['round_number'],
-                'phase_duration': game_state['phase_duration'],
-                'time_remaining': self.game_manager.get_phase_time_remaining(room_id),
-                'timeout_reason': 'Response time expired'
-            }
-            
-            # Add anonymized responses
-            for i, response in enumerate(game_state['responses']):
-                guessing_info['responses'].append({
-                    'index': i,
-                    'text': response['text']
-                })
+            # Add timeout-specific information
+            guessing_info['timeout_reason'] = 'Response time expired'
             
             self.broadcast_service.emit_to_room('guessing_phase_started', guessing_info, room_id)
             logger.debug(f'Broadcasted guessing phase start (timeout) to room {room_id}')
@@ -255,8 +257,8 @@ class AutoGameFlowService:
             logger.info(f"Handling disconnect impact for player {disconnected_player_id} in room {room_id}, "
                        f"phase: {current_phase}, remaining players: {len(connected_players)}")
             
-            # If only one player left, reset to waiting phase
-            if len(connected_players) < 2:
+            # If insufficient players left, reset to waiting phase
+            if len(connected_players) < self.min_players_required:
                 if current_phase != "waiting":
                     logger.info(f"Insufficient players in room {room_id}, resetting to waiting phase")
                     # Directly reset to waiting phase
@@ -267,7 +269,7 @@ class AutoGameFlowService:
                         'success': False,
                         'error': {
                             'code': 'INSUFFICIENT_PLAYERS',
-                            'message': 'Game paused - need at least 2 players to continue'
+                            'message': f'Game paused - need at least {self.min_players_required} players to continue'
                         }
                     }
                     self.broadcast_service.broadcast_game_paused(room_id, error_response)

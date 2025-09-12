@@ -35,7 +35,7 @@ class TestSocketIOEventRegistration:
     
     def test_handler_functions_exist(self):
         """Test that handler functions exist and are callable."""
-        from app import (
+        from src.handlers.socket_handlers import (
             handle_connect,
             handle_disconnect,
             handle_join_room,

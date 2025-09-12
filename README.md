@@ -71,9 +71,7 @@ LLMpostor features a modern, modular architecture:
 ### Frontend  
 - **Event-Driven Architecture**: Modular JavaScript with EventBus communication
 - **Performance Enhancements**: Asset loading optimization, memory management, DOM caching
-- **Modular Design**: 7 specialized modules (GameClient, SocketManager, UIManager, etc.)
-
-For detailed frontend architecture, see [`docs/FRONTEND_ARCHITECTURE.md`](docs/FRONTEND_ARCHITECTURE.md).
+- **Modular Design**: 12 specialized modules (GameClient, SocketManager, UIManager, etc.)
 
 ## Quick Start
 
@@ -127,8 +125,8 @@ The application uses a Configuration Factory system with type-safe settings:
 - `GUESSING_TIME_LIMIT` - Guessing phase duration in seconds (default: 120)
 
 **Performance Settings:**
-- `CACHE_TTL` - Cache time-to-live in seconds (default: 3600)
-- `MAX_RESPONSE_LENGTH` - Maximum response length (default: 500)
+- `CACHE_DEFAULT_TTL_SECONDS` - Cache time-to-live in seconds (default: 60)
+- `MAX_RESPONSE_LENGTH` - Maximum response length (default: 100)
 
 ### Environment Configuration
 
@@ -136,14 +134,15 @@ For production deployments, copy `.env.example` to `.env` and customize as neede
 
 ## Roadmap
 
- - Add more prompts
- - Better theme
- - Multiple responses for each LLM prompt
- - Scripts to generate prompt responses
+- **Content Expansion**: Add more prompts and introduce multiple responses for each LLM prompt.
+- **Theming**: Improve the visual theme of the game.
+- **Tooling**: Develop scripts to help generate prompt responses.
+- **Observability**: Enhance observability with more detailed metrics and logging.
+- **Internationalization**: Add support for multiple languages.
 
 ## Requirements
 
-- Python 3.11+ (for local development)
+- Python 3.13+ (for local development)
 - uv (for dependency management)
 - Node.js 18+ (for JavaScript testing)
 - Docker & Docker Compose (for containerized deployment)

@@ -6,8 +6,10 @@ Tests error scenarios across the full application stack.
 
 import time
 from unittest.mock import patch
+import pytest
 from flask_socketio import SocketIOTestClient
-from app import app, socketio, room_manager
+# Service imports
+from tests.migration_compat import app, socketio, room_manager
 
 
 class TestErrorHandlingIntegration:

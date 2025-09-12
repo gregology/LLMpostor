@@ -3,7 +3,7 @@ Service Container - Dependency Injection Container for LLMpostor
 Manages service creation, dependencies, and lifecycle.
 """
 
-from typing import Dict, Any, List, Optional, Callable, Type
+from typing import Dict, Any, List, Optional, Callable
 import inspect
 from enum import Enum
 
@@ -121,32 +121,53 @@ class ServiceContainer:
         from src.room_manager import RoomManager
         from src.game_manager import GameManager
         from src.content_manager import ContentManager
-        from src.error_handler import ErrorHandler
+        # Removed ErrorHandler - replaced with direct service usage
+        from src.services.validation_service import ValidationService
+        from src.services.error_response_factory import ErrorResponseFactory
         from src.services.session_service import SessionService
         from src.services.broadcast_service import BroadcastService
         from src.services.auto_game_flow_service import AutoGameFlowService
+        from src.services.cache_service import CacheService
+        # Removed unused services: MetricsService, PayloadOptimizer, DatabaseOptimizer
         
         # Configuration Factory (highest priority - no dependencies)
         from config_factory import ConfigurationFactory
         self.register('ConfigurationFactory', ConfigurationFactory)
         
+        # Validation and error handling services - no dependencies
+        self.register('ValidationService', ValidationService)
+        self.register('ErrorResponseFactory', ErrorResponseFactory)
+        
         # Core managers - no dependencies
         self.register('RoomManager', RoomManager)
         self.register('ContentManager', ContentManager)
-        self.register('ErrorHandler', ErrorHandler)
         self.register('SessionService', SessionService)
+        
+        # Cache service - always available
+        self.register('CacheService', CacheService)
         
         # Game manager - depends on room manager
         self.register('GameManager', GameManager, dependencies=['RoomManager'])
         
-        # Broadcast service - depends on socketio, room_manager, game_manager, error_handler
+        # Broadcast service - depends on socketio, room_manager, game_manager, error_response_factory
         # Note: socketio will be injected as external dependency
-        self.register('BroadcastService', BroadcastService, dependencies=['socketio', 'RoomManager', 'GameManager', 'ErrorHandler'])
+        self.register('BroadcastService', BroadcastService, dependencies=['socketio', 'RoomManager', 'GameManager', 'ErrorResponseFactory'])
         
         # Auto game flow - depends on broadcast_service, game_manager, room_manager
         self.register('AutoGameFlowService', AutoGameFlowService, dependencies=['BroadcastService', 'GameManager', 'RoomManager'])
         
         return self
+    
+    def _get_app_config(self):
+        """Get application configuration"""
+        try:
+            from config_factory import get_config
+            return get_config()
+        except:
+            # Fallback if config not available
+            return None
+    
+    # Removed unused service enablement methods
     
     def set_external_dependency(self, name: str, instance: Any) -> 'ServiceContainer':
         """

@@ -113,6 +113,86 @@ class TestAppConfig:
                 secret_key='dev-secret-key-change-in-production'
             )
     
+    def test_config_validation_min_players_required(self):
+        """Test validation for min_players_required"""
+        # Valid values
+        config = AppConfig(min_players_required=2)
+        assert config.min_players_required == 2
+        
+        # Invalid: less than 1
+        with pytest.raises(ConfigError, match="Invalid min_players_required"):
+            AppConfig(min_players_required=0)
+        
+        # Invalid: more than max_players_per_room
+        with pytest.raises(ConfigError, match="Invalid min_players_required"):
+            AppConfig(max_players_per_room=4, min_players_required=5)
+    
+    def test_config_validation_game_flow_intervals(self):
+        """Test validation for auto game flow timing settings"""
+        # Valid values
+        config = AppConfig(game_flow_check_interval=2, countdown_broadcast_interval=15)
+        assert config.game_flow_check_interval == 2
+        assert config.countdown_broadcast_interval == 15
+        
+        # Invalid: check interval too small
+        with pytest.raises(ConfigError, match="Invalid game_flow_check_interval"):
+            AppConfig(game_flow_check_interval=0)
+        
+        # Invalid: check interval too large
+        with pytest.raises(ConfigError, match="Invalid game_flow_check_interval"):
+            AppConfig(game_flow_check_interval=120)
+        
+        # Invalid: broadcast interval too small
+        with pytest.raises(ConfigError, match="Invalid countdown_broadcast_interval"):
+            AppConfig(countdown_broadcast_interval=0)
+    
+    def test_config_validation_warning_thresholds(self):
+        """Test validation for warning threshold settings"""
+        # Valid values
+        config = AppConfig(warning_threshold_seconds=45, final_warning_threshold_seconds=15)
+        assert config.warning_threshold_seconds == 45
+        assert config.final_warning_threshold_seconds == 15
+        
+        # Invalid: final warning >= warning threshold
+        with pytest.raises(ConfigError, match="Invalid final_warning_threshold_seconds"):
+            AppConfig(warning_threshold_seconds=30, final_warning_threshold_seconds=30)
+        
+        # Invalid: final warning > warning threshold
+        with pytest.raises(ConfigError, match="Invalid final_warning_threshold_seconds"):
+            AppConfig(warning_threshold_seconds=10, final_warning_threshold_seconds=15)
+    
+    def test_config_validation_rate_limiting(self):
+        """Test validation for rate limiting settings"""
+        # Valid values
+        config = AppConfig(max_events_per_second=20, max_events_per_minute=200)
+        assert config.max_events_per_second == 20
+        assert config.max_events_per_minute == 200
+        
+        # Invalid: events per second too low
+        with pytest.raises(ConfigError, match="Invalid max_events_per_second"):
+            AppConfig(max_events_per_second=0)
+        
+        # Invalid: events per minute less than events per second
+        with pytest.raises(ConfigError, match="Invalid max_events_per_minute"):
+            AppConfig(max_events_per_second=60, max_events_per_minute=30)
+    
+    def test_config_validation_cache_settings(self):
+        """Test validation for cache settings"""
+        # Valid values
+        config = AppConfig(cache_max_memory_bytes=10*1024*1024, cache_default_ttl_seconds=300)
+        assert config.cache_max_memory_bytes == 10*1024*1024
+        assert config.cache_default_ttl_seconds == 300
+        
+        # Invalid: memory too small
+        with pytest.raises(ConfigError, match="Invalid cache_max_memory_bytes"):
+            AppConfig(cache_max_memory_bytes=512*1024)  # 512KB, below 1MB minimum
+        
+        # Invalid: TTL too small
+        with pytest.raises(ConfigError, match="Invalid cache_default_ttl_seconds"):
+            AppConfig(cache_default_ttl_seconds=0)
+    
+    # Removed test for deleted metrics settings
+    
     def test_environment_properties(self):
         """Test environment property methods"""
         dev_config = AppConfig(environment=Environment.DEVELOPMENT)
@@ -185,6 +265,36 @@ class TestConfigurationFactory:
         assert config.secret_key == 'super-secure-production-key'
         assert config.port == 8080
         assert config.max_response_length == 150
+    
+    def test_load_from_environment_new_config_fields(self):
+        """Test loading new configuration fields from environment"""
+        env_vars = {
+            'FLASK_ENV': 'development',
+            'MIN_PLAYERS_REQUIRED': '3',
+            'GAME_FLOW_CHECK_INTERVAL': '2',
+            'COUNTDOWN_BROADCAST_INTERVAL': '15',
+            'WARNING_THRESHOLD_SECONDS': '45',
+            'FINAL_WARNING_THRESHOLD_SECONDS': '15',
+            'MAX_EVENTS_PER_SECOND': '20',
+            'MAX_EVENTS_PER_MINUTE': '200',
+            'COMPRESSION_THRESHOLD_BYTES': '1024',
+            'CACHE_MAX_MEMORY_BYTES': str(10*1024*1024),  # 10MB
+            'CACHE_DEFAULT_TTL_SECONDS': '300'
+        }
+        
+        with patch.dict(os.environ, env_vars, clear=True):
+            config = self.factory.load_from_environment()
+        
+        assert config.min_players_required == 3
+        assert config.game_flow_check_interval == 2
+        assert config.countdown_broadcast_interval == 15
+        assert config.warning_threshold_seconds == 45
+        assert config.final_warning_threshold_seconds == 15
+        assert config.max_events_per_second == 20
+        assert config.max_events_per_minute == 200
+        assert config.compression_threshold_bytes == 1024
+        assert config.cache_max_memory_bytes == 10*1024*1024
+        assert config.cache_default_ttl_seconds == 300
     
     def test_load_from_environment_with_prefix(self):
         """Test loading configuration with environment variable prefix"""

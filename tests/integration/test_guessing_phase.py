@@ -13,8 +13,11 @@ import sys
 import os
 sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
 
-from app import app, socketio, room_manager, content_manager
+import pytest
+from flask_socketio import SocketIOTestClient
 from src.content_manager import PromptData
+# Service imports
+from tests.migration_compat import app, socketio, room_manager, content_manager, session_service
 
 
 class TestGuessingPhase:
@@ -26,7 +29,6 @@ class TestGuessingPhase:
         app.config['TESTING'] = True
         # Clear any existing rooms and sessions before each test
         room_manager._rooms.clear()
-        from app import session_service
         session_service._player_sessions.clear()
         return socketio.test_client(app)
     

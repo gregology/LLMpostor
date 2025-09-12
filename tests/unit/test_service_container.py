@@ -248,7 +248,7 @@ class TestLLMpostorServiceConfiguration:
             
             # Verify all services are registered
             expected_services = [
-                'RoomManager', 'ContentManager', 'ErrorHandler', 'SessionService',
+                'RoomManager', 'ContentManager', 'SessionService',
                 'GameManager', 'BroadcastService', 'AutoGameFlowService'
             ]
             
@@ -295,7 +295,7 @@ class TestLLMpostorServiceConfiguration:
             assert 'socketio' in broadcast_deps
             assert 'RoomManager' in broadcast_deps
             assert 'GameManager' in broadcast_deps
-            assert 'ErrorHandler' in broadcast_deps
+            assert 'ErrorResponseFactory' in broadcast_deps
             
             # AutoGameFlowService should depend on multiple services
             auto_flow_deps = graph['AutoGameFlowService']

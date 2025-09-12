@@ -24,13 +24,16 @@
 import { EventBusModule } from './EventBusMigration.js';
 import { Events } from './EventBus.js';
 import MemoryManager from '../utils/MemoryManager.js';
+import { getBootstrapValue } from '../utils/Bootstrap.js';
+import StateRenderer from './ui/StateRenderer.js';
+import PerformanceOptimizer from './ui/PerformanceOptimizer.js';
 
 class UIManager extends EventBusModule {
     constructor() {
         super('UIManager');
         
         this.elements = {};
-        this.maxResponseLength = window.maxResponseLength || 500;
+        this.maxResponseLength = getBootstrapValue('maxResponseLength', 500);
         
         // Performance optimizations
         this.memoryManager = new MemoryManager();
@@ -46,6 +49,10 @@ class UIManager extends EventBusModule {
         // UI state
         this.currentPhase = null;
         this.isInitialized = false;
+
+        // Rendering helpers
+        this.renderer = new StateRenderer();
+        this.optimizer = new PerformanceOptimizer(this.memoryManager);
         
         
         // Subscribe to events that trigger UI updates
@@ -696,92 +703,31 @@ class UIManager extends EventBusModule {
     }
     
     _createPlayerElement(player, index, currentPlayerId, currentPosition, previousScore) {
-        const playerElement = document.createElement('div');
-        playerElement.className = `player-item ${player.connected ? 'connected' : 'disconnected'} ${player.player_id === currentPlayerId ? 'current-player' : ''}`;
-        
-        // Update position only if score is different from previous player
-        if (previousScore !== null && player.score < previousScore) {
-            currentPosition = index + 1;
-        }
-        
-        // Add position indicator for top players (only show if there are actual scores)
-        const hasScores = player.score > 0;
-        const positionBadge = (hasScores && currentPosition <= 3) ? 
-            `<span class="position-badge position-${currentPosition}">${currentPosition}</span>` : '';
-        
-        playerElement.innerHTML = `
-            <div class="player-info">
-                <div class="player-name-row">
-                    ${positionBadge}
-                    <span class="player-name">${this._escapeHtml(player.name)}</span>
-                </div>
-                <span class="player-score">${player.score} pts</span>
-            </div>
-            <div class="player-status ${player.connected ? 'online' : 'offline'}">
-                ${player.connected ? '●' : '○'}
-            </div>
-        `;
-        
-        return playerElement;
+        return this.renderer.createPlayerElement(
+            player,
+            index,
+            currentPlayerId,
+            currentPosition,
+            previousScore
+        );
     }
     
     _createResponseCard(response, index) {
-        const responseCard = document.createElement('div');
-        responseCard.className = 'response-card';
-        
-        const responseTextWithBreaks = this._escapeHtml(response.text).replace(/\n/g, '<br>');
-        
-        responseCard.innerHTML = `
-            <div class="response-header">
-                <span class="response-label">Response ${String.fromCharCode(65 + index)}</span>
-            </div>
-            <div class="response-text">${responseTextWithBreaks}</div>
-            <button class="guess-btn btn btn-outline" data-index="${index}">
-                Select This Response
-            </button>
-        `;
-        
-        // Add click handler for guess button
-        const guessBtn = responseCard.querySelector('.guess-btn');
-        guessBtn.addEventListener('click', (event) => {
-            event.preventDefault();
-            if (!guessBtn.disabled) {
-                this.publish(Events.USER.GUESS_SUBMITTED, {
-                    guessIndex: index,
-                    response: response,
-                    timestamp: Date.now()
-                });
-            }
+        return this.renderer.createResponseCard(response, index, (guessIndex, resp) => {
+            this.publish(Events.USER.GUESS_SUBMITTED, {
+                guessIndex,
+                response: resp,
+                timestamp: Date.now()
+            });
         });
-        
-        return responseCard;
     }
     
     _displayCorrectResponse(results) {
-        if (!this.elements.correctResponse || !results.correct_response) return;
-        
-        const correctResponseWithBreaks = this._escapeHtml(results.correct_response.text).replace(/\n/g, '<br>');
-        this.elements.correctResponse.innerHTML = `
-            <div class="response-header">
-                <span class="response-label">AI Response (${results.correct_response.model})</span>
-            </div>
-            <div class="response-text">${correctResponseWithBreaks}</div>
-        `;
+        this.renderer.renderCorrectResponse(this.elements.correctResponse, results);
     }
     
     _displayPlayerResults(results) {
-        if (!this.elements.roundScoresList || !results.player_results) return;
-        
-        this.elements.roundScoresList.innerHTML = '';
-        
-        // Convert player_results to array and sort by round_points (descending)
-        const playerArray = Object.values(results.player_results)
-            .sort((a, b) => b.round_points - a.round_points);
-        
-        playerArray.forEach((player) => {
-            const scoreItem = this._createPlayerResultElement(player, results);
-            this.elements.roundScoresList.appendChild(scoreItem);
-        });
+        this.renderer.renderPlayerResults(this.elements.roundScoresList, results, (t) => this._escapeHtml(t));
     }
     
     _createPlayerResultElement(player, results) {
@@ -904,18 +850,25 @@ class UIManager extends EventBusModule {
      * @private
      */
     _processBatchedUpdates() {
-        // Process all pending updates
-        while (this.updateQueue.length > 0) {
-            const update = this.updateQueue.shift();
-            try {
-                update.fn();
-            } catch (error) {
-                console.error(`Error in batched update ${update.key}:`, error);
+        // Prefer using optimizer if present to process queue uniformly
+        if (this.optimizer) {
+            // migrate queued updates into optimizer and let it process
+            const queue = [...this.updateQueue];
+            this.updateQueue.length = 0;
+            this.pendingUpdates.clear();
+            queue.forEach(({ key, fn }) => this.optimizer.batch(key, fn));
+            this.optimizer.process();
+        } else {
+            while (this.updateQueue.length > 0) {
+                const update = this.updateQueue.shift();
+                try {
+                    update.fn();
+                } catch (error) {
+                    console.error(`Error in batched update ${update.key}:`, error);
+                }
             }
+            this.pendingUpdates.clear();
         }
-        
-        // Clear tracking
-        this.pendingUpdates.clear();
         this.animationFrameId = null;
     }
     
@@ -924,24 +877,23 @@ class UIManager extends EventBusModule {
      * @private
      */
     _debounce(fn, delay) {
+        if (this.optimizer) {
+            const debounced = this.optimizer.debounce(fn, delay);
+            return (...args) => debounced.apply(this, args);
+        }
         return (...args) => {
-            // In test environment, execute immediately without debouncing
             if (typeof window !== 'undefined' && window.isTestEnvironment) {
                 fn.apply(this, args);
                 return;
             }
-            
             const key = fn.name || 'anonymous';
-            
             if (this.debounceTimers.has(key)) {
                 clearTimeout(this.debounceTimers.get(key));
             }
-            
             const timerId = setTimeout(() => {
                 fn.apply(this, args);
                 this.debounceTimers.delete(key);
             }, delay);
-            
             this.debounceTimers.set(key, timerId);
             this.memoryManager.trackTimer(timerId);
         };
