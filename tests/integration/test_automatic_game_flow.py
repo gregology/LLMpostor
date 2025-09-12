@@ -16,20 +16,24 @@ import sys
 import os
 sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
 
-from app import app, socketio, room_manager, game_manager, content_manager, auto_flow_service, session_service
+from flask_socketio import SocketIOTestClient
 from src.content_manager import PromptData
+# Service imports
+from tests.migration_compat import app, socketio, room_manager, game_manager, content_manager, auto_flow_service, session_service
 
 
 class TestAutomaticGameFlow:
     """Test class for automatic game flow and timing."""
     
-    @pytest.fixture
-    def client(self):
-        """Create a test client for Socket.IO."""
-        app.config['TESTING'] = True
+    @pytest.fixture(autouse=True)
+    def setup_test_environment(self, app, socketio):
+        """Set up test environment before each test."""
         # Clear any existing rooms and sessions before each test
+        # Use the actual services from the app, not test fixtures
         room_manager._rooms.clear()
         session_service._player_sessions.clear()
+        
+        app.config['TESTING'] = True
         
         # Ensure auto flow service is running
         if not auto_flow_service.running:
@@ -37,6 +41,15 @@ class TestAutomaticGameFlow:
             auto_flow_service.timer_thread = threading.Thread(target=auto_flow_service._timer_loop, daemon=True)
             auto_flow_service.timer_thread.start()
         
+        yield  # This is where the test runs
+        
+        # Teardown: Clean up state
+        room_manager._rooms.clear()
+        session_service._player_sessions.clear()
+        
+    @pytest.fixture
+    def client(self, app, socketio):
+        """Create a test client for Socket.IO."""
         return socketio.test_client(app)
     
     @pytest.fixture

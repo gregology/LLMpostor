@@ -36,7 +36,6 @@ def register_socket_handlers(socketio_instance, services, config):
     room_manager = services['room_manager']
     game_manager = services['game_manager']
     content_manager = services['content_manager']
-    # ErrorHandler backwards compatibility wrapper removed
     session_service = services['session_service']
     broadcast_service = services['broadcast_service']
     auto_flow_service = services['auto_flow_service']

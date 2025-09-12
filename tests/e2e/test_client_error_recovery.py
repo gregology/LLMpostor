@@ -5,16 +5,19 @@ Tests client behavior during connection issues, server errors, and recovery scen
 """
 
 import time
+import pytest
 from unittest.mock import patch, MagicMock
 from flask_socketio import SocketIOTestClient
-from app import app, socketio, room_manager, game_manager
 from src.game_manager import GamePhase
+# Service imports  
+from tests.migration_compat import app, socketio, room_manager, game_manager
 
 
 class TestClientErrorRecovery:
     """End-to-end tests for client error handling and recovery."""
     
-    def setup_method(self):
+    @pytest.fixture(autouse=True)
+    def setup_test_environment(self, room_manager, app, socketio):
         """Set up test environment before each test."""
         # Clear any existing rooms
         room_manager._rooms.clear()
@@ -25,12 +28,14 @@ class TestClientErrorRecovery:
         
         # Clear received messages
         self.client.get_received()
-    
-    def teardown_method(self):
-        """Clean up after each test."""
-        if self.client.is_connected():
-            self.client.disconnect()
+        
+        yield  # This is where the test runs
+        
+        # Teardown: Clean up state
         room_manager._rooms.clear()
+        if hasattr(self, 'client'):
+            self.client.disconnect()
+    
     
     def test_connection_loss_and_recovery(self):
         """Test client behavior during connection loss and recovery."""

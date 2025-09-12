@@ -5,8 +5,9 @@ Tests room joining, player management, and real-time updates.
 
 import pytest
 from flask_socketio import SocketIOTestClient
-from app import app, socketio, room_manager, session_service
 import time
+# Service imports
+from tests.migration_compat import app, socketio, room_manager, session_service
 
 
 class TestSocketIORoomOperations:

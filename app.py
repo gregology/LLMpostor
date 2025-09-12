@@ -55,13 +55,6 @@ services = {
     'error_response_factory': container.get('ErrorResponseFactory')
 }
 
-# Expose services for backward compatibility (tests, etc.)
-room_manager = services['room_manager']
-game_manager = services['game_manager']
-content_manager = services['content_manager']
-session_service = services['session_service']
-broadcast_service = services['broadcast_service']
-auto_flow_service = services['auto_flow_service']
 
 # Initialize rate limiting
 event_queue_manager = EventQueueManager()
@@ -70,8 +63,8 @@ set_event_queue_manager(event_queue_manager)
 
 # Load prompts on startup
 try:
-    content_manager.load_prompts_from_yaml()
-    logger.info(f"Loaded {content_manager.get_prompt_count()} prompts from YAML")
+    services['content_manager'].load_prompts_from_yaml()
+    logger.info(f"Loaded {services['content_manager'].get_prompt_count()} prompts from YAML")
 except (FileNotFoundError, yaml.YAMLError, ContentValidationError) as e:
     logger.critical(f"FATAL: Prompt file validation failed, which is critical for game play. Server shutting down. Error: {e}")
     sys.exit(1)
@@ -79,7 +72,7 @@ except (FileNotFoundError, yaml.YAMLError, ContentValidationError) as e:
 # Register REST endpoints
 from src.routes.api import create_api_blueprint
 api_services = {
-    'room_manager': room_manager
+    'room_manager': services['room_manager']
 }
 api_blueprint = create_api_blueprint(api_services)
 app.register_blueprint(api_blueprint)
@@ -95,7 +88,7 @@ register_socket_handlers(socketio, services, handler_config)
 def cleanup_on_exit():
     """Clean up resources on application exit."""
     logger.info("Shutting down LLMpostor server...")
-    auto_flow_service.stop()
+    services['auto_flow_service'].stop()
 
 atexit.register(cleanup_on_exit)
 

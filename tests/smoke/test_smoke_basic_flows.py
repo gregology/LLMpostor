@@ -14,13 +14,13 @@ application functionality works end-to-end.
 import pytest
 import time
 from flask_socketio import SocketIOTestClient
-from app import app, socketio, room_manager, session_service, game_manager
 
 
 class TestSmokeBasicFlows:
     """Smoke tests for basic application flows"""
     
-    def setup_method(self):
+    @pytest.fixture(autouse=True)
+    def setup_test_environment(self, room_manager, session_service, app):
         """Set up test environment before each test."""
         # Clear any existing state
         room_manager._rooms.clear()
@@ -28,14 +28,14 @@ class TestSmokeBasicFlows:
         
         # Enable testing mode to ensure bypasses are active
         app.config['TESTING'] = True
-    
-    def teardown_method(self):
-        """Clean up after each test."""
-        # Clean up state
+        
+        yield  # This is where the test runs
+        
+        # Teardown: Clean up state
         room_manager._rooms.clear()
         session_service._player_sessions.clear()
     
-    def create_test_client(self):
+    def create_test_client(self, app, socketio):
         """Create a Socket.IO test client"""
         return SocketIOTestClient(app, socketio)
     
@@ -71,9 +71,9 @@ class TestSmokeBasicFlows:
         
         return None
 
-    def test_smoke_basic_room_join_leave_cycle(self):
+    def test_smoke_basic_room_join_leave_cycle(self, app, socketio):
         """Smoke test: Basic room join/leave cycle"""
-        client = self.create_test_client()
+        client = self.create_test_client(app, socketio)
         
         # Test connection
         assert client.connected, "Client should be connected"
@@ -103,11 +103,11 @@ class TestSmokeBasicFlows:
         
         print("✓ Basic room join/leave cycle completed successfully")
 
-    def test_smoke_full_game_round_flow(self):
+    def test_smoke_full_game_round_flow(self, app, socketio):
         """Smoke test: Full game round flow (join → respond → guess → results)"""
         # Create two clients for a complete game
-        client1 = self.create_test_client()
-        client2 = self.create_test_client()
+        client1 = self.create_test_client(app, socketio)
+        client2 = self.create_test_client(app, socketio)
         
         room_id = "smoke-game-room"
         
@@ -169,9 +169,9 @@ class TestSmokeBasicFlows:
         client1.disconnect()
         client2.disconnect()
 
-    def test_smoke_error_handling_paths(self):
+    def test_smoke_error_handling_paths(self, app, socketio):
         """Smoke test: Error handling for common invalid operations"""
-        client = self.create_test_client()
+        client = self.create_test_client(app, socketio)
         
         # Test invalid room join (invalid room ID)
         client.emit('join_room', {
@@ -220,9 +220,9 @@ class TestSmokeBasicFlows:
         client.disconnect()
         print("✓ Error handling paths completed successfully")
 
-    def test_smoke_connection_reliability(self):
+    def test_smoke_connection_reliability(self, app, socketio):
         """Smoke test: Basic connection reliability scenarios"""
-        client = self.create_test_client()
+        client = self.create_test_client(app, socketio)
         
         # Test initial connection
         assert client.connected, "Client should connect successfully"
@@ -256,14 +256,14 @@ class TestSmokeBasicFlows:
         client.disconnect()
         print("✓ Connection reliability test completed successfully")
 
-    def test_smoke_multiple_clients_basic_interaction(self):
+    def test_smoke_multiple_clients_basic_interaction(self, app, socketio):
         """Smoke test: Multiple clients can interact without conflicts"""
         clients = []
         room_id = "multi-client-room"
         
         # Create multiple clients
         for i in range(3):
-            client = self.create_test_client()
+            client = self.create_test_client(app, socketio)
             clients.append(client)
             assert client.connected, f"Client {i} should be connected"
         

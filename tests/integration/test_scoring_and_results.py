@@ -8,17 +8,32 @@ import sys
 import os
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..'))
 
-from app import app, socketio
 from src.content_manager import PromptData
+# Service imports
+from tests.migration_compat import app, socketio, room_manager, game_manager, content_manager, session_service
 
 
 class TestScoringAndResults:
     """Test cases for scoring system and results display integration."""
     
+    @pytest.fixture(autouse=True)
+    def setup_test_environment(self):
+        """Set up test environment before each test."""
+        # Clear any existing state
+        room_manager._rooms.clear()
+        session_service._player_sessions.clear()
+        app.config['TESTING'] = True
+        yield
+        # Cleanup after test
+        room_manager._rooms.clear()
+        session_service._player_sessions.clear()
+    
     @pytest.fixture
     def mock_content_manager(self):
         """Mock content manager with test prompt."""
-        with patch('app.content_manager') as mock_cm:
+        with patch.object(content_manager, 'is_loaded', return_value=True), \
+             patch.object(content_manager, 'get_prompt_count', return_value=1), \
+             patch.object(content_manager, 'get_random_prompt_response') as mock_get_prompt:
             mock_prompt = PromptData(
                 id="test_001",
                 prompt="What is artificial intelligence?",
@@ -26,10 +41,8 @@ class TestScoringAndResults:
                 responses=["Artificial intelligence (AI) is a branch of computer science that aims to create intelligent machines."]
             )
             mock_prompt.select_random_response()  # Ensure response is selected for tests
-            mock_cm.get_random_prompt_response.return_value = mock_prompt
-            mock_cm.is_loaded.return_value = True
-            mock_cm.get_prompt_count.return_value = 1
-            yield mock_cm
+            mock_get_prompt.return_value = mock_prompt
+            yield mock_get_prompt
     
     def _setup_complete_round(self, client1, client2, mock_content_manager):
         """Helper to set up a complete round with responses and guesses."""

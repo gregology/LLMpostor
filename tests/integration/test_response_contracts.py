@@ -5,7 +5,8 @@ Tests ensure all socket events follow consistent response schemas.
 
 import pytest
 from flask_socketio import SocketIOTestClient
-from app import app, socketio, room_manager, session_service, game_manager, content_manager
+# Service imports
+from tests.migration_compat import app, socketio, room_manager, game_manager, session_service, content_manager
 import time
 
 
