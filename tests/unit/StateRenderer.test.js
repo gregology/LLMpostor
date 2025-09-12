@@ -43,7 +43,7 @@ describe('StateRenderer', () => {
   it('renderCorrectResponse injects correct response markup', () => {
     const container = document.createElement('div');
     renderer.renderCorrectResponse(container, { correct_response: { text: 'OK', model: 'GPT-4' } });
-    expect(container.innerHTML).toContain('AI Response');
+    expect(container.innerHTML).toContain('Response by');
     expect(container.innerHTML).toContain('GPT-4');
     expect(container.innerHTML).toContain('OK');
   });

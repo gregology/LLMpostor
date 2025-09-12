@@ -45,12 +45,9 @@ export default class StateRenderer {
     const responseTextWithBreaks = this.escapeHtml(response.text).replace(/\n/g, '<br>');
 
     responseCard.innerHTML = `
-      <div class="response-header">
-        <span class="response-label">Response ${String.fromCharCode(65 + index)}</span>
-      </div>
       <div class="response-text">${responseTextWithBreaks}</div>
       <button class="guess-btn btn btn-outline" data-index="${index}">
-        Select This Response
+        This is the bot
       </button>
     `;
 
@@ -70,7 +67,7 @@ export default class StateRenderer {
     if (!container || !results?.correct_response) return;
     const html = `
       <div class="response-header">
-        <span class="response-label">AI Response (${results.correct_response.model})</span>
+        <span class="response-label">Response by <span class="model-highlight">${results.correct_response.model}</span>:</span>
       </div>
       <div class="response-text">${this.escapeHtml(results.correct_response.text).replace(/\n/g, '<br>')}</div>
     `;

@@ -68,13 +68,12 @@
             <div class="prompt-container">
                 <div class="prompt-header">
                     <span class="prompt-label">Prompt:</span>
-                    <span class="model-badge">
-                        <span class="model-label">Target Model:</span>
-                        <span id="targetModel" class="model-name">GPT-4</span>
-                    </span>
                 </div>
                 <div id="currentPrompt" class="prompt-text">
                     Loading prompt...
+                </div>
+                <div class="response-instruction">
+                    Respond like <span id="targetModel" class="model-highlight">GPT-4</span>
                 </div>
             </div>
             
@@ -122,8 +121,17 @@
                 </div>
             </div>
             
+            <div class="prompt-container">
+                <div class="prompt-header">
+                    <span class="prompt-label">Prompt:</span>
+                </div>
+                <div id="guessingPrompt" class="prompt-text">
+                    Loading prompt...
+                </div>
+            </div>
+            
             <div class="guessing-instructions">
-                <p>Which response was written by <span id="guessingTargetModel" class="model-highlight">the AI</span>?</p>
+                <p>Which response was written by <span id="guessingModelName" class="model-highlight">the AI</span>?</p>
             </div>
             
             <div id="responsesList" class="responses-list">
@@ -148,9 +156,8 @@
             
             <div class="results-content">
                 <div class="correct-answer">
-                    <h4>The AI Response Was:</h4>
-                    <div id="correctResponse" class="response-card correct-response">
-                        <!-- Correct response will be highlighted -->
+                    <div id="correctResponse" class="correct-response">
+                        <!-- Correct response will be populated by JavaScript -->
                     </div>
                 </div>
                 

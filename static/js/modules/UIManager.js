@@ -217,17 +217,28 @@ class UIManager extends EventBusModule {
      * @param {Object} promptData - Prompt data from server
      */
     updatePromptDisplay(promptData) {
-        if (this.elements.currentPrompt && promptData.prompt) {
+        if (promptData.prompt) {
             const promptWithBreaks = this._escapeHtml(promptData.prompt).replace(/\n/g, '<br>');
-            this.elements.currentPrompt.innerHTML = promptWithBreaks;
+            
+            // Update response phase prompt
+            if (this.elements.currentPrompt) {
+                this.elements.currentPrompt.innerHTML = promptWithBreaks;
+            }
+            
+            // Update guessing phase prompt
+            if (this.elements.guessingPrompt) {
+                this.elements.guessingPrompt.innerHTML = promptWithBreaks;
+            }
         }
         
-        if (this.elements.targetModel && promptData.model) {
-            this.elements.targetModel.textContent = promptData.model;
-        }
-        
-        if (this.elements.guessingTargetModel && promptData.model) {
-            this.elements.guessingTargetModel.textContent = promptData.model;
+        if (promptData.model) {
+            if (this.elements.targetModel) {
+                this.elements.targetModel.textContent = promptData.model;
+            }
+            
+            if (this.elements.guessingModelName) {
+                this.elements.guessingModelName.textContent = promptData.model;
+            }
         }
     }
     
@@ -481,7 +492,8 @@ class UIManager extends EventBusModule {
         this.elements.responsesList = document.getElementById('responsesList');
         this.elements.guessingTimer = document.getElementById('guessingTimer');
         this.elements.guessingTimerBar = document.getElementById('guessingTimerBar');
-        this.elements.guessingTargetModel = document.getElementById('guessingTargetModel');
+        this.elements.guessingPrompt = document.getElementById('guessingPrompt');
+        this.elements.guessingModelName = document.getElementById('guessingModelName');
         this.elements.guessingCount = document.getElementById('guessingCount');
         
         // Results phase elements

@@ -26,26 +26,6 @@ Contains styles for prompts, responses, and submission forms
     color: var(--gray-700);
 }
 
-.model-badge {
-    display: flex;
-    align-items: center;
-    gap: var(--spacing-2);
-    padding: var(--spacing-2) var(--spacing-3);
-    background: var(--primary-light);
-    border-radius: var(--radius-md);
-}
-
-.model-label {
-    font-size: var(--font-size-sm);
-    color: var(--gray-600);
-}
-
-.model-name {
-    font-weight: 600;
-    color: var(--primary-color);
-    font-family: monospace;
-}
-
 .prompt-text {
     font-size: var(--font-size-lg);
     line-height: 1.6;

@@ -209,7 +209,6 @@ export class MockFactory {
       submitGuess: vi.fn(),
       shareRoom: vi.fn(),
       _setupSocketCallbacks: vi.fn(),
-      _setupUICallbacks: vi.fn(),
       _setupGameStateCallbacks: vi.fn(),
       _setupTimerCallbacks: vi.fn(),
       _registerSocketEvents: vi.fn(),

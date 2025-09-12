@@ -326,8 +326,7 @@ class ToastManager extends EventBusModule {
     
     _handleTimerWarning(data) {
         if (data && data.message) {
-            const message = `Timer Warning: ${data.message}`;
-            this.warning(message, false);
+            this.warning(data.message, false);
         }
     }
     
