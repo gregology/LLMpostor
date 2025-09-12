@@ -108,7 +108,10 @@ Contains styles for game results, scoring, and leaderboards
     color: var(--gray-600);
 }
 
-.correct-response .response-card {
-    border-color: var(--success-color);
+.correct-response .response-text {
+    border: 2px solid var(--success-color);
     background-color: rgba(16, 185, 129, 0.05);
+    padding: 1rem;
+    border-radius: 8px;
+    margin-top: 0.5rem;
 }

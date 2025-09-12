@@ -39,7 +39,6 @@ class EventManager extends EventBusModule {
         
         // Legacy callback setup (for backward compatibility)
         this._setupSocketCallbacks();
-        this._setupUICallbacks();
         this._setupGameStateCallbacks();
         this._setupTimerCallbacks();
         
@@ -412,29 +411,6 @@ class EventManager extends EventBusModule {
         };
     }
     
-    _setupUICallbacks() {
-        // Disable old callback patterns - using EventBus only
-        // this.ui.onSubmitResponse = () => {
-        //     const responseText = this.ui.elements.responseInput?.value?.trim();
-        //     this.submitResponse(responseText);
-        // };
-        
-        // this.ui.onSubmitGuess = (index) => {
-        //     this.submitGuess(index);
-        // };
-        
-        // this.ui.onStartRound = () => {
-        //     this.startRound();
-        // };
-        
-        // this.ui.onLeaveRoom = () => {
-        //     this.leaveRoom();
-        // };
-        
-        // this.ui.onShareRoom = () => {
-        //     this.shareRoom();
-        // };
-    }
     
     _setupGameStateCallbacks() {
         this.gameState.onStateChange = (state) => {
@@ -456,7 +432,6 @@ class EventManager extends EventBusModule {
         };
         
         this.timer.onTimerWarning = (warningData) => {
-            this.toast.warning(warningData.message);
             this.ui.flashTimer(warningData.phase);
         };
     }

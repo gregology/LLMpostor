@@ -36,7 +36,6 @@ describe('UIManager', () => {
       <div id="responsesList"></div>
       <div id="guessingTimer">2:00</div>
       <div id="guessingTimerBar"></div>
-      <div id="guessingTargetModel"></div>
       <div id="guessingCount">
         <span class="guessed-count">0</span>/<span class="total-count">0</span>
       </div>

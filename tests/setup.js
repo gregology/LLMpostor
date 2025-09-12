@@ -86,7 +86,6 @@ document.body.innerHTML = `
   <div id="responsesList"></div>
   <div id="guessingTimer"></div>
   <div id="guessingTimerBar"></div>
-  <div id="guessingTargetModel"></div>
   <div id="guessingCount">
     <span class="guessed-count">0</span>/<span class="total-count">0</span>
   </div>
