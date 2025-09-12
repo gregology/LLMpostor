@@ -353,12 +353,21 @@ class TestSocketIORoomOperations:
         # Give some time for cleanup
         time.sleep(0.1)
         
-        # Verify player was removed
+        # Verify player was marked as disconnected (preserved for reconnection)
         room_state = room_manager.get_room_state('disconnect-room')
-        assert len(room_state['players']) == 1
+        assert len(room_state['players']) == 2  # Both players still in room
         
-        remaining_player = list(room_state['players'].values())[0]
-        assert remaining_player['name'] == 'Player2'
+        # But only one should be connected
+        connected_players = room_manager.get_connected_players('disconnect-room')
+        assert len(connected_players) == 1
+        
+        remaining_connected_player = connected_players[0]
+        assert remaining_connected_player['name'] == 'Player2'
+        
+        # Verify the disconnected player is preserved with their data
+        all_players = list(room_state['players'].values())
+        disconnected_player = next(p for p in all_players if not p['connected'])
+        assert disconnected_player['name'] == 'Player1'
         
         # Clean up
         client2.disconnect()

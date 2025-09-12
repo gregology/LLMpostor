@@ -5,6 +5,7 @@ Handles room lifecycle, player management, and room state tracking.
 Implements in-memory storage for MVP version.
 """
 
+import logging
 from datetime import datetime
 from typing import Dict, Optional, List
 import uuid
@@ -13,6 +14,8 @@ import time
 from contextlib import contextmanager
 # Cache service will be injected via dependency container if needed
 from config_factory import get_config
+
+logger = logging.getLogger(__name__)
 
 
 class RoomManager:
@@ -73,9 +76,9 @@ class RoomManager:
     
     def _validate_player_addition(self, room: Dict, player_name: str) -> None:
         """Validate that a player can be added to the room."""
-        # Check if player name is already taken
+        # Check if player name is already taken by a connected player
         for player in room["players"].values():
-            if player["name"] == player_name:
+            if player["name"] == player_name and player.get("connected", True):
                 raise ValueError(f"Player name '{player_name}' is already taken in room {room['room_id']}")
         
         # Check room capacity (prevent DoS)
@@ -101,6 +104,13 @@ class RoomManager:
         """Remove player from room state."""
         del room["players"][player_id]
         room["last_activity"] = datetime.now()
+    
+    def _find_disconnected_player(self, room: Dict, player_name: str) -> Dict:
+        """Find disconnected player with matching name in room."""
+        for player in room["players"].values():
+            if player["name"] == player_name and not player.get("connected", True):
+                return player
+        return None
     
     def _validate_game_state_transition(self, room: Dict, game_state: Dict, room_id: str) -> bool:
         """Validate that a game state transition is valid."""
@@ -294,18 +304,20 @@ class RoomManager:
     
     def is_room_empty(self, room_id: str) -> bool:
         """
-        Check if a room has no players.
+        Check if a room has no connected players.
         
         Args:
             room_id: ID of the room to check
             
         Returns:
-            True if room is empty or doesn't exist, False otherwise
+            True if room has no connected players or doesn't exist, False otherwise
         """
         room = self._rooms.get(room_id)
         if not room:
             return True
-        return len(room["players"]) == 0
+        # Count only connected players for determining if room is "empty"
+        connected_count = sum(1 for player in room["players"].values() if player.get("connected", True))
+        return connected_count == 0
     
     def add_player_to_room(self, room_id: str, player_name: str, socket_id: str) -> Dict:
         """
@@ -347,10 +359,45 @@ class RoomManager:
             self._validate_room_consistency(room_id)
             self._validate_player_addition(room, player_name)
             
-            player_data = self._create_player_data(player_name, socket_id)
-            self._add_player_to_room_state(room, player_data)
+            # Check for existing disconnected player with same name (reconnection)
+            existing_player = self._find_disconnected_player(room, player_name)
+            if existing_player:
+                # Restore existing player with new socket_id
+                existing_player["socket_id"] = socket_id
+                existing_player["connected"] = True
+                player_data = existing_player
+                logger.info(f"Player {player_name} reconnected to room {room_id} with preserved score {existing_player['score']}")
+            else:
+                # Create new player
+                player_data = self._create_player_data(player_name, socket_id)
+                self._add_player_to_room_state(room, player_data)
+                logger.info(f"New player {player_name} joined room {room_id}")
             
             return player_data.copy()
+    
+    def disconnect_player_from_room(self, room_id: str, player_id: str) -> bool:
+        """
+        Mark a player as disconnected (for page refresh/temporary disconnection).
+        Preserves player data including scores.
+        
+        Args:
+            room_id: ID of the room
+            player_id: ID of the player to disconnect
+            
+        Returns:
+            True if player was marked as disconnected, False if player or room didn't exist
+        """
+        with self._room_operation(room_id):
+            room = self._rooms.get(room_id)
+            if not room or player_id not in room["players"]:
+                return False
+            
+            player = room["players"][player_id]
+            player["connected"] = False
+            room["last_activity"] = datetime.now()
+            
+            logger.info(f"Player {player['name']} ({player_id}) marked as disconnected in room {room_id}")
+            return True
     
     def remove_player_from_room(self, room_id: str, player_id: str) -> bool:
         """
@@ -370,44 +417,16 @@ class RoomManager:
             
             self._remove_player_from_room_state(room, player_id)
             
-            # Clean up empty room (requires global lock)
-            if len(room["players"]) == 0:
+            # Clean up room if no connected players remain (requires global lock)
+            if self.is_room_empty(room_id):
                 with self._rooms_lock:
-                    # Double-check room is still empty after acquiring global lock
-                    if room_id in self._rooms and len(self._rooms[room_id]["players"]) == 0:
+                    # Double-check room is still empty after acquiring global lock  
+                    if room_id in self._rooms and self.is_room_empty(room_id):
                         del self._rooms[room_id]
                         self._cleanup_room_lock(room_id)
             
             return True
     
-    def update_player_connection(self, room_id: str, player_id: str, connected: bool, socket_id: Optional[str] = None) -> bool:
-        """
-        Update a player's connection status.
-        
-        Args:
-            room_id: ID of the room
-            player_id: ID of the player
-            connected: New connection status
-            socket_id: New socket ID (optional)
-            
-        Returns:
-            True if player was updated, False if player or room didn't exist
-        """
-        with self._room_operation(room_id):
-            room = self._rooms.get(room_id)
-            if not room:
-                return False
-            
-            player = room["players"].get(player_id)
-            if not player:
-                return False
-            
-            player["connected"] = connected
-            if socket_id is not None:
-                player["socket_id"] = socket_id
-            
-            room["last_activity"] = datetime.now()
-            return True
     
     def get_room_players(self, room_id: str) -> List[Dict]:
         """

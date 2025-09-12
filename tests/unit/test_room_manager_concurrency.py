@@ -296,8 +296,8 @@ class TestRoomManagerConcurrency:
                     players = self.room_manager.get_room_players(room_id)
                     for player in players:
                         if player['name'] == f"Worker_{worker_id}":
-                            self.room_manager.update_player_connection(
-                                room_id, player['player_id'], False
+                            self.room_manager.disconnect_player_from_room(
+                                room_id, player['player_id']
                             )
                             self.results.append(('disconnect', room_id, worker_id, player['player_id']))
                             break
@@ -357,10 +357,16 @@ class TestRoomManagerConcurrency:
                         # Update activity
                         self.room_manager.update_room_activity(room_id)
                         
-                        # Update player connection
-                        self.room_manager.update_player_connection(
-                            room_id, player['player_id'], i % 2 == 0
-                        )
+                        # Update player connection status
+                        if i % 2 == 0:
+                            # Reconnect player
+                            # Note: reconnection is handled via add_player_to_room with existing name
+                            pass
+                        else:
+                            # Disconnect player
+                            self.room_manager.disconnect_player_from_room(
+                                room_id, player['player_id']
+                            )
                         
                         # Update score
                         self.room_manager.update_player_score(

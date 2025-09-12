@@ -112,6 +112,10 @@ class EventManager extends EventBusModule {
     leaveRoom() {
         if (confirm('Are you sure you want to leave the room?')) {
             try {
+                // Clear stored session when intentionally leaving room
+                if (this.gameStateManager && this.gameStateManager.clearStoredSession) {
+                    this.gameStateManager.clearStoredSession();
+                }
                 this.socket.emit('leave_room');
             } catch (error) {
                 console.error('Failed to leave room:', error);

@@ -2,6 +2,11 @@
 
 export function getBootstrapConfig(scriptId = 'bootstrapData') {
   try {
+    // Handle test environment where document might not exist
+    if (typeof document === 'undefined' || !document.getElementById) {
+      return {};
+    }
+    
     const el = document.getElementById(scriptId);
     if (!el) return {};
     const text = el.textContent || el.innerText || '';

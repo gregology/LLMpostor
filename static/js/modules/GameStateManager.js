@@ -13,6 +13,7 @@
 
 import { EventBusModule, migrationHelper } from './EventBusMigration.js';
 import { Events } from './EventBus.js';
+import storageManager from '../utils/StorageManager.js';
 
 class GameStateManager extends EventBusModule {
     constructor() {
@@ -69,6 +70,26 @@ class GameStateManager extends EventBusModule {
     }
     
     /**
+     * Restore room session from persistent storage if available
+     * @returns {Object|null} Restored session data or null if none available
+     */
+    restoreFromStorage() {
+        const savedSession = storageManager.getRoomSession();
+        if (savedSession) {
+            console.log('GameStateManager: Restoring session from storage');
+            this.roomInfo.roomId = savedSession.roomId;
+            this.roomInfo.playerId = savedSession.playerId;
+            this.roomInfo.playerName = savedSession.playerName;
+            
+            // Don't notify room info update here - let the reconnection flow handle it
+            return savedSession;
+        }
+        
+        console.log('GameStateManager: No stored session found');
+        return null;
+    }
+    
+    /**
      * Setup event subscriptions for user actions and external events
      * @private
      */
@@ -94,6 +115,9 @@ class GameStateManager extends EventBusModule {
         const previousState = { ...this.getState() };
         this.gameState = gameState;
         
+        // Sync client-side rounds completed counter with server round number
+        this._syncRoundsCompleted(gameState);
+        
         // Reset submission flags on phase changes
         if (previousPhase !== gameState.phase) {
             if (gameState.phase === 'responding') {
@@ -114,7 +138,6 @@ class GameStateManager extends EventBusModule {
                     timestamp: Date.now()
                 });
             } else if (gameState.phase === 'results') {
-                this.roundsCompleted++;
                 this.publish(Events.GAME.RESULTS_STARTED, {
                     phase: gameState.phase,
                     round_results: gameState.round_results,
@@ -207,6 +230,10 @@ class GameStateManager extends EventBusModule {
         this.roomInfo.roomId = joinData.room_id;
         this.roomInfo.playerId = joinData.player_id;
         this.roomInfo.playerName = joinData.player_name;
+        
+        // Save session for reconnection after successful room join
+        this._saveSessionToStorage();
+        
         this._notifyRoomInfoUpdate();
         
         // Publish room join confirmation event
@@ -556,11 +583,71 @@ class GameStateManager extends EventBusModule {
     }
     
     /**
+     * Clear stored session data (called when leaving room)
+     */
+    clearStoredSession() {
+        storageManager.clearRoomSession();
+        console.log('GameStateManager: Cleared stored session');
+    }
+    
+    /**
      * Clean up all subscriptions and state
      */
     destroy() {
         this.cleanup(); // Clean up event subscriptions
+        this.clearStoredSession(); // Clear stored session on destroy
         console.log('GameStateManager destroyed');
+    }
+    
+    // Private methods for storage management
+    
+    /**
+     * Save current room session to persistent storage
+     * @private
+     */
+    _saveSessionToStorage() {
+        if (this.roomInfo.roomId && this.roomInfo.playerId && this.roomInfo.playerName) {
+            const saved = storageManager.saveRoomSession(
+                this.roomInfo.roomId,
+                this.roomInfo.playerId,
+                this.roomInfo.playerName
+            );
+            
+            if (saved) {
+                console.log('GameStateManager: Session saved to storage');
+            } else {
+                console.warn('GameStateManager: Failed to save session to storage');
+            }
+        }
+    }
+    
+    /**
+     * Sync client-side rounds completed counter with server round number
+     * @private
+     * @param {Object} gameState - Game state from server
+     */
+    _syncRoundsCompleted(gameState) {
+        if (typeof gameState.round_number !== 'number') {
+            return; // No valid round number from server
+        }
+        
+        // Calculate completed rounds based on current phase and round number
+        let calculatedRounds;
+        
+        if (gameState.phase === 'waiting') {
+            // In waiting phase, all previous rounds are completed
+            calculatedRounds = gameState.round_number;
+        } else {
+            // In active phases (responding, guessing, results), current round is not yet completed
+            calculatedRounds = Math.max(0, gameState.round_number - 1);
+        }
+        
+        // Only update if different to avoid unnecessary events
+        if (this.roundsCompleted !== calculatedRounds) {
+            const previousRounds = this.roundsCompleted;
+            this.roundsCompleted = calculatedRounds;
+            console.log(`GameStateManager: Synced rounds completed: ${previousRounds} -> ${calculatedRounds} (server round: ${gameState.round_number}, phase: ${gameState.phase})`);
+        }
     }
 }
 

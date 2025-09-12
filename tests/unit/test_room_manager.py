@@ -165,35 +165,6 @@ class TestRoomManager:
         result = self.room_manager.remove_player_from_room("nonexistent", "player_id")
         assert result is False
     
-    def test_update_player_connection_success(self):
-        """Test successful player connection update."""
-        room_id = "test_room"
-        player_data = self.room_manager.add_player_to_room(room_id, "Player1", "socket1")
-        player_id = player_data["player_id"]
-        
-        result = self.room_manager.update_player_connection(room_id, player_id, False, "new_socket")
-        assert result is True
-        
-        # Verify update
-        room_state = self.room_manager.get_room_state(room_id)
-        player = room_state["players"][player_id]
-        assert player["connected"] is False
-        assert player["socket_id"] == "new_socket"
-    
-    def test_update_player_connection_without_socket_id(self):
-        """Test updating connection status without changing socket ID."""
-        room_id = "test_room"
-        player_data = self.room_manager.add_player_to_room(room_id, "Player1", "socket1")
-        player_id = player_data["player_id"]
-        
-        result = self.room_manager.update_player_connection(room_id, player_id, False)
-        assert result is True
-        
-        # Verify update
-        room_state = self.room_manager.get_room_state(room_id)
-        player = room_state["players"][player_id]
-        assert player["connected"] is False
-        assert player["socket_id"] == "socket1"  # Should remain unchanged
     
     def test_get_room_players(self):
         """Test getting all players in a room."""
@@ -223,7 +194,7 @@ class TestRoomManager:
         player2 = self.room_manager.add_player_to_room(room_id, "Player2", "socket2")
         
         # Disconnect one player
-        self.room_manager.update_player_connection(room_id, player1["player_id"], False)
+        self.room_manager.disconnect_player_from_room(room_id, player1["player_id"])
         
         connected_players = self.room_manager.get_connected_players(room_id)
         assert len(connected_players) == 1

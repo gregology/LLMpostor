@@ -84,9 +84,9 @@ def handle_disconnect():
         player_id = session_info['player_id']
         player_name = session_info['player_name']
         
-        # Remove player from room
-        if room_manager.remove_player_from_room(room_id, player_id):
-            logger.info(f'Player {player_name} ({player_id}) removed from room {room_id} due to disconnect')
+        # Mark player as disconnected (preserves scores for reconnection)
+        if room_manager.disconnect_player_from_room(room_id, player_id):
+            logger.info(f'Player {player_name} ({player_id}) disconnected from room {room_id} (scores preserved)')
             
             # Check if this affects the current game phase
             auto_flow_service.handle_player_disconnect_game_impact(room_id, player_id)
