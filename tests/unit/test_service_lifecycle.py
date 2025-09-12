@@ -237,7 +237,7 @@ class TestServiceContainer:
         assert container.has_service('ErrorResponseFactory')
         assert container.has_service('RoomManager')
         assert container.has_service('ContentManager')
-        assert container.has_service('ErrorHandler')
+        assert container.has_service('ErrorResponseFactory')
         assert container.has_service('SessionService')
         assert container.has_service('CacheService')  # Always available
         

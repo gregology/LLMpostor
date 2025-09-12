@@ -9,16 +9,14 @@ logger = logging.getLogger(__name__)
 
 # Global references to services - will be set by registration function
 room_manager = None
-error_handler = None
 
 
 def create_api_blueprint(services):
     """Create and configure the API Blueprint with service dependencies."""
-    global room_manager, error_handler
+    global room_manager
     
     # Store service references
     room_manager = services['room_manager']
-    error_handler = services['error_handler']
     
     # Create the blueprint
     api = Blueprint('api', __name__)

@@ -24,9 +24,7 @@ class SocketManager {
         this.eventListeners = new Map();
         
         // Enhanced reliability features
-        this.connectionTimeoutTimer = null; // maintained for backward compatibility
         this.connectionTimeout = 10000; // 10 seconds
-        this.heartbeatInterval = null; // maintained for backward compatibility
         this.heartbeatTimer = 30000; // 30 seconds
         this.lastHeartbeat = null;
         this.connectionQuality = 'unknown'; // 'good', 'poor', 'bad', 'unknown'
@@ -408,10 +406,6 @@ class SocketManager {
     
     _clearConnectionTimeout() {
         this.reliability.clearConnectionTimeout();
-        if (this.connectionTimeoutTimer) {
-            clearTimeout(this.connectionTimeoutTimer);
-            this.connectionTimeoutTimer = null;
-        }
     }
     
     _startHeartbeat() {
@@ -433,10 +427,6 @@ class SocketManager {
     
     _stopHeartbeat() {
         this.reliability.stopHeartbeat();
-        if (this.heartbeatInterval) {
-            clearInterval(this.heartbeatInterval);
-            this.heartbeatInterval = null;
-        }
     }
     
     _handleHeartbeatResponse(data) {

@@ -556,19 +556,6 @@ class GameStateManager extends EventBusModule {
     }
     
     /**
-     * Legacy method to set callback handlers (for backward compatibility)
-     * @param {Object} callbacks - Object with callback functions
-     * @deprecated Use event subscriptions instead
-     */
-    setCallbacks(callbacks = {}) {
-        console.warn('GameStateManager.setCallbacks() is deprecated. Use EventBus subscriptions instead.');
-        
-        if (callbacks.onStateChange) this.onStateChange = callbacks.onStateChange;
-        if (callbacks.onPlayersUpdate) this.onPlayersUpdate = callbacks.onPlayersUpdate;
-        if (callbacks.onRoomInfoUpdate) this.onRoomInfoUpdate = callbacks.onRoomInfoUpdate;
-    }
-    
-    /**
      * Clean up all subscriptions and state
      */
     destroy() {

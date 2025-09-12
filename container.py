@@ -121,7 +121,7 @@ class ServiceContainer:
         from src.room_manager import RoomManager
         from src.game_manager import GameManager
         from src.content_manager import ContentManager
-        from src.error_handler import ErrorHandler
+        # Removed ErrorHandler - replaced with direct service usage
         from src.services.validation_service import ValidationService
         from src.services.error_response_factory import ErrorResponseFactory
         from src.services.session_service import SessionService
@@ -138,10 +138,9 @@ class ServiceContainer:
         self.register('ValidationService', ValidationService)
         self.register('ErrorResponseFactory', ErrorResponseFactory)
         
-        # Core managers - no dependencies (ErrorHandler now wraps the new services)
+        # Core managers - no dependencies
         self.register('RoomManager', RoomManager)
         self.register('ContentManager', ContentManager)
-        self.register('ErrorHandler', ErrorHandler)
         self.register('SessionService', SessionService)
         
         # Cache service - always available
@@ -150,9 +149,9 @@ class ServiceContainer:
         # Game manager - depends on room manager
         self.register('GameManager', GameManager, dependencies=['RoomManager'])
         
-        # Broadcast service - depends on socketio, room_manager, game_manager, error_handler
+        # Broadcast service - depends on socketio, room_manager, game_manager, error_response_factory
         # Note: socketio will be injected as external dependency
-        self.register('BroadcastService', BroadcastService, dependencies=['socketio', 'RoomManager', 'GameManager', 'ErrorHandler'])
+        self.register('BroadcastService', BroadcastService, dependencies=['socketio', 'RoomManager', 'GameManager', 'ErrorResponseFactory'])
         
         # Auto game flow - depends on broadcast_service, game_manager, room_manager
         self.register('AutoGameFlowService', AutoGameFlowService, dependencies=['BroadcastService', 'GameManager', 'RoomManager'])

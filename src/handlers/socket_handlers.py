@@ -7,7 +7,7 @@ from flask import request
 from flask_socketio import emit, join_room, leave_room
 
 from src.core.errors import ErrorCode, ValidationError
-from src.error_handler import with_error_handling
+from src.services.error_response_factory import with_error_handling
 from src.services.rate_limit_service import prevent_event_overflow
 
 logger = logging.getLogger(__name__)
@@ -16,7 +16,8 @@ logger = logging.getLogger(__name__)
 room_manager = None
 game_manager = None
 content_manager = None
-error_handler = None
+validation_service = None
+error_response_factory = None
 session_service = None
 broadcast_service = None
 auto_flow_service = None
@@ -27,7 +28,7 @@ socketio = None
 
 def register_socket_handlers(socketio_instance, services, config):
     """Register all socket handlers with the SocketIO instance."""
-    global room_manager, game_manager, content_manager, error_handler
+    global room_manager, game_manager, content_manager, validation_service, error_response_factory
     global session_service, broadcast_service, auto_flow_service
     global app_config, allowed_origins_env, socketio
     
@@ -35,10 +36,12 @@ def register_socket_handlers(socketio_instance, services, config):
     room_manager = services['room_manager']
     game_manager = services['game_manager']
     content_manager = services['content_manager']
-    error_handler = services['error_handler']
+    # ErrorHandler backwards compatibility wrapper removed
     session_service = services['session_service']
     broadcast_service = services['broadcast_service']
     auto_flow_service = services['auto_flow_service']
+    validation_service = services['validation_service']
+    error_response_factory = services['error_response_factory']
     app_config = config['app_config']
     allowed_origins_env = config['allowed_origins_env']
     socketio = socketio_instance
@@ -130,8 +133,8 @@ def handle_join_room(data):
         )
     
     # Validate and sanitize room ID and player name
-    room_id = error_handler.validate_room_id(data['room_id'])
-    player_name = error_handler.validate_player_name(data['player_name'])
+    room_id = validation_service.validate_room_id(data['room_id'])
+    player_name = validation_service.validate_player_name(data['player_name'])
     
     # Check if player is already in a room
     if session_service.has_session(request.sid):
@@ -153,7 +156,7 @@ def handle_join_room(data):
         logger.info(f'Player {player_name} ({player_data["player_id"]}) joined room {room_id}')
         
         # Send success response to joining player
-        emit('room_joined', error_handler.create_success_response({
+        emit('room_joined', error_response_factory.create_success_response({
             'room_id': room_id,
             'player_id': player_data['player_id'],
             'player_name': player_name,
@@ -200,7 +203,7 @@ def handle_leave_room(data=None):
         logger.info(f'Player {player_name} ({player_id}) left room {room_id}')
         
         # Send confirmation to leaving player
-        emit('room_left', error_handler.create_success_response({
+        emit('room_left', error_response_factory.create_success_response({
             'message': f'Successfully left room {room_id}'
         }))
         
@@ -286,7 +289,7 @@ def handle_start_round(data=None):
         broadcast_service.broadcast_round_started(room_id)
         broadcast_service.broadcast_room_state_update(room_id)
         
-        emit('round_started', error_handler.create_success_response({
+        emit('round_started', error_response_factory.create_success_response({
             'message': 'Round started successfully'
         }))
     else:
@@ -329,7 +332,7 @@ def handle_submit_response(data):
         )
     
     # Validate and sanitize response text
-    response_text = error_handler.validate_response_text(data['response'])
+    response_text = validation_service.validate_response_text(data['response'])
     
     room_id = session_info['room_id']
     player_id = session_info['player_id']
@@ -354,7 +357,7 @@ def handle_submit_response(data):
         logger.info(f'Player {player_id} submitted response in room {room_id}')
         
         # Send confirmation to submitting player
-        emit('response_submitted', error_handler.create_success_response({
+        emit('response_submitted', error_response_factory.create_success_response({
             'message': 'Response submitted successfully'
         }))
         
@@ -430,7 +433,7 @@ def handle_submit_guess(data):
     filtered_responses = [i for i, response in enumerate(responses) if response['author_id'] != player_id]
     
     # Validate guess index against filtered responses
-    guess_index = error_handler.validate_guess_index(data['guess_index'], len(filtered_responses))
+    guess_index = validation_service.validate_guess_index(data['guess_index'], len(filtered_responses))
     
     # Map the filtered index to the actual response index
     actual_response_index = filtered_responses[guess_index]
@@ -440,7 +443,7 @@ def handle_submit_guess(data):
         logger.info(f'Player {player_id} submitted guess {guess_index} in room {room_id}')
         
         # Send confirmation to submitting player
-        emit('guess_submitted', error_handler.create_success_response({
+        emit('guess_submitted', error_response_factory.create_success_response({
             'message': 'Guess submitted successfully',
             'guess_index': guess_index  # This is the filtered index the player sees
         }))
@@ -476,7 +479,7 @@ def handle_get_round_results(data=None):
     round_results = game_manager.get_round_results(room_id)
     
     if round_results:
-        emit('round_results', error_handler.create_success_response({
+        emit('round_results', error_response_factory.create_success_response({
             'results': round_results
         }))
     else:
@@ -500,7 +503,7 @@ def handle_get_leaderboard(data=None):
     leaderboard = game_manager.get_leaderboard(room_id)
     scoring_summary = game_manager.get_scoring_summary(room_id)
     
-    emit('leaderboard', error_handler.create_success_response({
+    emit('leaderboard', error_response_factory.create_success_response({
         'leaderboard': leaderboard,
         'scoring_summary': scoring_summary
     }))
@@ -521,7 +524,7 @@ def handle_get_time_remaining(data=None):
     game_state = game_manager.get_game_state(room_id)
     
     if game_state:
-        emit('time_remaining', error_handler.create_success_response({
+        emit('time_remaining', error_response_factory.create_success_response({
             'time_remaining': time_remaining,
             'phase': game_state['phase'],
             'phase_duration': game_state.get('phase_duration', 0)

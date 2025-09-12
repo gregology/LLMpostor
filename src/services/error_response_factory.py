@@ -15,6 +15,32 @@ from flask_socketio import emit
 logger = logging.getLogger(__name__)
 
 
+def with_error_handling(func):
+    """
+    Decorator for Socket.IO event handlers to provide consistent error handling.
+    
+    Args:
+        func: Socket.IO event handler function
+        
+    Returns:
+        Wrapped function with error handling
+    """
+    def wrapper(*args, **kwargs):
+        try:
+            return func(*args, **kwargs)
+        except ValidationError as e:
+            factory = ErrorResponseFactory()
+            factory.emit_validation_error(e)
+        except Exception as e:
+            factory = ErrorResponseFactory()
+            error_code, error_message = factory.handle_exception(e, func.__name__)
+            factory.emit_error(error_code, error_message)
+    
+    wrapper.__name__ = func.__name__
+    wrapper.__doc__ = func.__doc__
+    return wrapper
+
+
 class ErrorResponseFactory:
     """Factory responsible for creating standardized error and success responses."""
     

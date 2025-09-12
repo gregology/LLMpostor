@@ -20,19 +20,19 @@ logger = logging.getLogger(__name__)
 class BroadcastService:
     """Centralized service for all Socket.IO broadcasting operations."""
     
-    def __init__(self, socketio, room_manager, game_manager, error_handler):
+    def __init__(self, socketio, room_manager, game_manager, error_response_factory):
         """Initialize the broadcast service.
         
         Args:
             socketio: Flask-SocketIO instance for emitting messages
             room_manager: Room management service
             game_manager: Game state management service  
-            error_handler: Error handling service
+            error_response_factory: Error response factory service
         """
         self.socketio = socketio
         self.room_manager = room_manager
         self.game_manager = game_manager
-        self.error_handler = error_handler
+        self.error_response_factory = error_response_factory
         
         # Initialize room state presenter for consistent payload transformations
         self.room_state_presenter = RoomStatePresenter(game_manager)
@@ -107,7 +107,7 @@ class BroadcastService:
         try:
             room_state = self.room_manager.get_room_state(room_id)
             if not room_state:
-                error_response = self.error_handler.create_error_response(
+                error_response = self.error_response_factory.create_error_response(
                     'ROOM_NOT_FOUND',
                     f'Room {room_id} not found',
                     {'room_id': room_id}

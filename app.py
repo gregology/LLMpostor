@@ -48,17 +48,17 @@ services = {
     'room_manager': container.get('RoomManager'),
     'game_manager': container.get('GameManager'), 
     'content_manager': container.get('ContentManager'),
-    'error_handler': container.get('ErrorHandler'),
     'session_service': container.get('SessionService'),
     'broadcast_service': container.get('BroadcastService'),
-    'auto_flow_service': container.get('AutoGameFlowService')
+    'auto_flow_service': container.get('AutoGameFlowService'),
+    'validation_service': container.get('ValidationService'),
+    'error_response_factory': container.get('ErrorResponseFactory')
 }
 
 # Expose services for backward compatibility (tests, etc.)
 room_manager = services['room_manager']
 game_manager = services['game_manager']
 content_manager = services['content_manager']
-error_handler = services['error_handler']
 session_service = services['session_service']
 broadcast_service = services['broadcast_service']
 auto_flow_service = services['auto_flow_service']
@@ -79,8 +79,7 @@ except (FileNotFoundError, yaml.YAMLError, ContentValidationError) as e:
 # Register REST endpoints
 from src.routes.api import create_api_blueprint
 api_services = {
-    'room_manager': room_manager,
-    'error_handler': error_handler
+    'room_manager': room_manager
 }
 api_blueprint = create_api_blueprint(api_services)
 app.register_blueprint(api_blueprint)

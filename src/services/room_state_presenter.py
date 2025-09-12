@@ -5,10 +5,7 @@ This service provides canonical transformations for room state data that needs
 to be sent to clients, ensuring consistent payload shapes and proper data filtering.
 """
 
-import logging
 from typing import Dict, Any, List, Optional
-
-logger = logging.getLogger(__name__)
 
 
 class RoomStatePresenter:

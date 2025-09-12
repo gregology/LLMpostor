@@ -23,14 +23,14 @@ class TestBroadcastService:
         self.mock_socketio = Mock()
         self.mock_room_manager = Mock()
         self.mock_game_manager = Mock()
-        self.mock_error_handler = Mock()
+        self.mock_error_response_factory = Mock()
         
         # Create broadcast service (payload optimizer is now disabled by default)
         self.broadcast_service = BroadcastService(
             socketio=self.mock_socketio,
             room_manager=self.mock_room_manager,
             game_manager=self.mock_game_manager,
-            error_handler=self.mock_error_handler
+            error_response_factory=self.mock_error_response_factory
         )
 
     def test_initialization_with_optimization(self):
@@ -39,7 +39,7 @@ class TestBroadcastService:
             socketio=self.mock_socketio,
             room_manager=self.mock_room_manager,
             game_manager=self.mock_game_manager,
-            error_handler=self.mock_error_handler
+            error_response_factory=self.mock_error_response_factory
         )
         # Payload optimization feature has been removed from the codebase
         assert not hasattr(service, 'optimization_enabled')
@@ -51,7 +51,7 @@ class TestBroadcastService:
             socketio=self.mock_socketio,
             room_manager=self.mock_room_manager,
             game_manager=self.mock_game_manager,
-            error_handler=self.mock_error_handler
+            error_response_factory=self.mock_error_response_factory
         )
         # Payload optimization feature has been removed from the codebase
         assert not hasattr(service, 'optimization_enabled')
@@ -340,14 +340,14 @@ class TestBroadcastServiceEdgeCases:
         self.mock_socketio = Mock()
         self.mock_room_manager = Mock()
         self.mock_game_manager = Mock()
-        self.mock_error_handler = Mock()
+        self.mock_error_response_factory = Mock()
         
         # Create broadcast service (payload optimizer is now disabled by default)
         self.broadcast_service = BroadcastService(
             socketio=self.mock_socketio,
             room_manager=self.mock_room_manager,
             game_manager=self.mock_game_manager,
-            error_handler=self.mock_error_handler
+            error_response_factory=self.mock_error_response_factory
         )
 
     def test_broadcast_with_empty_players(self):

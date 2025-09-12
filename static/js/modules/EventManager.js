@@ -883,15 +883,6 @@ class EventManager extends EventBusModule {
         
         console.log('EventManager destroyed');
     }
-    
-    /**
-     * Legacy method to set callback handlers (for backward compatibility)
-     * @deprecated Most functionality now handled through EventBus
-     */
-    setCallbacks(callbacks) {
-        console.warn('EventManager.setCallbacks() is partially deprecated. Most functionality now handled through EventBus.');
-        // Legacy callbacks can still be set if needed for specific integrations
-    }
 }
 
 

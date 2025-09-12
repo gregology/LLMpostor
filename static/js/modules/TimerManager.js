@@ -18,7 +18,6 @@ class TimerManager extends EventBusModule {
         super('TimerManager');
         
         this.activeTimers = new Map();
-        this.timers = this.activeTimers; // Backward compatibility
         
         // Legacy callback support (for gradual migration)
         this.onTimerUpdate = null;
@@ -76,7 +75,7 @@ class TimerManager extends EventBusModule {
             }
         }, 1000);
         
-        this.timers.set(phase, interval);
+        this.activeTimers.set(phase, interval);
         
         // Publish timer started event
         this.publish(Events.TIMER.STARTED, {
@@ -102,7 +101,7 @@ class TimerManager extends EventBusModule {
         }
         
         // Only update if timer exists for this phase
-        if (this.timers.has(phase)) {
+        if (this.activeTimers.has(phase)) {
             this._updateTimer(phase, timeRemaining, totalDuration);
         }
     }
@@ -112,10 +111,10 @@ class TimerManager extends EventBusModule {
      * @param {string} phase - Phase name
      */
     clearTimer(phase) {
-        const interval = this.timers.get(phase);
+        const interval = this.activeTimers.get(phase);
         if (interval) {
             clearInterval(interval);
-            this.timers.delete(phase);
+            this.activeTimers.delete(phase);
             
             this.publish(Events.TIMER.STOPPED, {
                 phase,
@@ -128,7 +127,7 @@ class TimerManager extends EventBusModule {
      * Clear all active timers
      */
     clearAllTimers() {
-        const phases = Array.from(this.timers.keys());
+        const phases = Array.from(this.activeTimers.keys());
         
         for (const phase of phases) {
             this.clearTimer(phase);
@@ -147,7 +146,7 @@ class TimerManager extends EventBusModule {
      * @returns {boolean} Whether timer exists
      */
     hasTimer(phase) {
-        return this.timers.has(phase);
+        return this.activeTimers.has(phase);
     }
     
     /**
@@ -155,7 +154,7 @@ class TimerManager extends EventBusModule {
      * @returns {Array<string>} Active timer phases
      */
     getActiveTimers() {
-        return Array.from(this.timers.keys());
+        return Array.from(this.activeTimers.keys());
     }
     
     /**
@@ -314,18 +313,6 @@ class TimerManager extends EventBusModule {
             },
             warningData
         );
-    }
-    
-    /**
-     * Legacy method to set callback handlers (for backward compatibility)
-     * @param {Function} onUpdate - Timer update callback
-     * @param {Function} onWarning - Timer warning callback
-     * @deprecated Use event subscriptions instead
-     */
-    setCallbacks(onUpdate, onWarning) {
-        console.warn('TimerManager.setCallbacks() is deprecated. Use EventBus subscriptions instead.');
-        this.onTimerUpdate = onUpdate;
-        this.onTimerWarning = onWarning;
     }
     
     /**

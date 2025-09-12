@@ -14,7 +14,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..', 'src'))
 from src.room_manager import RoomManager
 from src.game_manager import GameManager
 from src.content_manager import ContentManager
-from src.error_handler import ErrorHandler
+from src.services.error_response_factory import ErrorResponseFactory
 from src.services.broadcast_service import BroadcastService
 from src.services.session_service import SessionService
 from src.services.auto_game_flow_service import AutoGameFlowService
@@ -29,7 +29,7 @@ class TestServiceInitializationOrder:
         room_manager = RoomManager()
         game_manager = GameManager(room_manager)
         content_manager = ContentManager()
-        error_handler = ErrorHandler()
+        error_handler = ErrorResponseFactory()
         
         assert room_manager is not None
         assert game_manager is not None
@@ -42,7 +42,7 @@ class TestServiceInitializationOrder:
         # Core managers first
         room_manager = RoomManager()
         game_manager = GameManager(room_manager)
-        error_handler = ErrorHandler()
+        error_handler = ErrorResponseFactory()
         
         # Mock SocketIO since we don't have a real Flask app
         mock_socketio = Mock()
@@ -59,7 +59,7 @@ class TestServiceInitializationOrder:
         # Verify dependency injection worked
         assert broadcast_service.room_manager is room_manager
         assert broadcast_service.game_manager is game_manager
-        assert broadcast_service.error_handler is error_handler
+        assert broadcast_service.error_response_factory is error_handler
         assert auto_flow_service.game_manager is game_manager
         assert auto_flow_service.room_manager is room_manager
 
@@ -67,7 +67,7 @@ class TestServiceInitializationOrder:
         """Test that circular-like dependencies are handled correctly."""
         room_manager = RoomManager()
         game_manager = GameManager(room_manager)
-        error_handler = ErrorHandler()
+        error_handler = ErrorResponseFactory()
         mock_socketio = Mock()
         
         # BroadcastService depends on game_manager
@@ -104,7 +104,7 @@ class TestServiceDependencyValidation:
         """Test that BroadcastService requires all its dependencies."""
         room_manager = RoomManager()
         game_manager = GameManager(room_manager)
-        error_handler = ErrorHandler()
+        error_handler = ErrorResponseFactory()
         mock_socketio = Mock()
         
         broadcast_service = BroadcastService(mock_socketio, room_manager, game_manager, error_handler)
@@ -113,7 +113,7 @@ class TestServiceDependencyValidation:
         assert broadcast_service.socketio is mock_socketio
         assert broadcast_service.room_manager is room_manager
         assert broadcast_service.game_manager is game_manager
-        assert broadcast_service.error_handler is error_handler
+        assert broadcast_service.error_response_factory is error_handler
 
     def test_broadcast_service_with_missing_dependencies(self):
         """Test BroadcastService with missing dependencies."""
@@ -127,7 +127,7 @@ class TestServiceDependencyValidation:
         """Test AutoGameFlowService dependency requirements."""
         room_manager = RoomManager()
         game_manager = GameManager(room_manager)
-        error_handler = ErrorHandler()
+        error_handler = ErrorResponseFactory()
         mock_socketio = Mock()
         broadcast_service = BroadcastService(mock_socketio, room_manager, game_manager, error_handler)
         
@@ -147,7 +147,7 @@ class TestServiceInteraction:
         self.room_manager = RoomManager()
         self.game_manager = GameManager(self.room_manager)
         self.content_manager = ContentManager()
-        self.error_handler = ErrorHandler()
+        self.error_handler = ErrorResponseFactory()
         self.mock_socketio = Mock()
         self.session_service = SessionService()
         self.broadcast_service = BroadcastService(
@@ -248,7 +248,7 @@ class TestServiceCleanup:
         """Test that AutoGameFlowService can be properly cleaned up."""
         room_manager = RoomManager()
         game_manager = GameManager(room_manager)
-        error_handler = ErrorHandler()
+        error_handler = ErrorResponseFactory()
         mock_socketio = Mock()
         broadcast_service = BroadcastService(mock_socketio, room_manager, game_manager, error_handler)
         
