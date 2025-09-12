@@ -138,7 +138,6 @@ class GameStateManager extends EventBusModule {
                     timestamp: Date.now()
                 });
             } else if (gameState.phase === 'results') {
-                this.roundsCompleted++;
                 this.publish(Events.GAME.RESULTS_STARTED, {
                     phase: gameState.phase,
                     round_results: gameState.round_results,

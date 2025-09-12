@@ -427,34 +427,6 @@ class RoomManager:
             
             return True
     
-    def update_player_connection(self, room_id: str, player_id: str, connected: bool, socket_id: Optional[str] = None) -> bool:
-        """
-        Update a player's connection status.
-        
-        Args:
-            room_id: ID of the room
-            player_id: ID of the player
-            connected: New connection status
-            socket_id: New socket ID (optional)
-            
-        Returns:
-            True if player was updated, False if player or room didn't exist
-        """
-        with self._room_operation(room_id):
-            room = self._rooms.get(room_id)
-            if not room:
-                return False
-            
-            player = room["players"].get(player_id)
-            if not player:
-                return False
-            
-            player["connected"] = connected
-            if socket_id is not None:
-                player["socket_id"] = socket_id
-            
-            room["last_activity"] = datetime.now()
-            return True
     
     def get_room_players(self, room_id: str) -> List[Dict]:
         """
