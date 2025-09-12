@@ -5,10 +5,9 @@ Provides type-safe configuration with validation and environment-specific settin
 
 import os
 import logging
-from typing import Any, Dict, Optional, Union, Type
+from typing import Any, Dict, Optional, Type
 from enum import Enum
 from dataclasses import dataclass, field
-from pathlib import Path
 
 
 class Environment(Enum):

@@ -11,13 +11,11 @@ Performance optimizations:
 - Intelligent cache preloading
 """
 
-import asyncio
 import json
 import logging
 import time
 import threading
-from typing import Any, Dict, Optional, List, Union, Callable
-from datetime import datetime, timedelta
+from typing import Any, Dict, Optional, List, Callable
 import hashlib
 import pickle
 from .base_service import BaseService

@@ -3,7 +3,7 @@ LLMpostor - A multiplayer guessing game where players try to identify AI-generat
 Main Flask application entry point focusing on app creation, dependency injection, and service wiring.
 """
 
-from flask import Flask, request
+from flask import Flask
 from flask_socketio import SocketIO
 import os
 import logging

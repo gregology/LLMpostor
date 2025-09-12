@@ -3,7 +3,7 @@ Service Container - Dependency Injection Container for LLMpostor
 Manages service creation, dependencies, and lifecycle.
 """
 
-from typing import Dict, Any, List, Optional, Callable, Type
+from typing import Dict, Any, List, Optional, Callable
 import inspect
 from enum import Enum
 
