@@ -1,0 +1,139 @@
+/* 
+Player Components
+Contains styles for player lists, status indicators, and leaderboards
+*/
+
+.players-panel {
+    grid-area: players;
+    background: var(--bg-primary);
+    border-radius: var(--radius-lg);
+    padding: var(--spacing-4);
+    box-shadow: var(--shadow-sm);
+    border: 1px solid var(--border-light);
+    overflow-y: auto;
+}
+
+.panel-title {
+    font-size: var(--font-size-lg);
+    font-weight: 600;
+    margin-bottom: var(--spacing-4);
+    color: var(--gray-900);
+    display: flex;
+    justify-content: flex-start;
+    align-items: center;
+    gap: var(--spacing-2);
+}
+
+.round-indicator {
+    font-size: var(--font-size-sm);
+    color: var(--gray-600);
+    font-weight: 400;
+    margin-left: auto;
+}
+
+.players-list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-2);
+}
+
+.player-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: var(--spacing-3);
+    background: var(--bg-secondary);
+    border-radius: var(--radius-md);
+    border: 1px solid var(--border-light);
+}
+
+.player-name {
+    font-weight: 500;
+    color: var(--gray-800);
+}
+
+.player-info {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-1);
+    flex: 1;
+}
+
+.player-name-row {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-2);
+}
+
+.player-score {
+    font-size: var(--font-size-sm);
+    font-weight: 600;
+    color: var(--primary-color);
+}
+
+.position-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.5rem;
+    height: 1.5rem;
+    border-radius: 50%;
+    font-size: var(--font-size-xs);
+    font-weight: 700;
+    color: white;
+    flex-shrink: 0;
+}
+
+.position-badge.position-1 {
+    background: #ffd700; /* Gold */
+    color: #000;
+}
+
+.position-badge.position-2 {
+    background: #c0c0c0; /* Silver */
+    color: #000;
+}
+
+.position-badge.position-3 {
+    background: #cd7f32; /* Bronze */
+    color: white;
+}
+
+.player-item.current-player {
+    background: var(--primary-light);
+    border-color: var(--primary-color);
+}
+
+.player-status {
+    font-size: var(--font-size-xs);
+    padding: var(--spacing-1) var(--spacing-2);
+    border-radius: var(--radius-sm);
+    font-weight: 500;
+}
+
+.player-status.ready {
+    background: var(--success-color);
+    color: white;
+}
+
+.player-status.waiting {
+    background: var(--gray-400);
+    color: white;
+}
+
+.player-item.connected .player-status {
+    color: var(--success-color);
+}
+
+.player-item.disconnected {
+    opacity: 0.6;
+}
+
+.player-item.disconnected .player-status {
+    color: var(--gray-400);
+}
+
+.leaderboard-item.current-player {
+    background-color: var(--primary-light);
+    border-color: var(--primary-color);
+}

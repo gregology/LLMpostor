@@ -1,0 +1,213 @@
+/* 
+Responsive Design and Media Queries
+Contains all responsive breakpoints and adaptive layouts
+*/
+
+/* Responsive Design */
+@media (max-width: 1024px) {
+    .game-container {
+        grid-template-columns: 250px 1fr;
+        gap: var(--spacing-4);
+    }
+    
+    .main-content {
+        padding: var(--spacing-4);
+    }
+}
+
+@media (max-width: 768px) {
+    .game-container {
+        grid-template-columns: 1fr;
+        grid-template-areas: 
+            "header"
+            "game"
+            "players";
+        height: auto;
+        gap: var(--spacing-4);
+    }
+    
+    .room-header {
+        flex-direction: column;
+        gap: var(--spacing-3);
+        text-align: center;
+    }
+    
+    .room-actions {
+        justify-content: center;
+    }
+    
+    .phase-header {
+        flex-direction: column;
+        gap: var(--spacing-3);
+        text-align: center;
+    }
+    
+    .prompt-header {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+    
+    .game-features {
+        grid-template-columns: 1fr;
+    }
+    
+    .steps {
+        grid-template-columns: 1fr;
+    }
+    
+    .hero-title {
+        font-size: var(--font-size-3xl);
+    }
+    
+    .main-content {
+        padding: var(--spacing-3);
+    }
+    
+    .app-header {
+        padding: var(--spacing-3);
+    }
+    
+    .game-actions {
+        margin-top: var(--spacing-6);
+    }
+    
+    .score-item {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: var(--spacing-2);
+    }
+    
+    .score-details {
+        align-self: stretch;
+        justify-content: space-between;
+    }
+    
+    .toast-container {
+        top: var(--spacing-2);
+        right: var(--spacing-2);
+        left: var(--spacing-2);
+        max-width: none;
+    }
+    
+    .error-modal-content {
+        margin: var(--spacing-4);
+        padding: var(--spacing-6);
+    }
+    
+    .error-modal-actions {
+        flex-direction: column;
+    }
+    
+    .offline-indicator {
+        bottom: var(--spacing-2);
+        left: var(--spacing-2);
+        right: var(--spacing-2);
+        transform: none;
+    }
+}
+
+@media (max-width: 480px) {
+    .join-room-card {
+        padding: var(--spacing-6);
+    }
+    
+    .hero-section {
+        margin-bottom: var(--spacing-8);
+    }
+    
+    .hero-content {
+        margin-bottom: var(--spacing-6);
+    }
+    
+    .hero-title {
+        font-size: var(--font-size-2xl);
+    }
+    
+    .feature {
+        padding: var(--spacing-4);
+    }
+    
+    .step {
+        flex-direction: column;
+        text-align: center;
+    }
+    
+    .step-number {
+        align-self: center;
+    }
+    
+    .toast {
+        padding: var(--spacing-3);
+    }
+    
+    .toast-content {
+        gap: var(--spacing-2);
+    }
+}
+
+/* Print Styles */
+@media print {
+    .app-header,
+    .app-footer,
+    .room-actions,
+    .timer-container,
+    .btn {
+        display: none;
+    }
+    
+    .game-container {
+        grid-template-columns: 1fr;
+        grid-template-areas: 
+            "game"
+            "players"
+            "leaderboard";
+    }
+    
+    body {
+        background: white;
+    }
+    
+    .game-area,
+    .players-panel,
+    .leaderboard-panel {
+        box-shadow: none;
+        border: 1px solid #ccc;
+    }
+}
+
+/* High Contrast Mode */
+@media (prefers-contrast: high) {
+    :root {
+        --border-light: #000;
+        --border-medium: #000;
+        --border-dark: #000;
+    }
+    
+    .response-card {
+        border-width: 3px;
+    }
+    
+    .btn {
+        border-width: 2px;
+    }
+}
+
+/* Reduced Motion */
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+    }
+    
+    .status-dot {
+        animation: none;
+    }
+    
+    .spinner {
+        animation: none;
+        border-top-color: var(--primary-color);
+    }
+}

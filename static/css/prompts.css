@@ -1,0 +1,167 @@
+/* 
+Prompt and Response Components
+Contains styles for prompts, responses, and submission forms
+*/
+
+/* Response Phase */
+.prompt-container {
+    margin-bottom: var(--spacing-6);
+    padding: var(--spacing-6);
+    background: var(--bg-secondary);
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--border-light);
+}
+
+.prompt-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: var(--spacing-4);
+    flex-wrap: wrap;
+    gap: var(--spacing-2);
+}
+
+.prompt-label {
+    font-weight: 600;
+    color: var(--gray-700);
+}
+
+.model-badge {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-2);
+    padding: var(--spacing-2) var(--spacing-3);
+    background: var(--primary-light);
+    border-radius: var(--radius-md);
+}
+
+.model-label {
+    font-size: var(--font-size-sm);
+    color: var(--gray-600);
+}
+
+.model-name {
+    font-weight: 600;
+    color: var(--primary-color);
+    font-family: monospace;
+}
+
+.prompt-text {
+    font-size: var(--font-size-lg);
+    line-height: 1.6;
+    color: var(--gray-800);
+    padding: var(--spacing-4);
+    background: var(--bg-primary);
+    border-radius: var(--radius-md);
+    border: 1px solid var(--border-light);
+}
+
+.response-form {
+    margin-bottom: var(--spacing-6);
+}
+
+.submission-status,
+.guessing-status {
+    text-align: center;
+    padding: var(--spacing-4);
+    background: var(--bg-secondary);
+    border-radius: var(--radius-md);
+    border: 1px solid var(--border-light);
+    margin-top: var(--spacing-4);
+}
+
+.status-text {
+    color: var(--gray-600);
+    font-weight: 500;
+    font-size: var(--font-size-sm);
+}
+
+/* Guessing Phase */
+.guessing-instructions {
+    text-align: center;
+    margin-bottom: var(--spacing-6);
+    padding: var(--spacing-4);
+    background: var(--bg-secondary);
+    border-radius: var(--radius-md);
+    border: 1px solid var(--border-light);
+}
+
+.guessing-instructions p {
+    font-size: var(--font-size-lg);
+    color: var(--gray-700);
+}
+
+.model-highlight {
+    font-weight: 600;
+    color: var(--primary-color);
+}
+
+.responses-list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-4);
+    margin-bottom: var(--spacing-6);
+}
+
+.response-card {
+    padding: var(--spacing-4);
+    background: var(--bg-secondary);
+    border: 2px solid var(--border-light);
+    border-radius: var(--radius-lg);
+    cursor: pointer;
+    transition: all var(--transition-fast);
+    position: relative;
+}
+
+.response-card:hover {
+    border-color: var(--primary-color);
+    box-shadow: var(--shadow-md);
+}
+
+.response-card.selected {
+    border-color: var(--success-color);
+    background-color: rgba(16, 185, 129, 0.05);
+    box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.2);
+}
+
+.response-card.correct-response {
+    border-color: var(--success-color);
+    background: rgba(16, 185, 129, 0.1);
+}
+
+.response-card.incorrect-guess {
+    border-color: var(--error-color);
+    background: rgba(239, 68, 68, 0.1);
+}
+
+.response-card.error {
+    border-color: var(--error-color);
+    background-color: rgba(239, 68, 68, 0.05);
+}
+
+.response-text {
+    font-size: var(--font-size-base);
+    line-height: 1.6;
+    color: var(--gray-800);
+}
+
+.response-index {
+    position: absolute;
+    top: var(--spacing-2);
+    right: var(--spacing-2);
+    width: 1.5rem;
+    height: 1.5rem;
+    background: var(--gray-300);
+    color: var(--gray-700);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: var(--font-size-xs);
+    font-weight: 600;
+}
+
+.response-card.selected .response-index {
+    background: var(--primary-color);
+    color: white;
+}

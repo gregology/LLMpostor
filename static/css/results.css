@@ -1,0 +1,114 @@
+/* 
+Results and Scoring Components
+Contains styles for game results, scoring, and leaderboards
+*/
+
+.results-content {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-6);
+}
+
+.correct-answer h4,
+.round-scores h4 {
+    font-size: var(--font-size-lg);
+    font-weight: 600;
+    margin-bottom: var(--spacing-4);
+    color: var(--gray-900);
+}
+
+.round-scores {
+    margin-top: var(--spacing-6);
+}
+
+.scores-list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-3);
+}
+
+.score-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: var(--spacing-3);
+    background-color: var(--bg-primary);
+    border-radius: var(--radius-md);
+    border: 1px solid var(--border-light);
+}
+
+.player-result {
+    width: 100%;
+}
+
+.player-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: var(--spacing-2);
+}
+
+.player-name {
+    font-weight: 600;
+    font-size: var(--font-size-base);
+    color: var(--gray-900);
+}
+
+.round-points {
+    font-weight: 600;
+    color: var(--success-color);
+    font-size: var(--font-size-lg);
+}
+
+.player-details {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-1);
+    font-size: var(--font-size-sm);
+    color: var(--gray-600);
+}
+
+.vote-info {
+    font-weight: 500;
+    color: var(--gray-700);
+}
+
+.votes-received {
+    color: var(--gray-600);
+}
+
+.scoring-breakdown {
+    color: var(--gray-600);
+    font-style: italic;
+}
+
+.score-change {
+    font-weight: 600;
+    color: var(--success-color);
+}
+
+.score-details {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-3);
+}
+
+.points {
+    font-weight: 600;
+    color: var(--success-color);
+}
+
+.reason {
+    font-size: var(--font-size-sm);
+    color: var(--gray-600);
+}
+
+.next-round-timer {
+    font-size: var(--font-size-sm);
+    color: var(--gray-600);
+}
+
+.correct-response .response-card {
+    border-color: var(--success-color);
+    background-color: rgba(16, 185, 129, 0.05);
+}
