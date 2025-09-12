@@ -53,6 +53,7 @@ These guidelines are a starting point, and we welcome feedback and suggestions.
 ## Features
 
 - **Real-time multiplayer gameplay** using Socket.IO
+- **Persistent game state** - scores and progress survive page refreshes
 - **Scoring system** with deception and detection points
 - **Automatic game flow** with timed phases and progression
 - **Room-based sessions** for private games with friends
@@ -70,6 +71,7 @@ LLMpostor features a modern, modular architecture:
 
 ### Frontend  
 - **Event-Driven Architecture**: Modular JavaScript with EventBus communication
+- **State Persistence**: Client-side storage for seamless reconnection and progress preservation
 - **Performance Enhancements**: Asset loading optimization, memory management, DOM caching
 - **Modular Design**: 12 specialized modules (GameClient, SocketManager, UIManager, etc.)
 
