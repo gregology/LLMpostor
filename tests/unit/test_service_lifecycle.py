@@ -14,8 +14,7 @@ import os
 from unittest.mock import Mock, patch
 from src.services.base_service import BaseService, ServiceRegistry
 from src.services.cache_service import CacheService
-from src.services.metrics_service import MetricsService
-from src.services.payload_optimizer import PayloadOptimizer
+# Removed unused service imports: MetricsService, PayloadOptimizer
 from container import ServiceContainer, ServiceLifecycle
 from config_factory import load_config, reset_config
 
@@ -216,84 +215,7 @@ class TestCacheServiceLifecycle:
         assert service.get('test_key') is None
 
 
-class TestMetricsServiceLifecycle:
-    """Test MetricsService lifecycle with BaseService integration"""
-    
-    def test_metrics_service_initialization(self):
-        """Test MetricsService initialization with BaseService"""
-        service = MetricsService({
-            'max_metric_points': 5000,
-            'collection_interval': 60
-        })
-        
-        assert service.is_initialized
-        assert not service.is_shutdown
-        assert service.collector.max_points == 5000
-        assert service.collection_interval == 60
-    
-    def test_metrics_service_testing_mode(self):
-        """Test MetricsService behavior in testing mode"""
-        os.environ['TESTING'] = '1'
-        
-        service = MetricsService()
-        assert service.is_testing_mode()
-        
-        # In testing mode, background collection should not start
-        assert service.collection_thread is None
-        
-        os.environ.pop('TESTING', None)
-    
-    def test_metrics_service_shutdown(self):
-        """Test MetricsService shutdown and cleanup"""
-        service = MetricsService()
-        
-        # Record some metrics
-        service.record_metric('test_metric', 42)
-        
-        service.shutdown()
-        
-        assert service.is_shutdown
-        # Metrics should be cleared
-        assert len(list(service.collector.metrics.keys())) == 0
-
-
-class TestPayloadOptimizerLifecycle:
-    """Test PayloadOptimizer lifecycle with BaseService integration"""
-    
-    def test_payload_optimizer_initialization(self):
-        """Test PayloadOptimizer initialization with BaseService"""
-        service = PayloadOptimizer({
-            'compression_threshold': 2048,
-            'gzip_level': 9
-        })
-        
-        assert service.is_initialized
-        assert not service.is_shutdown
-        assert service.compression_threshold == 2048
-        assert service.gzip_level == 9
-    
-    def test_payload_optimizer_testing_mode(self):
-        """Test PayloadOptimizer behavior in testing mode"""
-        os.environ['TESTING'] = '1'
-        
-        service = PayloadOptimizer()
-        assert service.is_testing_mode()
-        
-        os.environ.pop('TESTING', None)
-    
-    def test_payload_optimizer_shutdown(self):
-        """Test PayloadOptimizer shutdown and cleanup"""
-        service = PayloadOptimizer()
-        
-        # Process some data
-        data = {'test': 'data'}
-        payload, metadata = service.optimize_outbound(data)
-        
-        service.shutdown()
-        
-        assert service.is_shutdown
-        # Cache should be cleared
-        assert len(service.payload_cache) == 0
+# Removed test classes for deleted services: TestMetricsServiceLifecycle, TestPayloadOptimizerLifecycle
 
 
 class TestServiceContainer:
@@ -329,7 +251,7 @@ class TestServiceContainer:
         container = ServiceContainer()
         container.configure_services()
         
-        # Optional services should NOT be registered in testing mode
+        # These services have been removed from the codebase entirely
         assert not container.has_service('MetricsService')
         assert not container.has_service('PayloadOptimizer')
         assert not container.has_service('DatabaseOptimizer')
@@ -452,12 +374,6 @@ class TestServiceIntegration:
         # Test without loading config first
         reset_config()
         
-        # Services should still initialize with fallback values
+        # Cache service should still initialize with fallback values
         cache_service = CacheService()
         assert cache_service.is_initialized
-        
-        metrics_service = MetricsService()  
-        assert metrics_service.is_initialized
-        
-        optimizer_service = PayloadOptimizer()
-        assert optimizer_service.is_initialized

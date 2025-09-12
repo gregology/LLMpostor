@@ -11,7 +11,6 @@ This service handles all Socket.IO emissions in a centralized way:
 
 import logging
 from typing import Dict, Any
-# Payload optimizer will be injected via dependency container if needed
 from src.services.room_state_presenter import RoomStatePresenter
 from config_factory import get_config
 
@@ -38,10 +37,7 @@ class BroadcastService:
         # Initialize room state presenter for consistent payload transformations
         self.room_state_presenter = RoomStatePresenter(game_manager)
         
-        # Payload optimizer will be injected via dependency container if needed
-        # For now, optimization is disabled - can be re-enabled via DI container
-        self.payload_optimizer = None
-        self.optimization_enabled = False
+        # Payload optimization feature has been removed from the codebase
     
     # Core emission methods
     
@@ -99,13 +95,7 @@ class BroadcastService:
             # Use presenter to create consistent safe game state
             safe_game_state = self.room_state_presenter.create_safe_game_state(room_state, room_id)
             
-            # Keep original format for backward compatibility
-            # TODO: Enable payload optimization in future version with client support
-            # optimized_payload, metadata = self.payload_optimizer.optimize_room_state(
-            #     safe_game_state, room_id
-            # )
-            
-            # Broadcast the game state directly (maintaining backward compatibility)
+            # Broadcast the game state directly
             self.emit_to_room('room_state_updated', safe_game_state, room_id)
             logger.debug(f'Broadcasted room state update to room {room_id}')
             

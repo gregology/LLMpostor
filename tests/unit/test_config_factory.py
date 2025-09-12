@@ -191,15 +191,7 @@ class TestAppConfig:
         with pytest.raises(ConfigError, match="Invalid cache_default_ttl_seconds"):
             AppConfig(cache_default_ttl_seconds=0)
     
-    def test_config_validation_metrics_settings(self):
-        """Test validation for metrics settings"""
-        # Valid values
-        config = AppConfig(metrics_max_data_points=5000)
-        assert config.metrics_max_data_points == 5000
-        
-        # Invalid: too few data points
-        with pytest.raises(ConfigError, match="Invalid metrics_max_data_points"):
-            AppConfig(metrics_max_data_points=50)  # Below 100 minimum
+    # Removed test for deleted metrics settings
     
     def test_environment_properties(self):
         """Test environment property methods"""
@@ -287,9 +279,7 @@ class TestConfigurationFactory:
             'MAX_EVENTS_PER_MINUTE': '200',
             'COMPRESSION_THRESHOLD_BYTES': '1024',
             'CACHE_MAX_MEMORY_BYTES': str(10*1024*1024),  # 10MB
-            'CACHE_DEFAULT_TTL_SECONDS': '300',
-            'METRICS_MAX_DATA_POINTS': '5000',
-            'METRICS_CLEANUP_MAX_AGE_SECONDS': '7200'
+            'CACHE_DEFAULT_TTL_SECONDS': '300'
         }
         
         with patch.dict(os.environ, env_vars, clear=True):
@@ -305,8 +295,6 @@ class TestConfigurationFactory:
         assert config.compression_threshold_bytes == 1024
         assert config.cache_max_memory_bytes == 10*1024*1024
         assert config.cache_default_ttl_seconds == 300
-        assert config.metrics_max_data_points == 5000
-        assert config.metrics_cleanup_max_age_seconds == 7200
     
     def test_load_from_environment_with_prefix(self):
         """Test loading configuration with environment variable prefix"""

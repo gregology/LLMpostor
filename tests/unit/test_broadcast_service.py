@@ -41,9 +41,9 @@ class TestBroadcastService:
             game_manager=self.mock_game_manager,
             error_handler=self.mock_error_handler
         )
-        # Optimization is now disabled by default since we removed singleton
-        assert service.optimization_enabled is False
-        assert service.payload_optimizer is None
+        # Payload optimization feature has been removed from the codebase
+        assert not hasattr(service, 'optimization_enabled')
+        assert not hasattr(service, 'payload_optimizer')
 
     def test_initialization_without_optimization(self):
         """Test service initialization without optimization (default behavior now)"""
@@ -53,9 +53,9 @@ class TestBroadcastService:
             game_manager=self.mock_game_manager,
             error_handler=self.mock_error_handler
         )
-        # Optimization is disabled by default now
-        assert service.optimization_enabled is False
-        assert service.payload_optimizer is None
+        # Payload optimization feature has been removed from the codebase
+        assert not hasattr(service, 'optimization_enabled')
+        assert not hasattr(service, 'payload_optimizer')
 
     def test_emit_to_room_success(self):
         """Test successful emission to room"""

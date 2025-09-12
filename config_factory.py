@@ -67,18 +67,7 @@ class AppConfig:
     cache_max_memory_bytes: int = 50 * 1024 * 1024  # 50MB default
     cache_default_ttl_seconds: int = 60  # 1 minute default TTL
     
-    # Metrics settings
-    metrics_max_data_points: int = 10000  # max data points to store
-    metrics_cleanup_max_age_seconds: int = 3600  # 1 hour max age for cleanup
-    
-    # Database Optimizer settings
-    db_optimizer_max_cache_size: int = 1000  # max cached queries
-    db_optimizer_default_ttl_seconds: int = 300  # 5 minutes default TTL
-    
-    # Optional services configuration
-    enable_metrics: bool = False  # Enable metrics collection service
-    enable_payload_optimizer: bool = False  # Enable payload optimization
-    enable_database_optimizer: bool = False  # Enable database query optimization
+    # Removed unused optional services (metrics, payload optimizer, database optimizer)
     
     # File paths
     prompts_file: str = 'prompts.yaml'
@@ -147,8 +136,7 @@ class AppConfig:
             raise ConfigError(f"Invalid cache_default_ttl_seconds: {self.cache_default_ttl_seconds}")
         
         # Metrics validations
-        if self.metrics_max_data_points < 100 or self.metrics_max_data_points > 100000:
-            raise ConfigError(f"Invalid metrics_max_data_points: {self.metrics_max_data_points}")
+        # Removed unused metrics validation
         
         if self.environment == Environment.PRODUCTION and self.secret_key == 'dev-secret-key-change-in-production':
             raise ConfigError("Production environment requires a secure SECRET_KEY")
@@ -286,13 +274,7 @@ class ConfigurationFactory:
             cache_max_memory_bytes=get_env_var('CACHE_MAX_MEMORY_BYTES', 50 * 1024 * 1024, int),
             cache_default_ttl_seconds=get_env_var('CACHE_DEFAULT_TTL_SECONDS', 60, int),
             
-            # Metrics settings
-            metrics_max_data_points=get_env_var('METRICS_MAX_DATA_POINTS', 10000, int),
-            metrics_cleanup_max_age_seconds=get_env_var('METRICS_CLEANUP_MAX_AGE_SECONDS', 3600, int),
-            
-            # Database Optimizer settings
-            db_optimizer_max_cache_size=get_env_var('DB_OPTIMIZER_MAX_CACHE_SIZE', 1000, int),
-            db_optimizer_default_ttl_seconds=get_env_var('DB_OPTIMIZER_DEFAULT_TTL_SECONDS', 300, int),
+            # Removed unused service settings: metrics, database optimizer
             
             # File paths
             prompts_file=get_env_var('PROMPTS_FILE', 'prompts.yaml'),
