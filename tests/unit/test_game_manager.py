@@ -3,12 +3,10 @@ Unit tests for GameManager class.
 """
 
 from datetime import datetime
-import sys
-import os
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..', 'src'))
 
-from game_manager import GameManager, GamePhase
-from room_manager import RoomManager
+from src.game_manager import GameManager
+from src.core.game_phases import GamePhase
+from src.room_manager import RoomManager
 
 
 class TestGameManager:

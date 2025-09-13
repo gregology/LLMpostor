@@ -14,6 +14,7 @@ import time
 from contextlib import contextmanager
 # Cache service will be injected via dependency container if needed
 from config_factory import get_config
+from src.config.game_settings import get_game_settings
 
 logger = logging.getLogger(__name__)
 
@@ -29,17 +30,11 @@ class RoomManager:
         self._room_locks: Dict[str, threading.RLock] = {}
         # Lock for managing room locks themselves
         self._locks_lock = threading.Lock()
-        # Request deduplication - more lenient during testing
+        # Request deduplication - get window from configuration
         self._recent_requests: Dict[str, float] = {}
-        # Adjust window based on testing environment
-        import os
-        is_testing = os.environ.get('TESTING') == '1' or 'pytest' in os.environ.get('_', '')
-        self._request_window = 0.01 if is_testing else 1.0  # Much shorter window for tests
+        self.game_settings = get_game_settings()
+        self._request_window = self.game_settings.request_dedup_window
         
-        # Cache service will be injected via dependency container if needed
-        # For now, caching is disabled - can be re-enabled via DI container
-        self.cache = None
-        self.cache_enabled = False
     
     def _create_initial_room_data(self, room_id: str) -> Dict:
         """Create initial room data structure."""
@@ -82,7 +77,8 @@ class RoomManager:
                 raise ValueError(f"Player name '{player_name}' is already taken in room {room['room_id']}")
         
         # Check room capacity (prevent DoS)
-        if len(room["players"]) >= 8:  # Max players per room
+        max_players = self.game_settings.max_players_per_room
+        if len(room["players"]) >= max_players:
             raise ValueError(f"Room {room['room_id']} is full")
     
     def _create_player_data(self, player_name: str, socket_id: str) -> Dict:
@@ -267,27 +263,9 @@ class RoomManager:
         Returns:
             Room data dict or None if room doesn't exist
         """
-        # Try cache first for read-heavy operations (if available)
-        if self.cache_enabled:
-            cache_key = f"room_state:{room_id}"
-            cached_state = self.cache.get(cache_key)
-            if cached_state is not None:
-                # Validate cached state is still current
-                room = self._rooms.get(room_id)
-                if room and room.get('last_activity') == cached_state.get('last_activity'):
-                    return cached_state
-        
         room = self._rooms.get(room_id)
         if room:
-            room_copy = room.copy()
-            
-            # Cache the room state for quick access (if available)
-            if self.cache_enabled:
-                config = get_config()
-                cache_key = f"room_state:{room_id}"
-                self.cache.set(cache_key, room_copy, ttl=config.cache_default_ttl_seconds)
-            
-            return room_copy
+            return room.copy()
         return None
     
     def room_exists(self, room_id: str) -> bool:
