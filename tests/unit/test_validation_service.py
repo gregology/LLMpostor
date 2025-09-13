@@ -30,7 +30,7 @@ class TestValidationService:
         
         for room_id in valid_ids:
             result = self.validation_service.validate_room_id(room_id)
-            assert result == room_id.strip()
+            assert result == room_id.strip().lower()
     
     def test_validate_room_id_invalid(self):
         """Test room ID validation with invalid inputs."""
