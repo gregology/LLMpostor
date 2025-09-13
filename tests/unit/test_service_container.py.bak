@@ -5,13 +5,7 @@ Tests for the dependency injection container implementation.
 
 import pytest
 from unittest.mock import Mock, MagicMock
-import sys
-import os
-
-# Add project root to path for imports
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
-
-from container import ServiceContainer, ServiceLifecycle, CircularDependencyError, ServiceNotFoundError, configure_container
+from src.container import ServiceContainer, ServiceNotRegisteredError
 
 
 class TestServiceContainer:
