@@ -4,13 +4,8 @@ Tests for the centralized Socket.IO broadcasting service.
 """
 
 import pytest
-import sys
-import os
 from unittest.mock import Mock, MagicMock, patch
 from datetime import datetime
-
-# Add project root to path for imports
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 
 from src.services.broadcast_service import BroadcastService
 

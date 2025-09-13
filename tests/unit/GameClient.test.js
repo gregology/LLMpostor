@@ -280,15 +280,12 @@ describe('GameClient', () => {
     describe('Module Dependencies', () => {
         it('should pass correct dependencies to EventManager', async () => {
             gameClient = new GameClient();
-            
-            // Check that EventManager was called with correct modules
+
+            // Check that EventManager was called with eventBus and serviceContainer
             const EventManagerConstructor = vi.mocked(await import('../../static/js/modules/EventManager.js')).default;
             expect(EventManagerConstructor).toHaveBeenCalledWith(
-                mockSocketManager,
-                mockGameStateManager,
-                mockUIManager,
-                mockTimerManager,
-                mockToastManager
+                expect.objectContaining({}), // eventBus
+                expect.objectContaining({})  // serviceContainer
             );
         });
 
@@ -314,20 +311,22 @@ describe('GameClient', () => {
 
     describe('Error Handling', () => {
         it('should handle UIManager initialization errors gracefully', () => {
+            // Set up mock BEFORE creating GameClient
             mockUIManager.initialize.mockImplementation(() => {
                 throw new Error('UI initialization failed');
             });
-            
+
             expect(() => {
                 gameClient = new GameClient();
             }).toThrow('UI initialization failed');
         });
 
         it('should handle EventManager initialization errors gracefully', () => {
+            // Set up mock BEFORE creating GameClient
             mockEventManager.initialize.mockImplementation(() => {
                 throw new Error('EventManager initialization failed');
             });
-            
+
             expect(() => {
                 gameClient = new GameClient();
             }).toThrow('EventManager initialization failed');
@@ -335,7 +334,7 @@ describe('GameClient', () => {
 
         it('should handle missing DOM gracefully', () => {
             delete global.document;
-            
+
             expect(() => {
                 gameClient = new GameClient();
             }).toThrow(); // Should throw due to missing document

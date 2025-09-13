@@ -6,11 +6,6 @@ Tests for the centralized configuration management system.
 import pytest
 import os
 from unittest.mock import patch, Mock
-import sys
-
-# Add project root to path for imports
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
-
 from config_factory import (
     ConfigurationFactory, AppConfig, Environment, ConfigError,
     load_config, load_config_from_dict, get_config, reset_config, override_config

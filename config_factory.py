@@ -58,6 +58,7 @@ class AppConfig:
     max_events_per_second: int = 10  # max events per client per second
     max_events_per_minute: int = 100  # max events per client per minute
     rate_limit_window_seconds: int = 60  # time window for rate calculations
+    request_dedup_window_seconds: float = 1.0  # request deduplication window in seconds
     
     # Broadcast settings
     compression_threshold_bytes: int = 512  # compress payloads larger than this
@@ -265,6 +266,7 @@ class ConfigurationFactory:
             max_events_per_second=get_env_var('MAX_EVENTS_PER_SECOND', 10, int),
             max_events_per_minute=get_env_var('MAX_EVENTS_PER_MINUTE', 100, int),
             rate_limit_window_seconds=get_env_var('RATE_LIMIT_WINDOW_SECONDS', 60, int),
+            request_dedup_window_seconds=get_env_var('REQUEST_DEDUP_WINDOW_SECONDS', 1.0, float),
             
             # Broadcast settings
             compression_threshold_bytes=get_env_var('COMPRESSION_THRESHOLD_BYTES', 512, int),

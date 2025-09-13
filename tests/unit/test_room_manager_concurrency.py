@@ -9,11 +9,7 @@ import pytest
 import threading
 import time
 from datetime import datetime
-import sys
-import os
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..', 'src'))
-
-from room_manager import RoomManager
+from src.room_manager import RoomManager
 
 
 class TestRoomManagerConcurrency:

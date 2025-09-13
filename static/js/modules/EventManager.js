@@ -1,68 +1,225 @@
 /**
  * EventManager - Event-driven coordination and business logic orchestration
- * 
+ *
  * Responsible for:
- * - Coordinating between event-driven modules
+ * - Coordinating between event-driven modules via ServiceContainer
  * - Game event handling and routing via EventBus
  * - Error handling and user feedback coordination
  * - Connection management and socket event routing
  * - Business logic orchestration through events
- * 
- * Migration Status: Updated to coordinate with EventBus-enabled modules
+ *
+ * Migration Status: Refactored to use ServiceContainer and reduced dependencies
  */
 
 import { EventBusModule, migrationHelper } from './EventBusMigration.js';
 import { Events } from './EventBus.js';
 import SocketEventDispatcher from './SocketEventDispatcher.js';
+import { IServiceModule } from '../interfaces/IModule.js';
 
-class EventManager extends EventBusModule {
-    constructor(socketManager, gameStateManager, uiManager, timerManager, toastManager) {
-        super('EventManager');
-        
-        this.socket = socketManager;
-        this.gameState = gameStateManager;
-        this.ui = uiManager;
-        this.timer = timerManager;
-        this.toast = toastManager;
-        
+class EventManager extends IServiceModule {
+    constructor(...args) {
+        // Support both old and new constructor signatures for backward compatibility
+        if (args.length === 5) {
+            // Old signature: (socketManager, gameStateManager, uiManager, timerManager, toastManager)
+            const [socketManager, gameStateManager, uiManager, timerManager, toastManager] = args;
+
+            // Create a minimal service container for backward compatibility
+            const mockServiceContainer = {
+                get: (serviceName) => {
+                    switch (serviceName) {
+                        case 'SocketManager': return socketManager;
+                        case 'GameStateManager': return gameStateManager;
+                        case 'UIManager': return uiManager;
+                        case 'TimerManager': return timerManager;
+                        case 'ToastManager': return toastManager;
+                        default: throw new Error(`Service '${serviceName}' not found in mock container`);
+                    }
+                },
+                has: (serviceName) => {
+                    return ['SocketManager', 'GameStateManager', 'UIManager', 'TimerManager', 'ToastManager'].includes(serviceName);
+                },
+                register: () => mockServiceContainer,
+                remove: () => {},
+                clear: () => {},
+                getServiceNames: () => ['SocketManager', 'GameStateManager', 'UIManager', 'TimerManager', 'ToastManager'],
+                setConfig: () => mockServiceContainer,
+                getConfig: () => undefined,
+                checkHealth: () => 'healthy',
+                getHealthStatus: () => ({}),
+                setDebugMode: () => {}
+            };
+
+            // Create a minimal EventBus for backward compatibility
+            const eventBus = {
+                subscribe: () => () => {}, // Return unsubscribe function
+                publish: () => {},
+                unsubscribe: () => {},
+                once: () => () => {},
+                getEventNames: () => [],
+                getSubscriberCount: () => 0,
+                setDebugMode: () => {},
+                clear: () => {}
+            };
+
+            super('EventManager', eventBus, mockServiceContainer);
+
+            // Store direct references for old signature
+            this._socket = socketManager;
+            this._gameState = gameStateManager;
+            this._ui = uiManager;
+            this._timer = timerManager;
+            this._toast = toastManager;
+
+        } else if (args.length === 2) {
+            // New signature: (eventBus, serviceContainer)
+            const [eventBus, serviceContainer] = args;
+            super('EventManager', eventBus, serviceContainer);
+
+            // Lazy-loaded services
+            this._socket = null;
+            this._gameState = null;
+            this._ui = null;
+            this._timer = null;
+            this._toast = null;
+        } else {
+            throw new Error('EventManager constructor requires either 5 arguments (old signature) or 2 arguments (new signature)');
+        }
+
         // Connection state
         this.isInitialized = false;
-        
+
         // Timeout tracking
         this.guessSubmissionTimeout = null;
-        
+
         // Response filtering
         this.responseIndexMapping = null;
-        
+
+        // Dispatcher will be initialized when socket service is available
+        this.dispatcher = null;
+
+        console.log('EventManager initialized with ServiceContainer pattern');
+    }
+
+    // Service getters with lazy loading and safety checks
+    get socket() {
+        if (!this._socket) {
+            try {
+                this._socket = this.getService('SocketManager');
+            } catch (error) {
+                console.error('Failed to get SocketManager service:', error);
+                return null;
+            }
+        }
+        return this._socket;
+    }
+
+    get gameState() {
+        if (!this._gameState) {
+            try {
+                this._gameState = this.getService('GameStateManager');
+            } catch (error) {
+                console.error('Failed to get GameStateManager service:', error);
+                return null;
+            }
+        }
+        return this._gameState;
+    }
+
+    get ui() {
+        if (!this._ui) {
+            try {
+                this._ui = this.getService('UIManager');
+            } catch (error) {
+                console.error('Failed to get UIManager service:', error);
+                return null;
+            }
+        }
+        return this._ui;
+    }
+
+    get timer() {
+        if (!this._timer) {
+            try {
+                this._timer = this.getService('TimerManager');
+            } catch (error) {
+                console.error('Failed to get TimerManager service:', error);
+                return null;
+            }
+        }
+        return this._timer;
+    }
+
+    get toast() {
+        if (!this._toast) {
+            try {
+                this._toast = this.getService('ToastManager');
+            } catch (error) {
+                console.error('Failed to get ToastManager service:', error);
+                return null;
+            }
+        }
+        return this._toast;
+    }
+
+    initialize(roomId) {
+        if (this.isInitialized) {
+            console.warn('EventManager already initialized');
+            return;
+        }
+
+        super.initialize();
+
+        // Initialize dispatcher now that services are available
+        const socket = this.socket;
+        if (socket) {
+            this.dispatcher = new SocketEventDispatcher(socket);
+        } else {
+            console.error('EventManager: SocketManager service not available, skipping dispatcher initialization');
+        }
+
         // Subscribe to EventBus events from modules
         this._setupEventBusSubscriptions();
-        
-        // Legacy callback setup (for backward compatibility)
+
+        // Setup callbacks and event handlers
         this._setupSocketCallbacks();
         this._setupGameStateCallbacks();
         this._setupTimerCallbacks();
-        
-        // Delegate socket event registration to dispatcher to reduce responsibilities
-        this.dispatcher = new SocketEventDispatcher(this.socket);
         this._registerSocketEvents();
-        
-        console.log('EventManager initialized with EventBus coordination');
-    }
-    
-    /**
-     * Initialize the event manager and start connection
-     * @param {string} roomId - Room ID from global config
-     */
-    initialize(roomId) {
-        console.log('Initializing EventManager for room:', roomId);
-        
-        if (roomId) {
-            this.gameState.initialize(roomId);
-        }
-        
-        this.socket.initialize();
-        this.isInitialized = true;
 
+        console.log('Initializing EventManager for room:', roomId);
+
+        const gameState = this.gameState;
+        if (roomId && gameState) {
+            gameState.initialize(roomId);
+        }
+
+        if (socket) {
+            socket.initialize();
+        }
+        this.isInitialized = true;
+    }
+
+    destroy() {
+        // Clear timeouts
+        if (this.guessSubmissionTimeout) {
+            clearTimeout(this.guessSubmissionTimeout);
+            this.guessSubmissionTimeout = null;
+        }
+
+        // Cleanup dispatcher
+        if (this.dispatcher) {
+            this.dispatcher = null;
+        }
+
+        // Reset service references
+        this._socket = null;
+        this._gameState = null;
+        this._ui = null;
+        this._timer = null;
+        this._toast = null;
+
+        this.isInitialized = false;
+        super.destroy();
     }
     
     /**
@@ -74,14 +231,12 @@ class EventManager extends EventBusModule {
             console.error('Cannot join room - not connected to server');
             return;
         }
-        
+
         const storedName = sessionStorage.getItem('playerName');
-        
+
         if (storedName) {
-            console.log('Joining room with stored name:', storedName);
             this.joinRoom(roomId, storedName);
         } else {
-            console.log('No stored name, prompting user');
             this._promptForPlayerName(roomId);
         }
     }
@@ -322,6 +477,11 @@ class EventManager extends EventBusModule {
     
     _registerSocketEvents() {
         // Connection events are handled by socket callbacks
+        if (!this.dispatcher) {
+            console.warn('EventManager: Dispatcher not available, skipping socket event registration');
+            return;
+        }
+
         this.dispatcher.register({
             // Room event handlers
             'room_joined': (data) => this._handleRoomJoined(data),
@@ -352,16 +512,28 @@ class EventManager extends EventBusModule {
     }
     
     _setupSocketCallbacks() {
-        this.socket.onConnect = () => {
+        const socket = this.socket;
+        if (!socket) {
+            console.warn('EventManager: SocketManager not available, skipping socket callbacks setup');
+            return;
+        }
+
+        socket.onConnect = () => {
             console.log('Connected to server');
-            
+
+            // Publish connection event for other modules to listen to
+            this.eventBus.publish('socket:connected', {
+                timestamp: Date.now(),
+                status: 'connected'
+            });
+
             // Use migration helper for dual-mode operation
             migrationHelper.execute(
                 'socket-connected',
                 // Old pattern (legacy callback-driven)
                 () => {
                     this.ui.updateConnectionStatus('connected', 'Connected');
-                    this.toast.success('Connected to server');
+                    // Don't show toast here - let GameClient handle it
                 },
                 // New pattern (event-driven)
                 () => {
@@ -372,8 +544,8 @@ class EventManager extends EventBusModule {
                 }
             );
         };
-        
-        this.socket.onDisconnect = () => {
+
+        socket.onDisconnect = () => {
             console.log('Disconnected from server');
             
             this.publish(Events.SOCKET.DISCONNECTED, {
@@ -382,8 +554,8 @@ class EventManager extends EventBusModule {
                 message: 'Connection lost. Attempting to reconnect...'
             });
         };
-        
-        this.socket.onConnectionError = (error) => {
+
+        socket.onConnectionError = (error) => {
             console.error('Connection error:', error);
             
             this.publish(Events.SOCKET.ERROR, {
@@ -393,8 +565,8 @@ class EventManager extends EventBusModule {
                 message: 'Failed to connect to server'
             });
         };
-        
-        this.socket.onReconnect = () => {
+
+        socket.onReconnect = () => {
             console.log('Reconnected to server');
             
             this.publish(Events.SOCKET.CONNECTED, {
@@ -413,26 +585,50 @@ class EventManager extends EventBusModule {
     
     
     _setupGameStateCallbacks() {
-        this.gameState.onStateChange = (state) => {
+        const gameState = this.gameState;
+        if (!gameState) {
+            console.warn('EventManager: GameStateManager not available, skipping game state callbacks setup');
+            return;
+        }
+
+        gameState.onStateChange = (state) => {
             this._handleGameStateChange(state);
         };
-        
-        this.gameState.onPlayersUpdate = (players) => {
-            this.ui.updatePlayersList(players, this.gameState.roomInfo.playerId);
+
+        gameState.onPlayersUpdate = (players) => {
+            const ui = this.ui;
+            if (ui) {
+                ui.updatePlayersList(players, gameState.roomInfo.playerId);
+            }
         };
-        
-        this.gameState.onRoomInfoUpdate = (roomInfo) => {
-            this.ui.updateRoomInfo(roomInfo);
+
+        gameState.onRoomInfoUpdate = (roomInfo) => {
+            const ui = this.ui;
+            if (ui) {
+                ui.updateRoomInfo(roomInfo);
+            }
         };
     }
     
     _setupTimerCallbacks() {
-        this.timer.onTimerUpdate = (timerData) => {
-            this.ui.updateTimer(timerData);
+        const timer = this.timer;
+        if (!timer) {
+            console.warn('EventManager: TimerManager not available, skipping timer callbacks setup');
+            return;
+        }
+
+        timer.onTimerUpdate = (timerData) => {
+            const ui = this.ui;
+            if (ui) {
+                ui.updateTimer(timerData);
+            }
         };
-        
-        this.timer.onTimerWarning = (warningData) => {
-            this.ui.flashTimer(warningData.phase);
+
+        timer.onTimerWarning = (warningData) => {
+            const ui = this.ui;
+            if (ui) {
+                ui.flashTimer(warningData.phase);
+            }
         };
     }
     
@@ -505,12 +701,19 @@ class EventManager extends EventBusModule {
     }
     
     _handleServerError(error) {
-        if (typeof window === 'undefined' || !window.isTestEnvironment) {
-            console.error('Server error:', error);
+        // Don't log ALREADY_IN_ROOM as an error since it's handled gracefully
+        if (error?.error?.code !== 'ALREADY_IN_ROOM') {
+            if (typeof window === 'undefined' || !window.isTestEnvironment) {
+                console.error('Server error:', error);
+            }
         }
-        
+
         const userMessage = this._getUserFriendlyErrorMessage(error);
-        this.toast.error(userMessage);
+
+        // Don't show toast for ALREADY_IN_ROOM since it's handled silently
+        if (error?.error?.code !== 'ALREADY_IN_ROOM') {
+            this.toast.error(userMessage);
+        }
         
         // Handle specific error recovery
         this._handleSpecificErrors(error);
@@ -857,9 +1060,26 @@ class EventManager extends EventBusModule {
      * Clean up event subscriptions and timeouts
      */
     destroy() {
+        // Clear timeouts
         this._clearGuessSubmissionTimeout();
-        this.cleanup(); // Clean up event bus subscriptions
-        
+
+        // Cleanup dispatcher
+        if (this.dispatcher) {
+            this.dispatcher = null;
+        }
+
+        // Reset service references
+        this._socket = null;
+        this._gameState = null;
+        this._ui = null;
+        this._timer = null;
+        this._toast = null;
+
+        this.isInitialized = false;
+
+        // Call parent destroy
+        super.destroy();
+
         console.log('EventManager destroyed');
     }
 }

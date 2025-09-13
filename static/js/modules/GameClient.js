@@ -14,34 +14,84 @@ import TimerManager from './TimerManager.js';
 import ToastManager from './ToastManager.js';
 import UIManager from './UIManager.js';
 import EventManager from './EventManager.js';
+import serviceContainer from '../utils/ServiceContainer.js';
+import eventBus from './EventBus.js';
 import { getBootstrapValue } from '../utils/Bootstrap.js';
 
 class GameClient {
     constructor() {
-        // Initialize all modules
-        this.socketManager = new SocketManager();
-        this.gameStateManager = new GameStateManager();
-        this.timerManager = new TimerManager();
-        this.toastManager = new ToastManager();
-        this.uiManager = new UIManager();
-        
-        // Initialize event manager with all dependencies
-        this.eventManager = new EventManager(
-            this.socketManager,
-            this.gameStateManager,
-            this.uiManager,
-            this.timerManager,
-            this.toastManager
-        );
-        
+        this.serviceContainer = serviceContainer;
+        this.eventBus = eventBus;
         this.isInitialized = false;
-        
+        this.isRejoining = false;
+
+        // Register all services with the container
+        this._registerServices();
+
         // Initialize when DOM is ready
         if (document.readyState === 'loading') {
             document.addEventListener('DOMContentLoaded', () => this.initialize());
         } else {
             this.initialize();
         }
+    }
+
+    /**
+     * Register all services with the ServiceContainer
+     * @private
+     */
+    _registerServices() {
+        console.log('Registering services with ServiceContainer...');
+
+        // Register core modules as services
+        this.serviceContainer
+            .register('SocketManager', () => new SocketManager())
+            .register('GameStateManager', () => new GameStateManager())
+            .register('TimerManager', () => new TimerManager())
+            .register('ToastManager', () => new ToastManager())
+            .register('UIManager', () => new UIManager())
+            .register('EventManager', (socketManager, gameStateManager, uiManager, timerManager, toastManager, container) =>
+                new EventManager(this.eventBus, container), {
+                dependencies: ['SocketManager', 'GameStateManager', 'UIManager', 'TimerManager', 'ToastManager']
+            });
+
+        // Note: ErrorDisplayManager is registered externally in game-modular.js
+
+        console.log('All services registered successfully');
+    }
+
+    /**
+     * Get a service instance from the container
+     * @param {string} serviceName - Name of the service
+     * @returns {*} Service instance
+     */
+    getService(serviceName) {
+        return this.serviceContainer.get(serviceName);
+    }
+
+    // Backward compatibility getters for tests
+    get socketManager() {
+        return this.getService('SocketManager');
+    }
+
+    get gameStateManager() {
+        return this.getService('GameStateManager');
+    }
+
+    get timerManager() {
+        return this.getService('TimerManager');
+    }
+
+    get toastManager() {
+        return this.getService('ToastManager');
+    }
+
+    get uiManager() {
+        return this.getService('UIManager');
+    }
+
+    get eventManager() {
+        return this.getService('EventManager');
     }
     
     /**
@@ -52,26 +102,52 @@ class GameClient {
             console.warn('GameClient already initialized');
             return;
         }
-        
+
         console.log('Initializing LLMpostor Game Client (Modular)');
-        
-        // Wait for UI to be ready
-        this.uiManager.initialize();
-        
-        // Set up connection handling
-        this._setupConnectionFlow();
-        
-        // Initialize event manager
-        let roomId = null;
+
         try {
-            roomId = getBootstrapValue('roomId', null);
+            // Initialize UI first as other modules may depend on it
+            const uiManager = this.getService('UIManager');
+            uiManager.initialize();
+
+            // Set up connection handling
+            this._setupConnectionFlow();
+
+            // Initialize event manager with room ID
+            const eventManager = this.getService('EventManager');
+            let roomId = null;
+            try {
+                roomId = getBootstrapValue('roomId', null);
+            } catch (error) {
+                console.warn('Bootstrap system not available, room ID will be null');
+            }
+            eventManager.initialize(roomId);
+
+            this.isInitialized = true;
+            console.log('Game client initialization complete');
+
         } catch (error) {
-            console.warn('Bootstrap system not available, room ID will be null');
+            console.error('Failed to initialize GameClient:', error);
+            this._handleInitializationError(error);
+            throw error;
         }
-        this.eventManager.initialize(roomId);
-        
-        this.isInitialized = true;
-        console.log('Game client initialization complete');
+    }
+
+    /**
+     * Handle initialization errors
+     * @private
+     */
+    _handleInitializationError(error) {
+        try {
+            const toastManager = this.getService('ToastManager');
+            if (toastManager && typeof toastManager.error === 'function') {
+                toastManager.error('Failed to initialize game. Please refresh the page.');
+            } else {
+                console.error('ToastManager service not available or missing error method');
+            }
+        } catch (toastError) {
+            console.error('Could not show error toast:', toastError);
+        }
     }
     
     /**
@@ -79,46 +155,53 @@ class GameClient {
      * @returns {Object} Current game state
      */
     getGameState() {
-        return this.gameStateManager.getState();
+        const gameStateManager = this.getService('GameStateManager');
+        return gameStateManager.getState();
     }
-    
+
     /**
      * Get connection status
      * @returns {boolean} Whether client is connected
      */
     isConnected() {
-        return this.socketManager.getConnectionStatus();
+        const socketManager = this.getService('SocketManager');
+        return socketManager.getConnectionStatus();
     }
-    
+
     /**
      * Get room information
      * @returns {Object} Room information
      */
     getRoomInfo() {
-        return this.gameStateManager.roomInfo;
+        const gameStateManager = this.getService('GameStateManager');
+        return gameStateManager.roomInfo;
     }
-    
+
     /**
      * Get players list
      * @returns {Array} Current players
      */
     getPlayers() {
-        return this.gameStateManager.players;
+        const gameStateManager = this.getService('GameStateManager');
+        return gameStateManager.players;
     }
-    
+
     /**
      * Force reconnection attempt
      */
     reconnect() {
-        this.socketManager.reconnect();
+        const socketManager = this.getService('SocketManager');
+        socketManager.reconnect();
     }
-    
+
     /**
      * Disconnect from server
      */
     disconnect() {
-        this.socketManager.disconnect();
-        this.timerManager.clearAllTimers();
+        const socketManager = this.getService('SocketManager');
+        const timerManager = this.getService('TimerManager');
+        socketManager.disconnect();
+        timerManager.clearAllTimers();
     }
     
     /**
@@ -127,39 +210,44 @@ class GameClient {
      * @param {string} playerName - Player name
      */
     joinRoom(roomId, playerName) {
-        this.eventManager.joinRoom(roomId, playerName);
+        const eventManager = this.getService('EventManager');
+        eventManager.joinRoom(roomId, playerName);
     }
-    
+
     /**
      * Leave current room (programmatic API)
      */
     leaveRoom() {
-        this.eventManager.leaveRoom();
+        const eventManager = this.getService('EventManager');
+        eventManager.leaveRoom();
     }
-    
+
     /**
      * Start a new round (programmatic API)
      */
     startRound() {
-        this.eventManager.startRound();
+        const eventManager = this.getService('EventManager');
+        eventManager.startRound();
     }
-    
+
     /**
      * Submit response (programmatic API)
      * @param {string} responseText - Response text
      */
     submitResponse(responseText) {
-        this.eventManager.submitResponse(responseText);
+        const eventManager = this.getService('EventManager');
+        eventManager.submitResponse(responseText);
     }
-    
+
     /**
      * Submit guess (programmatic API)
      * @param {number} responseIndex - Response index
      */
     submitGuess(responseIndex) {
-        this.eventManager.submitGuess(responseIndex);
+        const eventManager = this.getService('EventManager');
+        eventManager.submitGuess(responseIndex);
     }
-    
+
     /**
      * Show toast notification (programmatic API)
      * @param {string} message - Message to show
@@ -167,14 +255,16 @@ class GameClient {
      * @param {boolean} persistent - Whether to auto-dismiss
      */
     showToast(message, type = 'info', persistent = false) {
-        this.toastManager.show(message, type, persistent);
+        const toastManager = this.getService('ToastManager');
+        toastManager.show(message, type, persistent);
     }
-    
+
     /**
      * Clear all toast notifications
      */
     clearToasts() {
-        this.toastManager.clearAll();
+        const toastManager = this.getService('ToastManager');
+        toastManager.clearAll();
     }
     
     /**
@@ -183,13 +273,21 @@ class GameClient {
      */
     getModules() {
         return {
-            socket: this.socketManager,
-            gameState: this.gameStateManager,
-            ui: this.uiManager,
-            timer: this.timerManager,
-            toast: this.toastManager,
-            event: this.eventManager
+            socket: this.getService('SocketManager'),
+            gameState: this.getService('GameStateManager'),
+            ui: this.getService('UIManager'),
+            timer: this.getService('TimerManager'),
+            toast: this.getService('ToastManager'),
+            event: this.getService('EventManager')
         };
+    }
+
+    /**
+     * Get service container health status
+     * @returns {Object} Health status of all services
+     */
+    getHealthStatus() {
+        return this.serviceContainer.getHealthStatus();
     }
     
     /**
@@ -197,95 +295,86 @@ class GameClient {
      */
     destroy() {
         console.log('Destroying GameClient...');
-        
-        // Destroy all modules that have destroy methods
-        if (this.timerManager && this.timerManager.destroy) {
-            this.timerManager.destroy();
+
+        try {
+            // Destroy services through the container - this handles cleanup properly
+            this.serviceContainer.clear();
+
+            this.isInitialized = false;
+            console.log('GameClient destroyed');
+
+        } catch (error) {
+            console.error('Error during GameClient destruction:', error);
         }
-        if (this.toastManager && this.toastManager.destroy) {
-            this.toastManager.destroy();
-        }
-        if (this.gameStateManager && this.gameStateManager.destroy) {
-            this.gameStateManager.destroy();
-        }
-        if (this.eventManager && this.eventManager.destroy) {
-            this.eventManager.destroy();
-        }
-        if (this.uiManager && this.uiManager.destroy) {
-            this.uiManager.destroy();
-        }
-        if (this.socketManager && this.socketManager.destroy) {
-            this.socketManager.destroy();
-        }
-        
-        // Clear references
-        this.socketManager = null;
-        this.gameStateManager = null;
-        this.timerManager = null;
-        this.toastManager = null;
-        this.uiManager = null;
-        this.eventManager = null;
-        
-        this.isInitialized = false;
-        
-        console.log('GameClient destroyed');
     }
     
     // Private methods
     
     _setupConnectionFlow() {
-        // Set up auto-join flow after connection
-        this.socketManager.onConnect = () => {
-            console.log('Connected to server');
-            this.uiManager.updateConnectionStatus('connected', 'Connected');
-            
+        const socketManager = this.getService('SocketManager');
+        const uiManager = this.getService('UIManager');
+        const toastManager = this.getService('ToastManager');
+        const gameStateManager = this.getService('GameStateManager');
+        const eventManager = this.getService('EventManager');
+
+        // Subscribe to socket connection events via EventBus
+        this.eventBus.subscribe('socket:connected', () => {
+            console.log('GameClient: Received socket connected event');
+
+            // Prevent duplicate rejoin attempts
+            if (this.isRejoining) {
+                console.log('GameClient: Already attempting to rejoin, skipping');
+                return;
+            }
+
             // Try to restore session first, then fall back to bootstrap room ID
-            const savedSession = this.gameStateManager.restoreFromStorage();
+            const savedSession = gameStateManager.restoreFromStorage();
             if (savedSession) {
                 console.log('Attempting to rejoin room from saved session...');
+                this.isRejoining = true;
                 this._attemptRoomRejoin(savedSession);
                 return;
             }
-            
+
             // Fall back to bootstrap room ID if no saved session
             try {
                 const roomId = getBootstrapValue('roomId', null);
                 if (roomId) {
-                    this.eventManager.autoJoinRoom(roomId);
+                    eventManager.autoJoinRoom(roomId);
                 }
             } catch (error) {
                 console.warn('Bootstrap system not available during connection flow');
             }
-        };
-        
-        this.socketManager.onDisconnect = () => {
+        });
+
+        socketManager.onDisconnect = () => {
             console.log('Disconnected from server');
-            this.uiManager.updateConnectionStatus('disconnected', 'Disconnected');
-            this.toastManager.warning('Connection lost. Attempting to reconnect...');
+            uiManager.updateConnectionStatus('disconnected', 'Disconnected');
+            toastManager.warning('Connection lost. Attempting to reconnect...');
         };
-        
-        this.socketManager.onConnectionError = (error) => {
+
+        socketManager.onConnectionError = (error) => {
             console.error('Connection error:', error);
-            this.uiManager.updateConnectionStatus('error', 'Connection Error');
-            this.toastManager.error('Failed to connect to server');
+            uiManager.updateConnectionStatus('error', 'Connection Error');
+            toastManager.error('Failed to connect to server');
         };
-        
-        this.socketManager.onReconnect = () => {
+
+        socketManager.onReconnect = () => {
             console.log('Reconnected to server');
-            this.uiManager.updateConnectionStatus('connected', 'Connected');
-            this.toastManager.success('Reconnected successfully!');
-            
+            uiManager.updateConnectionStatus('connected', 'Connected');
+            toastManager.success('Reconnected successfully!');
+
             // Try current room info first, then saved session as fallback
-            const roomInfo = this.gameStateManager.roomInfo;
+            const roomInfo = gameStateManager.roomInfo;
             if (roomInfo.roomId && roomInfo.playerName) {
                 console.log('Rejoining room from current state after reconnection...');
-                this.eventManager.joinRoom(roomInfo.roomId, roomInfo.playerName);
+                eventManager.joinRoom(roomInfo.roomId, roomInfo.playerName);
             } else {
                 // Fallback to saved session if current state is empty
-                const savedSession = this.gameStateManager.restoreFromStorage();
+                const savedSession = gameStateManager.restoreFromStorage();
                 if (savedSession) {
                     console.log('Rejoining room from saved session after reconnection...');
-                    this.eventManager.joinRoom(savedSession.roomId, savedSession.playerName);
+                    eventManager.joinRoom(savedSession.roomId, savedSession.playerName);
                 }
             }
         };
@@ -297,36 +386,43 @@ class GameClient {
      * @param {Object} savedSession - Session data from storage
      */
     _attemptRoomRejoin(savedSession) {
+        const socketManager = this.getService('SocketManager');
+        const eventManager = this.getService('EventManager');
+        const toastManager = this.getService('ToastManager');
         let rejoinTimeoutId;
-        
+
         // Set up one-time listener for room join result
         const handleRoomJoined = (data) => {
             clearTimeout(rejoinTimeoutId);
+            this.isRejoining = false; // Reset flag
+
             if (data && data.success) {
                 console.log('Successfully rejoined room from saved session');
-                this.toastManager.success('Welcome back! Rejoined your game.');
+                toastManager.success('Welcome back! Rejoined your game.');
             } else {
                 this._handleRejoinFailure(savedSession, 'Room join failed');
             }
         };
-        
+
         // Set up timeout for join attempt
         rejoinTimeoutId = setTimeout(() => {
+            this.isRejoining = false; // Reset flag
             this._handleRejoinFailure(savedSession, 'Room join timeout');
         }, 5000); // 5 second timeout
-        
+
         // Listen for room join response (one-time)
-        this.socketManager.socket.once('room_joined', handleRoomJoined);
-        
+        socketManager.socket.once('room_joined', handleRoomJoined);
+
         // Attempt to join
         try {
-            this.eventManager.joinRoom(savedSession.roomId, savedSession.playerName);
+            eventManager.joinRoom(savedSession.roomId, savedSession.playerName);
         } catch (error) {
             clearTimeout(rejoinTimeoutId);
+            this.isRejoining = false; // Reset flag
             this._handleRejoinFailure(savedSession, 'Failed to send join request');
         }
     }
-    
+
     /**
      * Handle failed room rejoin attempts
      * @private
@@ -334,20 +430,24 @@ class GameClient {
      * @param {string} reason - Reason for failure
      */
     _handleRejoinFailure(savedSession, reason) {
+        const gameStateManager = this.getService('GameStateManager');
+        const toastManager = this.getService('ToastManager');
+        const eventManager = this.getService('EventManager');
+
         console.warn(`Room rejoin failed: ${reason}. Clearing invalid session.`);
-        
+
         // Clear invalid session data
-        this.gameStateManager.clearStoredSession();
-        
+        gameStateManager.clearStoredSession();
+
         // Show user-friendly message
-        this.toastManager.warning(`Couldn't rejoin your previous room. Starting fresh.`);
-        
+        toastManager.warning(`Couldn't rejoin your previous room. Starting fresh.`);
+
         // Fall back to bootstrap room ID if available
         try {
             const roomId = getBootstrapValue('roomId', null);
             if (roomId && roomId !== savedSession.roomId) {
                 console.log('Falling back to bootstrap room ID');
-                this.eventManager.autoJoinRoom(roomId);
+                eventManager.autoJoinRoom(roomId);
             }
         } catch (error) {
             console.warn('Bootstrap system not available during rejoin failure handling');

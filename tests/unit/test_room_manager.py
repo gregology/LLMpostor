@@ -4,11 +4,8 @@ Unit tests for RoomManager class.
 
 import pytest
 from datetime import datetime, timedelta
-import sys
-import os
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..', 'src'))
 
-from room_manager import RoomManager
+from src.room_manager import RoomManager
 
 
 class TestRoomManager:

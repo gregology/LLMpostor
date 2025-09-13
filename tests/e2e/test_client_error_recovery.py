@@ -8,7 +8,7 @@ import time
 import pytest
 from unittest.mock import patch, MagicMock
 from flask_socketio import SocketIOTestClient
-from src.game_manager import GamePhase
+from src.core.game_phases import GamePhase
 # Service imports  
 from tests.migration_compat import app, socketio, room_manager, game_manager
 

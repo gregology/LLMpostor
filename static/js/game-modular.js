@@ -23,35 +23,51 @@ import ToastManager from './modules/ToastManager.js';
 import UIManager from './modules/UIManager.js';
 import EventManager from './modules/EventManager.js';
 import GameClient from './modules/GameClient.js';
+import ErrorDisplayManager from './modules/ErrorDisplayManager.js';
+import serviceContainer from './utils/ServiceContainer.js';
+import eventBus from './modules/EventBus.js';
 
 // Initialize game client
 function initializeGameClient() {
+    let errorDisplayManager = null;
+
     try {
+        // Initialize error display manager first for proper error handling
+        errorDisplayManager = new ErrorDisplayManager(eventBus, serviceContainer);
+        serviceContainer.register('ErrorDisplayManager', () => errorDisplayManager);
+
         // Create global game client instance
         const gameClient = new GameClient();
-        
+
         // Expose globally for debugging
         window.gameClient = gameClient;
-        
+        window.serviceContainer = serviceContainer;
+        window.eventBus = eventBus;
+
         console.log('Modular LLMpostor game client initialized');
         return gameClient;
     } catch (error) {
         console.error('Failed to initialize game client:', error);
-        
-        // Show error to user
-        document.body.insertAdjacentHTML('beforeend', `
-            <div style="position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); 
-                        background: #fee; border: 2px solid #f00; padding: 20px; border-radius: 8px; 
-                        font-family: Arial, sans-serif; text-align: center; z-index: 10000;">
-                <h3 style="color: #c00; margin-top: 0;">Failed to Load Game</h3>
-                <p>Could not initialize game modules: ${error.message}</p>
-                <button onclick="window.location.reload()" style="padding: 8px 16px; 
-                        background: #007cba; color: white; border: none; border-radius: 4px; cursor: pointer;">
-                    Refresh Page
-                </button>
-            </div>
-        `);
-        
+
+        // Use ErrorDisplayManager if available, otherwise fallback
+        if (errorDisplayManager) {
+            errorDisplayManager.showInitializationError(error);
+        } else {
+            // Fallback to inline error display if ErrorDisplayManager failed
+            document.body.insertAdjacentHTML('beforeend', `
+                <div style="position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+                            background: #fee; border: 2px solid #f00; padding: 20px; border-radius: 8px;
+                            font-family: Arial, sans-serif; text-align: center; z-index: 10000;">
+                    <h3 style="color: #c00; margin-top: 0;">Failed to Load Game</h3>
+                    <p>Could not initialize game modules: ${error.message}</p>
+                    <button onclick="window.location.reload()" style="padding: 8px 16px;
+                            background: #007cba; color: white; border: none; border-radius: 4px; cursor: pointer;">
+                        Refresh Page
+                    </button>
+                </div>
+            `);
+        }
+
         throw error;
     }
 }

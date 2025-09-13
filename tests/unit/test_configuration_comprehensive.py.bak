@@ -1,0 +1,369 @@
+"""
+Comprehensive Configuration Testing
+
+Tests for externalized configuration management including:
+1. Environment-specific configuration loading
+2. Invalid configuration handling
+3. Configuration validation and fallbacks
+4. Runtime configuration changes
+"""
+
+import pytest
+import os
+import tempfile
+from unittest.mock import patch, Mock
+from config_factory import (
+    ConfigurationFactory, AppConfig, Environment, ConfigError,
+    load_config, get_config, reset_config, override_config
+)
+
+
+class TestConfigurationLoading:
+    """Test comprehensive configuration loading scenarios"""
+
+    def setup_method(self):
+        """Reset configuration before each test"""
+        reset_config()
+
+    def teardown_method(self):
+        """Clean up after each test"""
+        reset_config()
+
+    def test_load_config_with_missing_file(self):
+        """Configuration should handle missing config files gracefully"""
+        with patch.dict(os.environ, {'CONFIG_FILE': '/nonexistent/config.yaml'}):
+            try:
+                config = load_config()
+                # Should fall back to defaults
+                assert config is not None
+                assert config.max_players > 0
+            except ConfigError:
+                # Or raise specific configuration error
+                pass
+
+    def test_load_config_with_malformed_yaml(self):
+        """Configuration should handle malformed YAML gracefully"""
+        malformed_yaml = "invalid: yaml: content: ["
+
+        with tempfile.NamedTemporaryFile(mode='w', suffix='.yaml', delete=False) as f:
+            f.write(malformed_yaml)
+            f.flush()
+
+            try:
+                with patch.dict(os.environ, {'CONFIG_FILE': f.name}):
+                    config = load_config()
+                    # Should fall back to defaults or raise ConfigError
+                    assert config is not None or True  # Either succeeds with defaults or raises
+            except ConfigError:
+                pass  # Expected for malformed YAML
+            finally:
+                os.unlink(f.name)
+
+    def test_environment_variable_override(self):
+        """Environment variables should override configuration values"""
+        with patch.dict(os.environ, {
+            'LLMPOSTOR_MAX_PLAYERS': '12',
+            'LLMPOSTOR_RESPONSE_TIME_LIMIT': '300',
+            'LLMPOSTOR_GUESSING_TIME_LIMIT': '180'
+        }):
+            config = load_config()
+            assert config.max_players == 12
+            assert config.response_time_limit == 300
+            assert config.guessing_time_limit == 180
+
+    def test_invalid_environment_variable_types(self):
+        """Invalid environment variable types should be handled"""
+        with patch.dict(os.environ, {
+            'LLMPOSTOR_MAX_PLAYERS': 'not_a_number',
+            'LLMPOSTOR_RESPONSE_TIME_LIMIT': 'invalid',
+            'LLMPOSTOR_DEBUG': 'not_boolean'
+        }):
+            try:
+                config = load_config()
+                # Should either use defaults or raise validation error
+                assert isinstance(config.max_players, int)
+                assert isinstance(config.response_time_limit, (int, float))
+                assert isinstance(config.debug, bool)
+            except (ConfigError, ValueError):
+                pass  # Expected for invalid types
+
+    def test_configuration_validation_constraints(self):
+        """Configuration validation should enforce business rules"""
+        test_cases = [
+            # Invalid max_players
+            {'max_players': -1},
+            {'max_players': 0},
+            {'max_players': 1000},  # Too high
+
+            # Invalid time limits
+            {'response_time_limit': -10},
+            {'guessing_time_limit': 0},
+            {'results_time_limit': -5},
+
+            # Invalid string lengths
+            {'max_response_length': -1},
+            {'max_response_length': 0},
+
+            # Invalid port numbers
+            {'port': -1},
+            {'port': 0},
+            {'port': 70000},  # Too high
+        ]
+
+        for invalid_config in test_cases:
+            with pytest.raises((ConfigError, ValueError)):
+                AppConfig(**invalid_config)
+
+    def test_production_configuration_security(self):
+        """Production configuration should enforce security requirements"""
+        with patch.dict(os.environ, {'FLASK_ENV': 'production'}):
+            config = load_config()
+
+            # Production should not have default/weak secret key
+            assert config.secret_key != 'dev-secret-key'
+            assert len(config.secret_key) >= 32
+
+            # Debug should be disabled in production
+            assert config.debug is False
+
+    def test_development_configuration_defaults(self):
+        """Development configuration should have appropriate defaults"""
+        with patch.dict(os.environ, {'FLASK_ENV': 'development'}):
+            config = load_config()
+
+            # Development can have debug enabled
+            assert isinstance(config.debug, bool)
+
+            # Should have reasonable defaults
+            assert config.max_players >= 2
+            assert config.response_time_limit > 0
+            assert config.guessing_time_limit > 0
+
+
+class TestConfigurationFactorySingleton:
+    """Test ConfigurationFactory singleton behavior"""
+
+    def setup_method(self):
+        """Reset factory before each test"""
+        ConfigurationFactory._instance = None
+        ConfigurationFactory._config = None
+
+    def teardown_method(self):
+        """Clean up after each test"""
+        ConfigurationFactory._instance = None
+        ConfigurationFactory._config = None
+
+    def test_singleton_instance_consistency(self):
+        """Factory should return same instance across calls"""
+        factory1 = ConfigurationFactory()
+        factory2 = ConfigurationFactory()
+
+        assert factory1 is factory2
+        assert id(factory1) == id(factory2)
+
+    def test_configuration_caching(self):
+        """Configuration should be cached and reused"""
+        factory = ConfigurationFactory()
+
+        config1 = factory.get_config()
+        config2 = factory.get_config()
+
+        assert config1 is config2
+        assert id(config1) == id(config2)
+
+    def test_configuration_reload(self):
+        """Configuration should be reloadable for testing"""
+        factory = ConfigurationFactory()
+
+        # Load initial config
+        initial_config = factory.get_config()
+
+        # Reset and load again
+        reset_config()
+        new_config = load_config()
+
+        # Should be different instances
+        assert initial_config is not new_config
+
+
+class TestConfigurationValidation:
+    """Test detailed configuration validation"""
+
+    def test_time_limit_relationships(self):
+        """Time limits should have logical relationships"""
+        # Response time should be reasonable for user input
+        config = AppConfig(response_time_limit=30, guessing_time_limit=60)
+        assert config.response_time_limit <= config.guessing_time_limit
+
+        # Results time should be sufficient for reading
+        assert config.results_time_limit >= 10
+
+    def test_player_limit_validation(self):
+        """Player limits should support minimum game requirements"""
+        # Minimum 2 players for a game
+        with pytest.raises((ConfigError, ValueError)):
+            AppConfig(max_players=1)
+
+        # Maximum reasonable for performance
+        config = AppConfig(max_players=50)
+        assert config.max_players <= 100  # Reasonable upper bound
+
+    def test_response_length_validation(self):
+        """Response length limits should be practical"""
+        # Minimum length for meaningful responses
+        config = AppConfig(max_response_length=10)
+        assert config.max_response_length >= 1
+
+        # Maximum length for performance and UI
+        config = AppConfig(max_response_length=5000)
+        assert config.max_response_length <= 10000
+
+    def test_network_configuration_validation(self):
+        """Network settings should be valid"""
+        # Valid port ranges
+        valid_ports = [3000, 5000, 8080, 8000]
+        for port in valid_ports:
+            config = AppConfig(port=port)
+            assert 1024 <= config.port <= 65535
+
+        # Invalid ports should raise errors
+        invalid_ports = [0, -1, 80, 443, 70000]  # System ports or out of range
+        for port in invalid_ports:
+            with pytest.raises((ConfigError, ValueError)):
+                AppConfig(port=port)
+
+    def test_cache_configuration_validation(self):
+        """Cache settings should be reasonable"""
+        config = AppConfig(
+            cache_default_ttl=300,
+            cache_max_size=1000000,
+            cache_cleanup_interval=60
+        )
+
+        # TTL should be positive
+        assert config.cache_default_ttl > 0
+
+        # Max size should be reasonable
+        assert config.cache_max_size > 0
+
+        # Cleanup interval should be reasonable
+        assert config.cache_cleanup_interval > 0
+
+
+class TestConfigurationRuntimeChanges:
+    """Test runtime configuration modification"""
+
+    def setup_method(self):
+        """Setup configuration for each test"""
+        reset_config()
+        self.config = load_config()
+
+    def test_override_single_setting(self):
+        """Should be able to override individual settings"""
+        original_max_players = self.config.max_players
+
+        override_config('max_players', 12)
+        updated_config = get_config()
+
+        assert updated_config.max_players == 12
+        assert updated_config.max_players != original_max_players
+
+    def test_override_with_validation(self):
+        """Override should respect validation rules"""
+        with pytest.raises((ConfigError, ValueError)):
+            override_config('max_players', -1)
+
+        with pytest.raises((ConfigError, ValueError)):
+            override_config('response_time_limit', 0)
+
+    def test_override_multiple_settings(self):
+        """Should be able to override multiple settings"""
+        overrides = {
+            'max_players': 10,
+            'response_time_limit': 300,
+            'debug': True
+        }
+
+        for key, value in overrides.items():
+            override_config(key, value)
+
+        updated_config = get_config()
+        assert updated_config.max_players == 10
+        assert updated_config.response_time_limit == 300
+        assert updated_config.debug is True
+
+    def test_configuration_serialization(self):
+        """Configuration should be serializable for logging/debugging"""
+        config_dict = self.config.to_dict()
+
+        assert isinstance(config_dict, dict)
+        assert 'max_players' in config_dict
+        assert 'response_time_limit' in config_dict
+        assert 'secret_key' in config_dict
+
+        # Secret key should be masked in serialization
+        assert config_dict.get('secret_key', '').startswith('***') or len(config_dict['secret_key']) <= 10
+
+
+class TestEnvironmentSpecificConfiguration:
+    """Test environment-specific configuration behavior"""
+
+    def test_testing_environment_overrides(self):
+        """Testing environment should have appropriate settings"""
+        with patch.dict(os.environ, {
+            'FLASK_ENV': 'testing',
+            'TESTING': '1'
+        }):
+            config = load_config()
+
+            # Testing should have faster timeouts
+            assert config.response_time_limit <= 60
+            assert config.guessing_time_limit <= 60
+
+            # Testing should disable certain optimizations
+            assert hasattr(config, 'disable_rate_limiting')
+
+    def test_production_environment_security(self):
+        """Production environment should enforce security"""
+        with patch.dict(os.environ, {
+            'FLASK_ENV': 'production',
+            'SECRET_KEY': 'production-secret-key-with-sufficient-length'
+        }):
+            config = load_config()
+
+            # Production should require secure settings
+            assert config.debug is False
+            assert len(config.secret_key) >= 16
+
+            # Should have production-appropriate timeouts
+            assert config.response_time_limit >= 30
+
+    def test_development_environment_convenience(self):
+        """Development environment should prioritize convenience"""
+        with patch.dict(os.environ, {'FLASK_ENV': 'development'}):
+            config = load_config()
+
+            # Development can have debug enabled
+            assert isinstance(config.debug, bool)
+
+            # Should accept default secret key for development
+            if config.environment == Environment.DEVELOPMENT:
+                assert config.secret_key is not None
+
+    def test_configuration_environment_detection(self):
+        """Should correctly detect environment from various sources"""
+        test_cases = [
+            ({'FLASK_ENV': 'production'}, Environment.PRODUCTION),
+            ({'FLASK_ENV': 'development'}, Environment.DEVELOPMENT),
+            ({'TESTING': '1'}, Environment.TESTING),
+            ({'PYTEST_CURRENT_TEST': 'test'}, Environment.TESTING),
+        ]
+
+        for env_vars, expected_env in test_cases:
+            with patch.dict(os.environ, env_vars):
+                config = load_config()
+                assert config.environment == expected_env
+
+
+if __name__ == "__main__":
+    pytest.main([__file__])

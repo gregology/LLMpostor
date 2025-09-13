@@ -99,7 +99,8 @@ class ValidationService:
                 "Room ID can only contain letters, numbers, hyphens, and underscores"
             )
         
-        return room_id
+        # Normalize to lowercase to prevent case sensitivity issues
+        return room_id.lower()
     
     def validate_player_name(self, player_name: str) -> str:
         """
