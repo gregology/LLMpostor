@@ -11,7 +11,7 @@ from functools import wraps
 from flask import request
 from flask_socketio import emit
 
-from src.container import get_container
+from container import get_container
 
 logger = logging.getLogger(__name__)
 

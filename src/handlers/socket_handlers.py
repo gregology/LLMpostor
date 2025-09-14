@@ -6,10 +6,11 @@ for the new handler architecture using dependency injection and event routing.
 """
 
 import logging
+import os
 from flask import request
 from flask_socketio import emit
 
-from src.container import register_services, get_container
+from container import get_container
 from src.services.error_response_factory import with_error_handling
 from .socket_event_router import setup_router, get_router
 from .room_connection_handler import RoomConnectionHandler
@@ -22,8 +23,7 @@ logger = logging.getLogger(__name__)
 def register_socket_handlers(socketio_instance, services, config):
     """Register all socket handlers with the SocketIO instance using the new architecture."""
 
-    # Register services and config with dependency injection container
-    register_services(services, config)
+    # Services are already registered via the main container
 
     # Set up the event router
     router = setup_router(socketio_instance)
@@ -62,11 +62,11 @@ def register_socket_handlers(socketio_instance, services, config):
     logger.info(f"Registered {len(router.get_registered_events())} socket event handlers")
 
 
-def handle_connect():
+def handle_connect(auth=None):
     """Handle client connection with optional Origin enforcement in production."""
     container = get_container()
-    app_config = container.get_config('app_config')
-    allowed_origins_env = container.get_config('allowed_origins_env')
+    app_config = container._get_app_config()
+    allowed_origins_env = os.environ.get('SOCKETIO_CORS_ALLOWED_ORIGINS', '')
 
     origin = request.headers.get('Origin')
     # Enforce Origin in production if a CORS allowlist is configured
@@ -80,13 +80,13 @@ def handle_connect():
     emit('connected', {'status': 'Connected to LLMpostor server'})
 
 
-def handle_disconnect():
+def handle_disconnect(reason=None):
     """Handle client disconnection with game flow cleanup."""
     container = get_container()
-    session_service = container.get_service('session_service')
-    room_manager = container.get_service('room_manager')
-    auto_flow_service = container.get_service('auto_flow_service')
-    broadcast_service = container.get_service('broadcast_service')
+    session_service = container.get('SessionService')
+    room_manager = container.get('RoomManager')
+    auto_flow_service = container.get('AutoGameFlowService')
+    broadcast_service = container.get('BroadcastService')
 
     logger.info(f'Client disconnected: {request.sid}')
 

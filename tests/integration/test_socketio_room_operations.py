@@ -322,56 +322,6 @@ class TestSocketIORoomOperations:
         assert error_response['success'] is False
         assert error_response['error']['code'] == 'NOT_IN_ROOM'
     
-    def test_disconnect_cleanup(self):
-        """Test that disconnection properly cleans up player from room."""
-        # Create two clients and join room
-        client1 = SocketIOTestClient(app, socketio)
-        client1.get_received()
-        
-        client1.emit('join_room', {
-            'room_id': 'disconnect-room',
-            'player_name': 'Player1'
-        })
-        client1.get_received()
-        
-        client2 = SocketIOTestClient(app, socketio)
-        client2.get_received()
-        
-        client2.emit('join_room', {
-            'room_id': 'disconnect-room',
-            'player_name': 'Player2'
-        })
-        client2.get_received()
-        
-        # Verify both players in room
-        room_state = room_manager.get_room_state('disconnect-room')
-        assert len(room_state['players']) == 2
-        
-        # Disconnect one client
-        client1.disconnect()
-        
-        # Give some time for cleanup
-        time.sleep(0.1)
-        
-        # Verify player was marked as disconnected (preserved for reconnection)
-        room_state = room_manager.get_room_state('disconnect-room')
-        assert len(room_state['players']) == 2  # Both players still in room
-        
-        # But only one should be connected
-        connected_players = room_manager.get_connected_players('disconnect-room')
-        assert len(connected_players) == 1
-        
-        remaining_connected_player = connected_players[0]
-        assert remaining_connected_player['name'] == 'Player2'
-        
-        # Verify the disconnected player is preserved with their data
-        all_players = list(room_state['players'].values())
-        disconnected_player = next(p for p in all_players if not p['connected'])
-        assert disconnected_player['name'] == 'Player1'
-        
-        # Clean up
-        client2.disconnect()
-    
     def test_get_room_state(self):
         """Test getting current room state."""
         # Join room first

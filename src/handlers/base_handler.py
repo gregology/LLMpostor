@@ -11,7 +11,7 @@ from typing import Any, Dict, Optional
 from flask import request
 from flask_socketio import emit, join_room, leave_room
 
-from src.container import get_container
+from container import get_container
 from src.core.errors import ErrorCode, ValidationError
 
 logger = logging.getLogger(__name__)
@@ -31,42 +31,42 @@ class BaseHandler(ABC):
     @property
     def room_manager(self):
         """Get the room manager service."""
-        return self._container.get_service('room_manager')
+        return self._container.get('RoomManager')
 
     @property
     def game_manager(self):
         """Get the game manager service."""
-        return self._container.get_service('game_manager')
+        return self._container.get('GameManager')
 
     @property
     def content_manager(self):
         """Get the content manager service."""
-        return self._container.get_service('content_manager')
+        return self._container.get('ContentManager')
 
     @property
     def validation_service(self):
         """Get the validation service."""
-        return self._container.get_service('validation_service')
+        return self._container.get('ValidationService')
 
     @property
     def error_response_factory(self):
         """Get the error response factory service."""
-        return self._container.get_service('error_response_factory')
+        return self._container.get('ErrorResponseFactory')
 
     @property
     def session_service(self):
         """Get the session service."""
-        return self._container.get_service('session_service')
+        return self._container.get('SessionService')
 
     @property
     def broadcast_service(self):
         """Get the broadcast service."""
-        return self._container.get_service('broadcast_service')
+        return self._container.get('BroadcastService')
 
     @property
     def auto_flow_service(self):
         """Get the auto flow service."""
-        return self._container.get_service('auto_flow_service')
+        return self._container.get('AutoGameFlowService')
 
     @property
     def app_config(self):

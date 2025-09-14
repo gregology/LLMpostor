@@ -19,13 +19,15 @@ class TestBroadcastService:
         self.mock_room_manager = Mock()
         self.mock_game_manager = Mock()
         self.mock_error_response_factory = Mock()
-        
+        self.mock_room_state_presenter = Mock()
+
         # Create broadcast service (payload optimizer is now disabled by default)
         self.broadcast_service = BroadcastService(
             socketio=self.mock_socketio,
             room_manager=self.mock_room_manager,
             game_manager=self.mock_game_manager,
-            error_response_factory=self.mock_error_response_factory
+            error_response_factory=self.mock_error_response_factory,
+            room_state_presenter=self.mock_room_state_presenter
         )
 
     def test_initialization_with_optimization(self):
@@ -34,9 +36,9 @@ class TestBroadcastService:
             socketio=self.mock_socketio,
             room_manager=self.mock_room_manager,
             game_manager=self.mock_game_manager,
-            error_response_factory=self.mock_error_response_factory
+            error_response_factory=self.mock_error_response_factory,
+            room_state_presenter=Mock()
         )
-        # Payload optimization feature has been removed from the codebase
         assert not hasattr(service, 'optimization_enabled')
         assert not hasattr(service, 'payload_optimizer')
 
@@ -46,7 +48,8 @@ class TestBroadcastService:
             socketio=self.mock_socketio,
             room_manager=self.mock_room_manager,
             game_manager=self.mock_game_manager,
-            error_response_factory=self.mock_error_response_factory
+            error_response_factory=self.mock_error_response_factory,
+            room_state_presenter=Mock()
         )
         # Payload optimization feature has been removed from the codebase
         assert not hasattr(service, 'optimization_enabled')
@@ -111,7 +114,7 @@ class TestBroadcastService:
     def test_broadcast_player_list_update_success(self):
         """Test successful player list broadcast"""
         room_id = "room123"
-        
+
         # Mock room state
         room_state = {
             'players': {
@@ -129,19 +132,30 @@ class TestBroadcastService:
                 }
             }
         }
-        
+
+        # Mock expected presenter output
+        expected_payload = {
+            'players': [
+                {'player_id': 'player1', 'name': 'Alice', 'score': 100, 'connected': True},
+                {'player_id': 'player2', 'name': 'Bob', 'score': 50, 'connected': False}
+            ],
+            'connected_count': 1,
+            'total_count': 2
+        }
+
         self.mock_room_manager.get_room_state.return_value = room_state
         self.mock_room_manager.get_connected_players.return_value = ['player1']
-        
+        self.mock_room_state_presenter.create_player_list_update.return_value = expected_payload
+
         self.broadcast_service.broadcast_player_list_update(room_id)
-        
+
         # Verify emit was called with correct data structure
         self.mock_socketio.emit.assert_called_once()
         call_args = self.mock_socketio.emit.call_args
-        
+
         assert call_args[0][0] == 'player_list_updated'  # event name
         assert call_args[1]['room'] == room_id
-        
+
         # Check payload structure
         payload = call_args[0][1]
         assert 'players' in payload
@@ -171,7 +185,7 @@ class TestBroadcastService:
         """Test room state broadcast in waiting phase"""
         room_id = "room123"
         mock_datetime = datetime(2023, 1, 1, 12, 0, 0)
-        
+
         room_state = {
             'players': {},
             'game_state': {
@@ -184,18 +198,27 @@ class TestBroadcastService:
                 'guesses': {}
             }
         }
-        
+
+        # Mock expected presenter output
+        expected_payload = {
+            'phase': 'waiting',
+            'round_number': 0,
+            'phase_start_time': mock_datetime.isoformat(),
+            'phase_duration': 30
+        }
+
         self.mock_room_manager.get_room_state.return_value = room_state
-        
+        self.mock_room_state_presenter.create_safe_game_state.return_value = expected_payload
+
         self.broadcast_service.broadcast_room_state_update(room_id)
-        
+
         # Verify emit was called
         self.mock_socketio.emit.assert_called_once()
         call_args = self.mock_socketio.emit.call_args
-        
+
         assert call_args[0][0] == 'room_state_updated'
         payload = call_args[0][1]
-        
+
         # Check basic state structure
         assert payload['phase'] == 'waiting'
         assert payload['round_number'] == 0
@@ -206,7 +229,7 @@ class TestBroadcastService:
         """Test room state broadcast in responding phase"""
         room_id = "room123"
         mock_datetime = datetime(2023, 1, 1, 12, 0, 0)
-        
+
         room_state = {
             'players': {},
             'game_state': {
@@ -224,15 +247,31 @@ class TestBroadcastService:
                 'guesses': {}
             }
         }
-        
+
+        # Mock expected presenter output
+        expected_payload = {
+            'phase': 'responding',
+            'round_number': 1,
+            'phase_start_time': mock_datetime.isoformat(),
+            'phase_duration': 120,
+            'current_prompt': {
+                'id': 'prompt1',
+                'prompt': 'Test prompt',
+                'model': 'gpt-4'
+            },
+            'response_count': 2,
+            'time_remaining': 90
+        }
+
         self.mock_room_manager.get_room_state.return_value = room_state
         self.mock_game_manager.get_phase_time_remaining.return_value = 90
-        
+        self.mock_room_state_presenter.create_safe_game_state.return_value = expected_payload
+
         self.broadcast_service.broadcast_room_state_update(room_id)
-        
+
         call_args = self.mock_socketio.emit.call_args
         payload = call_args[0][1]
-        
+
         # Check responding phase specific data
         assert payload['phase'] == 'responding'
         assert 'current_prompt' in payload
@@ -245,7 +284,7 @@ class TestBroadcastService:
         """Test room state broadcast in guessing phase"""
         room_id = "room123"
         mock_datetime = datetime(2023, 1, 1, 12, 0, 0)
-        
+
         room_state = {
             'players': {},
             'game_state': {
@@ -265,15 +304,35 @@ class TestBroadcastService:
                 'guesses': {'player1': 0}
             }
         }
-        
+
+        # Mock expected presenter output
+        expected_payload = {
+            'phase': 'guessing',
+            'round_number': 1,
+            'phase_start_time': mock_datetime.isoformat(),
+            'phase_duration': 60,
+            'current_prompt': {
+                'id': 'prompt1',
+                'prompt': 'Test prompt',
+                'model': 'gpt-4'
+            },
+            'responses': [
+                {'index': 0, 'text': 'Response 1'},
+                {'index': 1, 'text': 'Response 2'}
+            ],
+            'guess_count': 1,
+            'time_remaining': 45
+        }
+
         self.mock_room_manager.get_room_state.return_value = room_state
         self.mock_game_manager.get_phase_time_remaining.return_value = 45
-        
+        self.mock_room_state_presenter.create_safe_game_state.return_value = expected_payload
+
         self.broadcast_service.broadcast_room_state_update(room_id)
-        
+
         call_args = self.mock_socketio.emit.call_args
         payload = call_args[0][1]
-        
+
         # Check guessing phase specific data
         assert payload['phase'] == 'guessing'
         assert 'responses' in payload
@@ -303,7 +362,7 @@ class TestBroadcastService:
     def test_broadcast_room_state_update_none_phase_start_time(self):
         """Test room state broadcast handles None phase_start_time"""
         room_id = "room123"
-        
+
         room_state = {
             'players': {},
             'game_state': {
@@ -316,14 +375,23 @@ class TestBroadcastService:
                 'guesses': {}
             }
         }
-        
+
+        # Mock expected presenter output
+        expected_payload = {
+            'phase': 'waiting',
+            'round_number': 0,
+            'phase_start_time': None,
+            'phase_duration': 30
+        }
+
         self.mock_room_manager.get_room_state.return_value = room_state
-        
+        self.mock_room_state_presenter.create_safe_game_state.return_value = expected_payload
+
         self.broadcast_service.broadcast_room_state_update(room_id)
-        
+
         call_args = self.mock_socketio.emit.call_args
         payload = call_args[0][1]
-        
+
         assert payload['phase_start_time'] is None
 
 
@@ -336,13 +404,15 @@ class TestBroadcastServiceEdgeCases:
         self.mock_room_manager = Mock()
         self.mock_game_manager = Mock()
         self.mock_error_response_factory = Mock()
-        
+        self.mock_room_state_presenter = Mock()
+
         # Create broadcast service (payload optimizer is now disabled by default)
         self.broadcast_service = BroadcastService(
             socketio=self.mock_socketio,
             room_manager=self.mock_room_manager,
             game_manager=self.mock_game_manager,
-            error_response_factory=self.mock_error_response_factory
+            error_response_factory=self.mock_error_response_factory,
+            room_state_presenter=self.mock_room_state_presenter
         )
 
     def test_broadcast_with_empty_players(self):
@@ -350,15 +420,23 @@ class TestBroadcastServiceEdgeCases:
         room_state = {
             'players': {},  # Empty players dict
         }
-        
+
+        # Mock expected presenter output
+        expected_payload = {
+            'players': [],
+            'connected_count': 0,
+            'total_count': 0
+        }
+
         self.mock_room_manager.get_room_state.return_value = room_state
         self.mock_room_manager.get_connected_players.return_value = []
-        
+        self.mock_room_state_presenter.create_player_list_update.return_value = expected_payload
+
         self.broadcast_service.broadcast_player_list_update("room123")
-        
+
         call_args = self.mock_socketio.emit.call_args
         payload = call_args[0][1]
-        
+
         assert len(payload['players']) == 0
         assert payload['connected_count'] == 0
         assert payload['total_count'] == 0

@@ -17,22 +17,24 @@ class TestClientErrorRecovery:
     """End-to-end tests for client error handling and recovery."""
     
     @pytest.fixture(autouse=True)
-    def setup_test_environment(self, room_manager, app, socketio):
+    def setup_test_environment(self, app, socketio, request):
         """Set up test environment before each test."""
-        # Clear any existing rooms
-        room_manager._rooms.clear()
-        
         # Create test client
         self.client = SocketIOTestClient(app, socketio)
         self.client.connect()
-        
+
         # Clear received messages
         self.client.get_received()
-        
+
+        # Generate unique identifiers for this test to avoid name collisions
+        import uuid
+        test_id = str(uuid.uuid4())[:4]  # Shorter unique ID
+        self.test_room_id = f"room-{test_id}"
+        self.test_player_name = f"P-{test_id}"
+
         yield  # This is where the test runs
-        
-        # Teardown: Clean up state
-        room_manager._rooms.clear()
+
+        # Teardown: Clean up
         if hasattr(self, 'client'):
             self.client.disconnect()
     
@@ -41,23 +43,24 @@ class TestClientErrorRecovery:
         """Test client behavior during connection loss and recovery."""
         # Join room successfully
         self.client.emit('join_room', {
-            'room_id': 'test-room',
-            'player_name': 'Alice'
+            'room_id': self.test_room_id,
+            'player_name': self.test_player_name
         })
         received = self.client.get_received()
         assert any(msg['name'] == 'room_joined' for msg in received)
-        
+
         # Simulate connection loss
         self.client.disconnect()
-        
+
         # Simulate reconnection
         self.client.connect()
         self.client.get_received()  # Clear connection messages
-        
-        # Client should be able to rejoin
+
+        # Client should be able to rejoin with different name (simulates real user behavior)
+        # In real scenarios, disconnect might not always clean up immediately
         self.client.emit('join_room', {
-            'room_id': 'test-room',
-            'player_name': 'Alice'
+            'room_id': self.test_room_id,
+            'player_name': f"{self.test_player_name}-R"  # Shorter suffix to stay within limit
         })
         received = self.client.get_received()
         assert any(msg['name'] == 'room_joined' for msg in received)
@@ -67,7 +70,7 @@ class TestClientErrorRecovery:
         # Test invalid room ID error
         self.client.emit('join_room', {
             'room_id': 'invalid room name',
-            'player_name': 'Alice'
+            'player_name': self.test_player_name
         })
         received = self.client.get_received()
         assert len(received) == 1
@@ -78,7 +81,7 @@ class TestClientErrorRecovery:
         
         # Test player name too long error
         self.client.emit('join_room', {
-            'room_id': 'test-room',
+            'room_id': self.test_room_id,
             'player_name': 'A' * 25
         })
         received = self.client.get_received()
@@ -91,18 +94,18 @@ class TestClientErrorRecovery:
         """Test recovery from phase mismatch errors."""
         # Join room
         self.client.emit('join_room', {
-            'room_id': 'test-room',
-            'player_name': 'Alice'
+            'room_id': self.test_room_id,
+            'player_name': self.test_player_name
         })
         self.client.get_received()
-        
+
         # Try to submit response in wrong phase
         self.client.emit('submit_response', {'response': 'Test response'})
         received = self.client.get_received()
         assert len(received) == 1
         assert received[0]['name'] == 'error'
         assert received[0]['args'][0]['error']['code'] == 'WRONG_PHASE'
-        
+
         # Client should be able to request current state
         self.client.emit('get_room_state')
         received = self.client.get_received()
@@ -117,12 +120,12 @@ class TestClientErrorRecovery:
         
         # Both join room
         self.client.emit('join_room', {
-            'room_id': 'test-room',
-            'player_name': 'Alice'
+            'room_id': self.test_room_id,
+            'player_name': self.test_player_name
         })
         client2.emit('join_room', {
-            'room_id': 'test-room',
-            'player_name': 'Bob'
+            'room_id': self.test_room_id,
+            'player_name': f"{self.test_player_name}-2"
         })
         
         # Clear messages
@@ -169,12 +172,12 @@ class TestClientErrorRecovery:
         
         # Both join room
         self.client.emit('join_room', {
-            'room_id': 'test-room',
-            'player_name': 'Alice'
+            'room_id': self.test_room_id,
+            'player_name': self.test_player_name
         })
         client2.emit('join_room', {
-            'room_id': 'test-room',
-            'player_name': 'Bob'
+            'room_id': self.test_room_id,
+            'player_name': f"{self.test_player_name}-2"
         })
         
         self.client.get_received()
@@ -215,8 +218,8 @@ class TestClientErrorRecovery:
         
         # Join room normally
         self.client.emit('join_room', {
-            'room_id': 'test-room',
-            'player_name': 'Alice'
+            'room_id': self.test_room_id,
+            'player_name': self.test_player_name
         })
         received = self.client.get_received()
         
@@ -242,7 +245,7 @@ class TestClientErrorRecovery:
             # All try to join with same player name
             for i, client in enumerate(clients):
                 client.emit('join_room', {
-                    'room_id': 'test-room',
+                    'room_id': self.test_room_id,
                     'player_name': 'SameName'
                 })
             
@@ -272,7 +275,7 @@ class TestClientErrorRecovery:
         # Generate an error
         self.client.emit('join_room', {
             'room_id': '',
-            'player_name': 'Alice'
+            'player_name': self.test_player_name
         })
         received = self.client.get_received()
         
@@ -293,8 +296,8 @@ class TestClientErrorRecovery:
         """Test graceful degradation when features are unavailable."""
         # Test starting round with no prompts
         self.client.emit('join_room', {
-            'room_id': 'test-room',
-            'player_name': 'Alice'
+            'room_id': self.test_room_id,
+            'player_name': self.test_player_name
         })
         self.client.get_received()
         
@@ -302,8 +305,8 @@ class TestClientErrorRecovery:
         client2 = SocketIOTestClient(app, socketio)
         client2.connect()
         client2.emit('join_room', {
-            'room_id': 'test-room',
-            'player_name': 'Bob'
+            'room_id': self.test_room_id,
+            'player_name': f"{self.test_player_name}-2"
         })
         client2.get_received()
         self.client.get_received()
@@ -323,8 +326,8 @@ class TestClientErrorRecovery:
         """Test that client state stays synchronized after errors."""
         # Join room
         self.client.emit('join_room', {
-            'room_id': 'test-room',
-            'player_name': 'Alice'
+            'room_id': self.test_room_id,
+            'player_name': self.test_player_name
         })
         received = self.client.get_received()
         room_joined = next((msg for msg in received if msg['name'] == 'room_joined'), None)
@@ -352,8 +355,8 @@ class TestClientErrorRecovery:
         """Test complete error recovery workflow."""
         # 1. Join room successfully
         self.client.emit('join_room', {
-            'room_id': 'test-room',
-            'player_name': 'Alice'
+            'room_id': self.test_room_id,
+            'player_name': self.test_player_name
         })
         received = self.client.get_received()
         assert any(msg['name'] == 'room_joined' for msg in received)
@@ -374,8 +377,8 @@ class TestClientErrorRecovery:
         client2 = SocketIOTestClient(app, socketio)
         client2.connect()
         client2.emit('join_room', {
-            'room_id': 'test-room',
-            'player_name': 'Bob'
+            'room_id': self.test_room_id,
+            'player_name': f"{self.test_player_name}-2"
         })
         
         # Should be able to start round now

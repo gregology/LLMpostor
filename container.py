@@ -121,13 +121,12 @@ class ServiceContainer:
         from src.room_manager import RoomManager
         from src.game_manager import GameManager
         from src.content_manager import ContentManager
-        # Removed ErrorHandler - replaced with direct service usage
         from src.services.validation_service import ValidationService
         from src.services.error_response_factory import ErrorResponseFactory
         from src.services.session_service import SessionService
         from src.services.broadcast_service import BroadcastService
         from src.services.auto_game_flow_service import AutoGameFlowService
-        # Removed unused services: MetricsService, PayloadOptimizer, DatabaseOptimizer
+        from src.services.room_state_presenter import RoomStatePresenter
         
         # Configuration Factory (highest priority - no dependencies)
         from config_factory import ConfigurationFactory
@@ -145,10 +144,13 @@ class ServiceContainer:
         
         # Game manager - depends on room manager
         self.register('GameManager', GameManager, dependencies=['RoomManager'])
-        
-        # Broadcast service - depends on socketio, room_manager, game_manager, error_response_factory
+
+        # Room state presenter - depends on game manager
+        self.register('RoomStatePresenter', RoomStatePresenter, dependencies=['GameManager'])
+
+        # Broadcast service - depends on socketio, room_manager, game_manager, error_response_factory, room_state_presenter
         # Note: socketio will be injected as external dependency
-        self.register('BroadcastService', BroadcastService, dependencies=['socketio', 'RoomManager', 'GameManager', 'ErrorResponseFactory'])
+        self.register('BroadcastService', BroadcastService, dependencies=['socketio', 'RoomManager', 'GameManager', 'ErrorResponseFactory', 'RoomStatePresenter'])
         
         # Auto game flow - depends on broadcast_service, game_manager, room_manager
         self.register('AutoGameFlowService', AutoGameFlowService, dependencies=['BroadcastService', 'GameManager', 'RoomManager'])
@@ -164,7 +166,6 @@ class ServiceContainer:
             # Fallback if config not available
             return None
     
-    # Removed unused service enablement methods
     
     def set_external_dependency(self, name: str, instance: Any) -> 'ServiceContainer':
         """
@@ -305,6 +306,12 @@ def get_container() -> ServiceContainer:
     if _app_container is None:
         _app_container = ServiceContainer()
     return _app_container
+
+
+def reset_container():
+    """Reset the global container (primarily for testing)"""
+    global _app_container
+    _app_container = None
 
 
 def configure_container(socketio=None, config=None) -> ServiceContainer:

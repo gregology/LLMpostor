@@ -172,22 +172,9 @@ class TestAppConfig:
             AppConfig(max_events_per_second=60, max_events_per_minute=30)
     
     def test_config_validation_cache_settings(self):
-        """Test validation for cache settings"""
-        # Valid values
-        config = AppConfig(cache_max_memory_bytes=10*1024*1024, cache_default_ttl_seconds=300)
-        assert config.cache_max_memory_bytes == 10*1024*1024
-        assert config.cache_default_ttl_seconds == 300
-        
-        # Invalid: memory too small
-        with pytest.raises(ConfigError, match="Invalid cache_max_memory_bytes"):
-            AppConfig(cache_max_memory_bytes=512*1024)  # 512KB, below 1MB minimum
-        
-        # Invalid: TTL too small
-        with pytest.raises(ConfigError, match="Invalid cache_default_ttl_seconds"):
-            AppConfig(cache_default_ttl_seconds=0)
-    
-    # Removed test for deleted metrics settings
-    
+        """Test validation for cache settings (removed - cache settings no longer exist)"""
+        config = AppConfig()
+
     def test_environment_properties(self):
         """Test environment property methods"""
         dev_config = AppConfig(environment=Environment.DEVELOPMENT)
@@ -272,9 +259,7 @@ class TestConfigurationFactory:
             'FINAL_WARNING_THRESHOLD_SECONDS': '15',
             'MAX_EVENTS_PER_SECOND': '20',
             'MAX_EVENTS_PER_MINUTE': '200',
-            'COMPRESSION_THRESHOLD_BYTES': '1024',
-            'CACHE_MAX_MEMORY_BYTES': str(10*1024*1024),  # 10MB
-            'CACHE_DEFAULT_TTL_SECONDS': '300'
+            'COMPRESSION_THRESHOLD_BYTES': '1024'
         }
         
         with patch.dict(os.environ, env_vars, clear=True):
@@ -288,8 +273,6 @@ class TestConfigurationFactory:
         assert config.max_events_per_second == 20
         assert config.max_events_per_minute == 200
         assert config.compression_threshold_bytes == 1024
-        assert config.cache_max_memory_bytes == 10*1024*1024
-        assert config.cache_default_ttl_seconds == 300
     
     def test_load_from_environment_with_prefix(self):
         """Test loading configuration with environment variable prefix"""
