@@ -5,11 +5,6 @@ Tests the current service initialization patterns before refactoring to service 
 
 import pytest
 from unittest.mock import Mock, patch, MagicMock
-import sys
-import os
-
-# Add src to path for imports
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..', 'src'))
 
 from src.room_manager import RoomManager
 from src.game_manager import GameManager
@@ -49,7 +44,12 @@ class TestServiceInitializationOrder:
         
         # Services initialization - mirrors app.py lines 41-42, 55
         session_service = SessionService()
-        broadcast_service = BroadcastService(mock_socketio, room_manager, game_manager, error_handler)
+
+        # Import RoomStatePresenter and create instance
+        from src.services.room_state_presenter import RoomStatePresenter
+        room_state_presenter = RoomStatePresenter(game_manager)
+
+        broadcast_service = BroadcastService(mock_socketio, room_manager, game_manager, error_handler, room_state_presenter)
         auto_flow_service = AutoGameFlowService(broadcast_service, game_manager, room_manager)
         
         assert session_service is not None
@@ -71,7 +71,11 @@ class TestServiceInitializationOrder:
         mock_socketio = Mock()
         
         # BroadcastService depends on game_manager
-        broadcast_service = BroadcastService(mock_socketio, room_manager, game_manager, error_handler)
+        # Import RoomStatePresenter and create instance
+        from src.services.room_state_presenter import RoomStatePresenter
+        room_state_presenter = RoomStatePresenter(game_manager)
+
+        broadcast_service = BroadcastService(mock_socketio, room_manager, game_manager, error_handler, room_state_presenter)
         
         # AutoGameFlowService depends on both broadcast_service AND game_manager
         auto_flow_service = AutoGameFlowService(broadcast_service, game_manager, room_manager)
@@ -107,7 +111,11 @@ class TestServiceDependencyValidation:
         error_handler = ErrorResponseFactory()
         mock_socketio = Mock()
         
-        broadcast_service = BroadcastService(mock_socketio, room_manager, game_manager, error_handler)
+        # Import RoomStatePresenter and create instance
+        from src.services.room_state_presenter import RoomStatePresenter
+        room_state_presenter = RoomStatePresenter(game_manager)
+
+        broadcast_service = BroadcastService(mock_socketio, room_manager, game_manager, error_handler, room_state_presenter)
         
         # Verify all dependencies are stored
         assert broadcast_service.socketio is mock_socketio
@@ -119,7 +127,7 @@ class TestServiceDependencyValidation:
         """Test BroadcastService with missing dependencies."""
         with pytest.raises(TypeError):
             BroadcastService()
-        
+
         with pytest.raises(TypeError):
             BroadcastService(Mock())
 
@@ -129,7 +137,11 @@ class TestServiceDependencyValidation:
         game_manager = GameManager(room_manager)
         error_handler = ErrorResponseFactory()
         mock_socketio = Mock()
-        broadcast_service = BroadcastService(mock_socketio, room_manager, game_manager, error_handler)
+        # Import RoomStatePresenter and create instance
+        from src.services.room_state_presenter import RoomStatePresenter
+        room_state_presenter = RoomStatePresenter(game_manager)
+
+        broadcast_service = BroadcastService(mock_socketio, room_manager, game_manager, error_handler, room_state_presenter)
         
         auto_flow_service = AutoGameFlowService(broadcast_service, game_manager, room_manager)
         
@@ -150,8 +162,13 @@ class TestServiceInteraction:
         self.error_handler = ErrorResponseFactory()
         self.mock_socketio = Mock()
         self.session_service = SessionService()
+
+        # Import RoomStatePresenter and create instance
+        from src.services.room_state_presenter import RoomStatePresenter
+        self.room_state_presenter = RoomStatePresenter(self.game_manager)
+
         self.broadcast_service = BroadcastService(
-            self.mock_socketio, self.room_manager, self.game_manager, self.error_handler
+            self.mock_socketio, self.room_manager, self.game_manager, self.error_handler, self.room_state_presenter
         )
         self.auto_flow_service = AutoGameFlowService(
             self.broadcast_service, self.game_manager, self.room_manager
@@ -250,7 +267,11 @@ class TestServiceCleanup:
         game_manager = GameManager(room_manager)
         error_handler = ErrorResponseFactory()
         mock_socketio = Mock()
-        broadcast_service = BroadcastService(mock_socketio, room_manager, game_manager, error_handler)
+        # Import RoomStatePresenter and create instance
+        from src.services.room_state_presenter import RoomStatePresenter
+        room_state_presenter = RoomStatePresenter(game_manager)
+
+        broadcast_service = BroadcastService(mock_socketio, room_manager, game_manager, error_handler, room_state_presenter)
         
         auto_flow_service = AutoGameFlowService(broadcast_service, game_manager, room_manager)
         
@@ -285,7 +306,11 @@ class TestServiceErrorHandling:
         
         # BroadcastService currently accepts any objects and doesn't validate types
         # This tests current behavior - no exception thrown during initialization
-        broadcast_service = BroadcastService("invalid", room_manager, game_manager, None)
+        # Import RoomStatePresenter and create instance
+        from src.services.room_state_presenter import RoomStatePresenter
+        room_state_presenter = RoomStatePresenter(game_manager)
+
+        broadcast_service = BroadcastService("invalid", room_manager, game_manager, None, room_state_presenter)
         assert broadcast_service is not None
 
     def test_content_manager_load_error_handling(self):

@@ -4,13 +4,8 @@ Tests for the centralized room state transformation service.
 """
 
 import pytest
-import sys
-import os
 from unittest.mock import Mock, MagicMock
 from datetime import datetime
-
-# Add project root to path for imports
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 
 from src.services.room_state_presenter import RoomStatePresenter
 

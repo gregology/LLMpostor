@@ -13,6 +13,32 @@ from flask import Flask
 os.environ['TESTING'] = '1'
 
 
+@pytest.fixture(scope="function", autouse=True)
+def reset_global_container():
+    """Reset the global container before each test to ensure clean state."""
+    from container import reset_container, configure_container, get_container
+    from config_factory import ConfigurationFactory
+
+    # Reset the global container
+    reset_container()
+
+    # Reconfigure it with proper dependencies
+    # Import the actual app socketio instance for consistency
+    try:
+        from app import socketio as app_socketio
+        config_factory = ConfigurationFactory()
+        # Load configuration before calling to_dict()
+        config_factory.load_from_environment()
+        configure_container(socketio=app_socketio, config=config_factory.to_dict())
+    except (ImportError, Exception):
+        # Fallback if app module can't be imported or config can't be loaded
+        pass
+
+    yield
+
+    # Cleanup: Don't reset here as some tests may need the container during teardown
+
+
 @pytest.fixture(scope="session")
 def app():
     """Create Flask app for testing."""

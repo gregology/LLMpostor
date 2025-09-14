@@ -207,6 +207,64 @@ class EventBus {
         this.debugMode = !!enabled;
         console.log(`EventBus: Debug mode ${enabled ? 'enabled' : 'disabled'}`);
     }
+
+    /**
+     * Wait for an event to be published (returns a Promise)
+     * @param {string} eventName - Event name to wait for
+     * @param {number} timeout - Timeout in milliseconds (default: 5000)
+     * @returns {Promise} Promise that resolves with event data
+     */
+    waitFor(eventName, timeout = 5000) {
+        return new Promise((resolve, reject) => {
+            let timeoutId;
+
+            const unsubscribe = this.once(eventName, (data) => {
+                clearTimeout(timeoutId);
+                resolve(data);
+            });
+
+            timeoutId = setTimeout(() => {
+                unsubscribe();
+                reject(new Error(`Timeout waiting for event '${eventName}'`));
+            }, timeout);
+        });
+    }
+
+    /**
+     * Create an event replay system for debugging
+     * @param {Array<string>} eventNames - Events to replay
+     * @returns {Function} Replay function
+     */
+    createReplaySystem(eventNames = []) {
+        const recordedEvents = [];
+        const subscriptions = [];
+
+        // Record specified events
+        for (const eventName of eventNames) {
+            const unsubscribe = this.subscribe(eventName, (data, eventData) => {
+                recordedEvents.push({
+                    ...eventData,
+                    data: JSON.parse(JSON.stringify(data)) // Deep clone
+                });
+            }, { priority: 1000 }); // High priority to catch early
+
+            subscriptions.push(unsubscribe);
+        }
+
+        // Return replay function
+        return {
+            getRecordedEvents: () => [...recordedEvents],
+            replay: () => {
+                recordedEvents.forEach(event => {
+                    this.publish(event.name + ':replay', event.data, { source: 'EventReplay' });
+                });
+            },
+            stop: () => {
+                subscriptions.forEach(unsub => unsub());
+                recordedEvents.length = 0;
+            }
+        };
+    }
     
     /**
      * Get event history (for debugging)

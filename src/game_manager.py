@@ -8,20 +8,15 @@ Works with RoomManager to manage game sessions.
 from datetime import datetime
 from typing import Dict, List, Optional, Tuple
 import random
-from enum import Enum
 
 try:
     from .room_manager import RoomManager
+    from .config.game_settings import get_game_settings
+    from .core.game_phases import GamePhase
 except ImportError:
-    from room_manager import RoomManager
-
-
-class GamePhase(Enum):
-    """Game phase enumeration."""
-    WAITING = "waiting"
-    RESPONDING = "responding"
-    GUESSING = "guessing"
-    RESULTS = "results"
+    from src.room_manager import RoomManager
+    from src.config.game_settings import get_game_settings
+    from src.core.game_phases import GamePhase
 
 
 class GameManager:
@@ -29,13 +24,10 @@ class GameManager:
     
     def __init__(self, room_manager: RoomManager):
         self.room_manager = room_manager
+        self.game_settings = get_game_settings()
         
-        # Phase durations in seconds
-        self.PHASE_DURATIONS = {
-            GamePhase.RESPONDING: 180,  # 3 minutes
-            GamePhase.GUESSING: 120,    # 2 minutes
-            GamePhase.RESULTS: 30       # 30 seconds
-        }
+        # Phase durations from configuration
+        self.PHASE_DURATIONS = self.game_settings.phase_durations
     
     def start_new_round(self, room_id: str, prompt_data: Dict) -> bool:
         """

@@ -4,12 +4,7 @@ Tests for the player session management service.
 """
 
 import pytest
-import sys
-import os
 from unittest.mock import Mock, patch
-
-# Add project root to path for imports
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 
 from src.services.session_service import SessionService
 

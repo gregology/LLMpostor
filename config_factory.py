@@ -58,15 +58,10 @@ class AppConfig:
     max_events_per_second: int = 10  # max events per client per second
     max_events_per_minute: int = 100  # max events per client per minute
     rate_limit_window_seconds: int = 60  # time window for rate calculations
+    request_dedup_window_seconds: float = 1.0  # request deduplication window in seconds
     
     # Broadcast settings
     compression_threshold_bytes: int = 512  # compress payloads larger than this
-    
-    # Cache settings
-    cache_max_memory_bytes: int = 50 * 1024 * 1024  # 50MB default
-    cache_default_ttl_seconds: int = 60  # 1 minute default TTL
-    
-    # Removed unused optional services (metrics, payload optimizer, database optimizer)
     
     # File paths
     prompts_file: str = 'prompts.yaml'
@@ -126,17 +121,7 @@ class AppConfig:
         
         if self.max_events_per_minute < self.max_events_per_second or self.max_events_per_minute > 10000:
             raise ConfigError(f"Invalid max_events_per_minute: {self.max_events_per_minute}")
-        
-        # Cache validations
-        if self.cache_max_memory_bytes < 1024 * 1024 or self.cache_max_memory_bytes > 1024 * 1024 * 1024:  # 1MB to 1GB
-            raise ConfigError(f"Invalid cache_max_memory_bytes: {self.cache_max_memory_bytes}")
-        
-        if self.cache_default_ttl_seconds < 1 or self.cache_default_ttl_seconds > 86400:  # 1 second to 1 day
-            raise ConfigError(f"Invalid cache_default_ttl_seconds: {self.cache_default_ttl_seconds}")
-        
-        # Metrics validations
-        # Removed unused metrics validation
-        
+         
         if self.environment == Environment.PRODUCTION and self.secret_key == 'dev-secret-key-change-in-production':
             raise ConfigError("Production environment requires a secure SECRET_KEY")
     
@@ -265,16 +250,11 @@ class ConfigurationFactory:
             max_events_per_second=get_env_var('MAX_EVENTS_PER_SECOND', 10, int),
             max_events_per_minute=get_env_var('MAX_EVENTS_PER_MINUTE', 100, int),
             rate_limit_window_seconds=get_env_var('RATE_LIMIT_WINDOW_SECONDS', 60, int),
+            request_dedup_window_seconds=get_env_var('REQUEST_DEDUP_WINDOW_SECONDS', 1.0, float),
             
             # Broadcast settings
             compression_threshold_bytes=get_env_var('COMPRESSION_THRESHOLD_BYTES', 512, int),
-            
-            # Cache settings
-            cache_max_memory_bytes=get_env_var('CACHE_MAX_MEMORY_BYTES', 50 * 1024 * 1024, int),
-            cache_default_ttl_seconds=get_env_var('CACHE_DEFAULT_TTL_SECONDS', 60, int),
-            
-            # Removed unused service settings: metrics, database optimizer
-            
+
             # File paths
             prompts_file=get_env_var('PROMPTS_FILE', 'prompts.yaml'),
             

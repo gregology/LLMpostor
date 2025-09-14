@@ -11,7 +11,6 @@ This service handles all Socket.IO emissions in a centralized way:
 
 import logging
 from typing import Dict, Any
-from src.services.room_state_presenter import RoomStatePresenter
 from config_factory import get_config
 
 logger = logging.getLogger(__name__)
@@ -20,7 +19,7 @@ logger = logging.getLogger(__name__)
 class BroadcastService:
     """Centralized service for all Socket.IO broadcasting operations."""
     
-    def __init__(self, socketio, room_manager, game_manager, error_response_factory):
+    def __init__(self, socketio, room_manager, game_manager, error_response_factory, room_state_presenter):
         """Initialize the broadcast service.
         
         Args:
@@ -28,16 +27,13 @@ class BroadcastService:
             room_manager: Room management service
             game_manager: Game state management service  
             error_response_factory: Error response factory service
+            room_state_presenter: Room state presenter service
         """
         self.socketio = socketio
         self.room_manager = room_manager
         self.game_manager = game_manager
         self.error_response_factory = error_response_factory
-        
-        # Initialize room state presenter for consistent payload transformations
-        self.room_state_presenter = RoomStatePresenter(game_manager)
-        
-        # Payload optimization feature has been removed from the codebase
+        self.room_state_presenter = room_state_presenter
     
     # Core emission methods
     

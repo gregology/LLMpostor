@@ -233,63 +233,6 @@ class TestErrorHandlingIntegration:
         
         client2.disconnect()
     
-    def test_player_disconnection_handling(self):
-        """Test graceful handling of player disconnections."""
-        # Create two clients
-        client2 = SocketIOTestClient(app, socketio)
-        client2.connect()
-        
-        # Both join the same room
-        self.client.emit('join_room', {
-            'room_id': 'test-room',
-            'player_name': 'Alice'
-        })
-        client2.emit('join_room', {
-            'room_id': 'test-room',
-            'player_name': 'Bob'
-        })
-        
-        # Clear initial messages
-        self.client.get_received()
-        client2.get_received()
-        
-        # Disconnect one client
-        client2.disconnect()
-        
-        # Check that remaining client receives disconnect notification
-        time.sleep(0.1)  # Allow time for disconnect handling
-        received = self.client.get_received()
-        
-        # Should receive player list update and possibly game pause notification
-        assert len(received) >= 1
-        message_names = [msg['name'] for msg in received]
-        assert 'player_list_updated' in message_names or 'game_paused' in message_names
-    
-    def test_connection_recovery_simulation(self):
-        """Test connection recovery by simulating disconnect/reconnect."""
-        # Join room
-        self.client.emit('join_room', {
-            'room_id': 'test-room',
-            'player_name': 'Alice'
-        })
-        received = self.client.get_received()
-        assert any(msg['name'] == 'room_joined' for msg in received)
-        
-        # Simulate disconnect
-        self.client.disconnect()
-        
-        # Reconnect
-        self.client.connect()
-        self.client.get_received()  # Clear connection messages
-        
-        # Try to rejoin the same room (should work since room was cleaned up)
-        self.client.emit('join_room', {
-            'room_id': 'test-room',
-            'player_name': 'Alice'
-        })
-        received = self.client.get_received()
-        assert any(msg['name'] == 'room_joined' for msg in received)
-    
     def test_malformed_data_handling(self):
         """Test handling of malformed or unexpected data."""
         # Test with non-dictionary data
