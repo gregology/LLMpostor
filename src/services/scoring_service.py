@@ -6,7 +6,7 @@ Extracted from GameManager to follow Single Responsibility Principle.
 """
 
 import logging
-from typing import Dict, List
+from typing import Dict, List, Optional
 
 logger = logging.getLogger(__name__)
 
@@ -45,7 +45,7 @@ class ScoringService:
         
         return round_scores
     
-    def _find_llm_response_index(self, responses: List[Dict]) -> int:
+    def _find_llm_response_index(self, responses: List[Dict]) -> Optional[int]:
         """Find the index of the LLM response."""
         for i, response in enumerate(responses):
             if response["is_llm"]:
@@ -54,7 +54,7 @@ class ScoringService:
     
     def _calculate_guess_scores(self, guesses: Dict[str, int], llm_response_index: int, players: Dict) -> Dict[str, int]:
         """Calculate scores for correct LLM guesses."""
-        guess_scores = {}
+        guess_scores: Dict[str, int] = {}
         for player_id, guess_index in guesses.items():
             if guess_index == llm_response_index:
                 guess_scores[player_id] = guess_scores.get(player_id, 0) + 1
@@ -65,7 +65,7 @@ class ScoringService:
     
     def _calculate_deception_scores(self, guesses: Dict[str, int], responses: List[Dict], players: Dict) -> Dict[str, int]:
         """Calculate scores for successful deception (votes received)."""
-        deception_scores = {}
+        deception_scores: Dict[str, int] = {}
         for player_id, guess_index in guesses.items():
             guessed_response = responses[guess_index]
             if not guessed_response["is_llm"]:

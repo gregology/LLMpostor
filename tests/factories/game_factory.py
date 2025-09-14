@@ -114,7 +114,7 @@ class GameContentFactory:
 
         if prompt_text is None:
             sample = random.choice(self.SAMPLE_PROMPTS)
-            prompt_text = sample['prompt']
+            prompt_text = str(sample['prompt'])
             kwargs.setdefault('category', sample['category'])
             kwargs.setdefault('tags', sample['tags'])
 
@@ -142,7 +142,7 @@ class GameContentFactory:
             if matching_samples:
                 sample = random.choice(matching_samples)
                 prompt = self.create_prompt(
-                    prompt_text=sample['prompt'],
+                    prompt_text=str(sample['prompt']),
                     category=sample['category'],
                     tags=sample['tags']
                 )

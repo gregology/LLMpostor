@@ -13,6 +13,7 @@ class ErrorCode(Enum):
     
     # Connection and Authentication Errors
     INVALID_DATA = "INVALID_DATA"
+    MISSING_DATA = "MISSING_DATA"
     MISSING_ROOM_ID = "MISSING_ROOM_ID"
     MISSING_PLAYER_NAME = "MISSING_PLAYER_NAME"
     INVALID_ROOM_ID = "INVALID_ROOM_ID"

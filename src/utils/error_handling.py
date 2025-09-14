@@ -150,7 +150,7 @@ def with_error_logging(handler_name: str):
     return decorator
 
 
-def safely_execute(func: Callable, error_handler: Callable = None, default_return: Any = None) -> Any:
+def safely_execute(func: Callable, error_handler: Optional[Callable] = None, default_return: Any = None) -> Any:
     """
     Safely execute a function with error handling.
     
@@ -165,7 +165,7 @@ def safely_execute(func: Callable, error_handler: Callable = None, default_retur
     try:
         return func()
     except Exception as e:
-        if error_handler:
+        if error_handler is not None:
             error_handler(e)
         else:
             logger.exception(f"Error in safely_execute: {e}")

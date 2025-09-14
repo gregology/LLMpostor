@@ -75,7 +75,7 @@ class BaseHandler(ABC):
 
     def get_current_session(self) -> Optional[Dict[str, Any]]:
         """Get the current session info for the requesting client."""
-        return self.session_service.get_session(request.sid)
+        return self.session_service.get_session(request.sid)  # type: ignore[attr-defined]
 
     def require_session(self) -> Dict[str, Any]:
         """
@@ -95,7 +95,7 @@ class BaseHandler(ABC):
             )
         return session_info
 
-    def validate_data_dict(self, data: Any, required_fields: list = None) -> Dict[str, Any]:
+    def validate_data_dict(self, data: Any, required_fields: Optional[list] = None) -> Dict[str, Any]:
         """
         Validate that data is a dictionary and contains required fields.
 
@@ -147,7 +147,7 @@ class BaseHandler(ABC):
 
         return data
 
-    def emit_success(self, event_name: str, data: Dict[str, Any] = None) -> None:
+    def emit_success(self, event_name: str, data: Optional[Dict[str, Any]] = None) -> None:
         """
         Emit a success response to the requesting client.
 
@@ -172,13 +172,13 @@ class BaseHandler(ABC):
 
     def log_handler_start(self, handler_name: str, data: Any = None) -> None:
         """Log the start of handler execution."""
-        logger.info(f'{handler_name} called by client: {request.sid}')
+        logger.info(f'{handler_name} called by client: {request.sid}')  # type: ignore[attr-defined]
         if data:
             logger.debug(f'{handler_name} data: {data}')
 
-    def log_handler_success(self, handler_name: str, message: str = None) -> None:
+    def log_handler_success(self, handler_name: str, message: Optional[str] = None) -> None:
         """Log successful handler completion."""
-        log_msg = f'{handler_name} completed successfully for client: {request.sid}'
+        log_msg = f'{handler_name} completed successfully for client: {request.sid}'  # type: ignore[attr-defined]
         if message:
             log_msg += f' - {message}'
         logger.info(log_msg)
@@ -195,12 +195,12 @@ class RoomHandlerMixin:
     def join_socketio_room(self, room_id: str) -> None:
         """Join a Socket.IO room for broadcasting."""
         join_room(room_id)
-        logger.debug(f'Client {request.sid} joined Socket.IO room: {room_id}')
+        logger.debug(f'Client {request.sid} joined Socket.IO room: {room_id}')  # type: ignore[attr-defined]
 
     def leave_socketio_room(self, room_id: str) -> None:
         """Leave a Socket.IO room."""
         leave_room(room_id)
-        logger.debug(f'Client {request.sid} left Socket.IO room: {room_id}')
+        logger.debug(f'Client {request.sid} left Socket.IO room: {room_id}')  # type: ignore[attr-defined]
 
     def broadcast_to_room(self, room_id: str, event_name: str, data: Dict[str, Any]) -> None:
         """
@@ -211,7 +211,7 @@ class RoomHandlerMixin:
             event_name: The event name
             data: The data to broadcast
         """
-        emit(event_name, data, room=room_id)
+        emit(event_name, data, to=room_id)
         logger.debug(f'Broadcasted {event_name} to room: {room_id}')
 
 
@@ -222,6 +222,9 @@ class GameHandlerMixin:
     Provides common game-related functionality like phase validation,
     game state checking, and common game operation patterns.
     """
+
+    # Type hints for expected attributes from BaseHandler
+    game_manager: Any  # Will be injected by container
 
     def validate_game_phase(self, room_id: str, required_phase: str) -> Dict[str, Any]:
         """
@@ -293,6 +296,13 @@ class ValidationHandlerMixin:
     Provides standardized validation methods for common data types
     used across multiple handlers.
     """
+
+    # Type hints for expected attributes from BaseHandler
+    validation_service: Any  # Will be injected by container
+
+    def validate_data_dict(self, data: Any, required_fields: Optional[list] = None) -> Dict[str, Any]:
+        """Expected to be implemented by BaseHandler"""
+        raise NotImplementedError("This method should be provided by BaseHandler")
 
     def validate_room_join_data(self, data: Any) -> tuple[str, str]:
         """

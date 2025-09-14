@@ -8,6 +8,7 @@ import threading
 import logging
 from collections import defaultdict, deque
 from functools import wraps
+from typing import Optional
 from flask import request
 from flask_socketio import emit
 
@@ -116,7 +117,7 @@ class EventQueueManager:
             self.global_event_count += 1
             return True
     
-    def get_queue_stats(self, client_id: str = None) -> dict:
+    def get_queue_stats(self, client_id: Optional[str] = None) -> dict:
         """Get queue statistics for monitoring."""
         with self.lock:
             if client_id:

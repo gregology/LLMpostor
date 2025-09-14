@@ -12,7 +12,7 @@ Provides:
 import logging
 import os
 from typing import Dict, Any, Optional
-from config_factory import get_config
+from config_factory import get_config, AppConfig
 from abc import ABC, abstractmethod
 
 
@@ -40,7 +40,7 @@ class BaseService(ABC):
         
         # Configuration access
         try:
-            self._app_config = get_config()
+            self._app_config: Optional[AppConfig] = get_config()
         except Exception:
             # Config not loaded yet - use fallback
             self._app_config = None
@@ -164,8 +164,10 @@ class BaseService(ABC):
         if os.environ.get('TESTING') == '1':
             return True
         
-        return (self.get_config_value('testing', False) or 
-                (self._app_config and getattr(self._app_config, 'is_testing', False)))
+        app_config_testing = False
+        if self._app_config and hasattr(self._app_config, 'is_testing'):
+            app_config_testing = self._app_config.is_testing
+        return bool(self.get_config_value('testing', False) or app_config_testing)
     
     def shutdown(self) -> None:
         """

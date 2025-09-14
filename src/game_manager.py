@@ -14,7 +14,7 @@ try:
     from .config.game_settings import get_game_settings
     from .core.game_phases import GamePhase
 except ImportError:
-    from room_manager import RoomManager
+    from src.room_manager import RoomManager
     from src.config.game_settings import get_game_settings
     from src.core.game_phases import GamePhase
 

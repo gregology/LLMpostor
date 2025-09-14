@@ -90,7 +90,7 @@ class SocketEventRouter:
             raise EventRouteNotFoundError(f"No handler registered for event: {event_name}")
 
         # Log incoming request
-        logger.info(f"Handling event: {event_name} from client: {request.sid}")
+        logger.info(f"Handling event: {event_name} from client: {request.sid}")  # type: ignore[attr-defined]
         if data is not None:
             logger.debug(f"Event data: {data}")
 
@@ -164,14 +164,14 @@ def create_router_with_socketio(socketio_instance) -> SocketEventRouter:
             logger.debug(f"Registered SocketIO handler for: {event_name}")
 
     # Monkey patch the register method onto the router
-    router.register_with_socketio = register_with_socketio
+    setattr(router, 'register_with_socketio', register_with_socketio)
 
     return router
 
 
 def request_logging_middleware(event_name: str, data: Any) -> Any:
     """Middleware for logging requests and responses."""
-    start_time = logger.info(f"Processing {event_name}")
+    logger.info(f"Processing {event_name}")
     # Return data unchanged - middleware can modify data if needed
     return data
 

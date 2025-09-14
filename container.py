@@ -21,9 +21,9 @@ class ServiceDefinition:
         self, 
         name: str,
         factory: Callable,
-        dependencies: List[str] = None,
+        dependencies: Optional[List[str]] = None,
         lifecycle: ServiceLifecycle = ServiceLifecycle.SINGLETON,
-        config: Dict[str, Any] = None
+        config: Optional[Dict[str, Any]] = None
     ):
         self.name = name
         self.factory = factory
@@ -64,9 +64,9 @@ class ServiceContainer:
         self,
         name: str,
         factory: Callable,
-        dependencies: List[str] = None,
+        dependencies: Optional[List[str]] = None,
         lifecycle: ServiceLifecycle = ServiceLifecycle.SINGLETON,
-        config: Dict[str, Any] = None
+        config: Optional[Dict[str, Any]] = None
     ) -> 'ServiceContainer':
         """
         Register a service with the container.
