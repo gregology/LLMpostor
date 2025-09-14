@@ -13,7 +13,6 @@ import pytest
 import os
 from unittest.mock import Mock, patch
 from src.services.base_service import BaseService, ServiceRegistry
-from src.services.cache_service import CacheService
 # Removed unused service imports: MetricsService, PayloadOptimizer
 from container import ServiceContainer, ServiceLifecycle
 from config_factory import load_config, reset_config
@@ -176,46 +175,7 @@ class TestServiceRegistry:
         assert len(registry.get_service_names()) == 0
 
 
-class TestCacheServiceLifecycle:
-    """Test CacheService lifecycle with BaseService integration"""
-    
-    def test_cache_service_initialization(self):
-        """Test CacheService initialization with BaseService"""
-        service = CacheService({
-            'max_memory_size': 1024 * 1024,  # 1MB
-            'default_ttl': 300
-        })
-        
-        assert service.is_initialized
-        assert not service.is_shutdown
-        assert service.max_memory_size == 1024 * 1024
-        assert service.default_ttl == 300
-    
-    def test_cache_service_testing_mode(self):
-        """Test CacheService behavior in testing mode"""
-        os.environ['TESTING'] = '1'
-        
-        service = CacheService()
-        assert service.is_testing_mode()
-        
-        os.environ.pop('TESTING', None)
-    
-    def test_cache_service_shutdown(self):
-        """Test CacheService shutdown and cleanup"""
-        service = CacheService()
-        
-        # Add some data to cache
-        service.set('test_key', 'test_value')
-        assert service.get('test_key') == 'test_value'
-        
-        service.shutdown()
-        
-        assert service.is_shutdown
-        # Cache should be cleared
-        assert service.get('test_key') is None
-
-
-# Removed test classes for deleted services: TestMetricsServiceLifecycle, TestPayloadOptimizerLifecycle
+# Removed test classes for deleted services: TestCacheServiceLifecycle, TestMetricsServiceLifecycle, TestPayloadOptimizerLifecycle
 
 
 class TestServiceContainer:
@@ -239,7 +199,6 @@ class TestServiceContainer:
         assert container.has_service('ContentManager')
         assert container.has_service('ErrorResponseFactory')
         assert container.has_service('SessionService')
-        assert container.has_service('CacheService')  # Always available
         
         # Game logic services
         assert container.has_service('GameManager')
@@ -256,20 +215,6 @@ class TestServiceContainer:
         assert not container.has_service('PayloadOptimizer')
         assert not container.has_service('DatabaseOptimizer')
     
-    def test_cache_service_instantiation(self):
-        """Test CacheService instantiation through container"""
-        os.environ['TESTING'] = '1'  # Ensure testing mode
-        
-        container = ServiceContainer()
-        container.configure_services()
-        
-        cache_service = container.get('CacheService')
-        
-        assert isinstance(cache_service, CacheService)
-        assert cache_service.is_initialized
-        assert cache_service.is_testing_mode()
-        
-        os.environ.pop('TESTING', None)
     
     def test_dependency_resolution(self):
         """Test service dependency resolution"""
@@ -333,20 +278,16 @@ class TestServiceIntegration:
         container.configure_services()
         
         # Get a service
-        cache_service = container.get('CacheService')
-        assert cache_service.is_initialized
-        assert not cache_service.is_shutdown
-        
+        validation_service = container.get('ValidationService')
+        assert validation_service is not None
+
         # Use the service
-        cache_service.set('test', 'value')
-        assert cache_service.get('test') == 'value'
-        
-        # Shutdown the service
-        cache_service.shutdown()
-        assert cache_service.is_shutdown
-        
-        # Service should be cleared
-        assert cache_service.get('test') is None
+        validated_room_id = validation_service.validate_room_id('test123')
+        assert validated_room_id == 'test123'
+
+        # Container can be cleared
+        container.clear()
+        assert len(container._instances) == 0
     
     def test_service_configuration_integration(self):
         """Test service integration with configuration"""
@@ -359,21 +300,21 @@ class TestServiceIntegration:
         from config_factory import load_config_from_dict
         load_config_from_dict(custom_config)
         
-        # Pass config directly to service to override get_config_value behavior
-        service = CacheService({
-            'max_memory_size': 2 * 1024 * 1024,
-            'default_ttl': 1800
-        })
-        
-        # Should use config values
-        assert service.max_memory_size == 2 * 1024 * 1024
-        assert service.default_ttl == 1800
+        # Service initialization works with custom config
+        from src.services.validation_service import ValidationService
+        service = ValidationService()
+
+        # Should be functional
+        assert service is not None
+        assert hasattr(service, 'validate_room_id')
     
     def test_service_graceful_degradation(self):
         """Test services handle missing dependencies gracefully"""
         # Test without loading config first
         reset_config()
         
-        # Cache service should still initialize with fallback values
-        cache_service = CacheService()
-        assert cache_service.is_initialized
+        # Services should still initialize with fallback values
+        from src.services.validation_service import ValidationService
+        service = ValidationService()
+        assert service is not None
+        assert hasattr(service, 'validate_room_id')

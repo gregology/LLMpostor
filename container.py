@@ -127,7 +127,6 @@ class ServiceContainer:
         from src.services.session_service import SessionService
         from src.services.broadcast_service import BroadcastService
         from src.services.auto_game_flow_service import AutoGameFlowService
-        from src.services.cache_service import CacheService
         # Removed unused services: MetricsService, PayloadOptimizer, DatabaseOptimizer
         
         # Configuration Factory (highest priority - no dependencies)
@@ -143,8 +142,6 @@ class ServiceContainer:
         self.register('ContentManager', ContentManager)
         self.register('SessionService', SessionService)
         
-        # Cache service - always available
-        self.register('CacheService', CacheService)
         
         # Game manager - depends on room manager
         self.register('GameManager', GameManager, dependencies=['RoomManager'])

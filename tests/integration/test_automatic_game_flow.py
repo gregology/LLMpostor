@@ -12,9 +12,6 @@ from unittest.mock import patch
 import threading
 
 # Import the Flask app and Socket.IO client for testing
-import sys
-import os
-sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
 
 from flask_socketio import SocketIOTestClient
 from src.content_manager import PromptData
