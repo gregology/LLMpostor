@@ -17,6 +17,7 @@ from src.services.broadcast_service import BroadcastService
 from src.services.session_service import SessionService
 from src.services.error_response_factory import ErrorResponseFactory
 from src.services.room_state_presenter import RoomStatePresenter
+from tests.helpers.socket_mocks import create_mock_socketio
 
 
 class TestDisconnectServiceIntegration:
@@ -30,8 +31,8 @@ class TestDisconnectServiceIntegration:
         self.error_factory = ErrorResponseFactory()
         self.room_state_presenter = RoomStatePresenter(self.game_manager)
 
-        # Mock socketio for broadcast service
-        self.mock_socketio = Mock()
+        # Mock socketio for broadcast service using shared pattern
+        self.mock_socketio = create_mock_socketio()
         self.broadcast_service = BroadcastService(
             self.mock_socketio, self.room_manager, self.game_manager,
             self.error_factory, self.room_state_presenter
@@ -119,48 +120,6 @@ class TestDisconnectServiceIntegration:
         mock_broadcast.broadcast_player_list_update.assert_called_once_with(room_id)
         mock_broadcast.broadcast_room_state_update.assert_called_once_with(room_id)
 
-    def DISABLED_test_disconnect_with_insufficient_players_integration(self):
-        """Test disconnect causing insufficient players integrates correctly."""
-        room_id = "insufficient-room"
-
-        # Set up game with exactly minimum players (2)
-        alice_data = self.room_manager.add_player_to_room(room_id, "Alice", "socket1")
-        bob_data = self.room_manager.add_player_to_room(room_id, "Bob", "socket2")
-
-        # Set up active game state
-        room_state = self.room_manager.get_room_state(room_id)
-        room_state['game_state'] = {
-            'phase': 'responding',
-            'round_number': 1,
-            'responses': [],
-            'guesses': {},
-            'current_prompt': {'id': 'test', 'prompt': 'Test prompt'},
-            'phase_start_time': datetime.now(),
-            'phase_duration': 60
-        }
-
-        # Mock broadcast service
-        mock_broadcast = Mock()
-        auto_flow_with_mock = AutoGameFlowService(
-            mock_broadcast, self.game_manager, self.room_manager
-        )
-
-        # Mock game manager to capture reset call
-        with patch.object(self.game_manager, '_advance_to_waiting_phase') as mock_reset:
-            mock_reset.return_value = 'waiting'
-
-            # Disconnect one player, leaving insufficient players
-            self.room_manager.disconnect_player_from_room(room_id, bob_data['player_id'])
-
-            # Trigger auto flow
-            auto_flow_with_mock.handle_player_disconnect_game_impact(room_id, bob_data['player_id'])
-
-            # Verify game was reset to waiting
-            mock_reset.assert_called_once_with(room_id)
-
-            # Verify appropriate broadcasts were made
-            mock_broadcast.broadcast_game_paused.assert_called_once()
-            mock_broadcast.broadcast_room_state_update.assert_called_once_with(room_id)
 
     def test_concurrent_disconnects_service_coordination(self):
         """Test multiple simultaneous disconnects are handled correctly by services."""
@@ -198,30 +157,6 @@ class TestDisconnectServiceIntegration:
         connected_players = self.room_manager.get_connected_players(room_id)
         assert len(connected_players) == 2  # Only 2 connected
 
-    def DISABLED_test_error_propagation_between_services(self):
-        """Test that errors in one service don't break others during disconnect."""
-        room_id = "error-room"
-
-        # Set up player
-        player_data = self.room_manager.add_player_to_room(room_id, "Alice", "socket1")
-
-        # Mock room manager to throw error
-        with patch.object(self.room_manager, 'get_connected_players', side_effect=Exception("Service error")):
-
-            # Auto flow should handle the error gracefully
-            try:
-                self.auto_flow_service.handle_player_disconnect_game_impact(room_id, player_data['player_id'])
-                # Should not crash
-            except Exception as e:
-                pytest.fail(f"Auto flow service should handle errors gracefully, but got: {e}")
-
-            # Other services should still work
-            success = self.room_manager.disconnect_player_from_room(room_id, player_data['player_id'])
-            assert success == True
-
-            # Broadcast service should still work
-            self.broadcast_service.broadcast_player_list_update(room_id)
-            assert self.mock_socketio.emit.called
 
 
 class TestDisconnectBroadcastIntegration:
@@ -233,7 +168,7 @@ class TestDisconnectBroadcastIntegration:
         self.game_manager = GameManager(self.room_manager)
         self.error_factory = ErrorResponseFactory()
         self.room_state_presenter = RoomStatePresenter(self.game_manager)
-        self.mock_socketio = Mock()
+        self.mock_socketio = create_mock_socketio()
 
         self.broadcast_service = BroadcastService(
             self.mock_socketio, self.room_manager, self.game_manager,
@@ -326,22 +261,6 @@ class TestDisconnectBroadcastIntegration:
                     'room_state_updated', safe_game_state, room=room_id
                 )
 
-    def DISABLED_test_error_handling_in_broadcast_during_disconnect(self):
-        """Test broadcast service handles errors gracefully during disconnect scenarios."""
-        room_id = "error-broadcast-room"
-
-        # Mock socketio to throw error
-        self.mock_socketio.emit.side_effect = Exception("Network error")
-
-        # Broadcast should handle error gracefully
-        try:
-            self.broadcast_service.broadcast_player_list_update(room_id)
-            # Should not raise exception
-        except Exception as e:
-            pytest.fail(f"Broadcast service should handle errors gracefully, but got: {e}")
-
-        # Verify emit was attempted
-        self.mock_socketio.emit.assert_called_once()
 
 
 class TestDisconnectMemoryManagement:

@@ -8,6 +8,7 @@ from flask_socketio import SocketIOTestClient
 import time
 # Service imports
 from tests.migration_compat import app, socketio, room_manager, session_service
+from tests.helpers.room_helpers import join_room_helper, RoomTestHelper
 
 
 class TestSocketIORoomOperations:
@@ -34,32 +35,10 @@ class TestSocketIORoomOperations:
     
     def test_successful_room_join(self):
         """Test successful room joining."""
-        # Connect client
-        received = self.client.get_received()
-        
-        # Join room
-        self.client.emit('join_room', {
-            'room_id': 'test-room',
-            'player_name': 'TestPlayer'
-        })
-        
-        # Check response
-        received = self.client.get_received()
-        
-        # Should receive connected event and room_joined event
-        assert len(received) >= 2
-        
-        # Find room_joined event
-        room_joined_event = None
-        for event in received:
-            if event['name'] == 'room_joined':
-                room_joined_event = event
-                break
-        
-        assert room_joined_event is not None
-        response = room_joined_event['args'][0]
-        assert response['success'] is True
-        data = response['data']
+        # Join room using helper
+        data = join_room_helper(self.client, 'test-room', 'TestPlayer')
+
+        # Validate response data
         assert data['room_id'] == 'test-room'
         assert data['player_name'] == 'TestPlayer'
         assert 'player_id' in data

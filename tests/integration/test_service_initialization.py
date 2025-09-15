@@ -13,6 +13,7 @@ from src.services.error_response_factory import ErrorResponseFactory
 from src.services.broadcast_service import BroadcastService
 from src.services.session_service import SessionService
 from src.services.auto_game_flow_service import AutoGameFlowService
+from tests.helpers.socket_mocks import create_mock_socketio
 
 
 class TestServiceInitializationOrder:
@@ -39,8 +40,8 @@ class TestServiceInitializationOrder:
         game_manager = GameManager(room_manager)
         error_handler = ErrorResponseFactory()
         
-        # Mock SocketIO since we don't have a real Flask app
-        mock_socketio = Mock()
+        # Mock SocketIO since we don't have a real Flask app using shared pattern
+        mock_socketio = create_mock_socketio()
         
         # Services initialization - mirrors app.py lines 41-42, 55
         session_service = SessionService()
