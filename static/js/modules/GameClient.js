@@ -327,20 +327,28 @@ class GameClient {
                 return;
             }
 
-            // Try to restore session first, then fall back to bootstrap room ID
-            const savedSession = gameStateManager.restoreFromStorage();
-            if (savedSession) {
-                console.log('Attempting to rejoin room from saved session...');
-                this.isRejoining = true;
-                this._attemptRoomRejoin(savedSession);
-                return;
-            }
-
-            // Fall back to bootstrap room ID if no saved session
+            // Prioritize current URL's room ID over saved session
             try {
-                const roomId = getBootstrapValue('roomId', null);
-                if (roomId) {
-                    eventManager.autoJoinRoom(roomId);
+                const currentRoomId = getBootstrapValue('roomId', null);
+                const savedSession = gameStateManager.restoreFromStorage();
+
+                // If we have a current room ID from URL, use it
+                if (currentRoomId) {
+                    // If saved session is for a different room, clear it and join current room
+                    if (savedSession && savedSession.roomId !== currentRoomId) {
+                        console.log(`URL room (${currentRoomId}) differs from saved session (${savedSession.roomId}), joining URL room`);
+                        gameStateManager.clearStoredSession();
+                    }
+                    eventManager.autoJoinRoom(currentRoomId);
+                    return;
+                }
+
+                // Fall back to saved session if no current room ID
+                if (savedSession) {
+                    console.log('No room ID in URL, attempting to rejoin room from saved session...');
+                    this.isRejoining = true;
+                    this._attemptRoomRejoin(savedSession);
+                    return;
                 }
             } catch (error) {
                 console.warn('Bootstrap system not available during connection flow');
