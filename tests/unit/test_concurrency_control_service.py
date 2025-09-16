@@ -12,6 +12,7 @@ from unittest.mock import Mock, patch
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
 from src.services.concurrency_control_service import ConcurrencyControlService
+from tests.helpers.socket_mocks import create_mock_socketio
 
 
 class TestConcurrencyControlServiceInitialization:
@@ -32,7 +33,7 @@ class TestConcurrencyControlServiceInitialization:
     def test_initialization_with_game_settings(self):
         """Test initialization with game settings configuration"""
         with patch('src.services.concurrency_control_service.get_game_settings') as mock_get_settings:
-            mock_settings = Mock()
+            mock_settings = create_mock_socketio()  # Use shared mock utility
             mock_settings.request_dedup_window = 0.5
             mock_get_settings.return_value = mock_settings
 

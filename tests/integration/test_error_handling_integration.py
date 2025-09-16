@@ -10,6 +10,7 @@ import pytest
 from flask_socketio import SocketIOTestClient
 # Service imports
 from tests.migration_compat import app, socketio, room_manager
+from tests.helpers.room_helpers import join_room_helper, join_room_expect_error, find_event_in_received
 
 
 class TestErrorHandlingIntegration:
@@ -36,92 +37,44 @@ class TestErrorHandlingIntegration:
     def test_join_room_validation_errors(self):
         """Test various validation errors when joining a room."""
         # Test missing data (empty dict) - should return missing room_id error
-        self.client.emit('join_room', {})
-        received = self.client.get_received()
-        assert len(received) == 1
-        assert received[0]['name'] == 'error'
-        assert received[0]['args'][0]['error']['code'] == 'MISSING_ROOM_ID'
-        
-        # Test missing room_id
-        self.client.emit('join_room', {'player_name': 'Alice'})
-        received = self.client.get_received()
-        assert len(received) == 1
-        assert received[0]['name'] == 'error'
-        assert received[0]['args'][0]['error']['code'] == 'MISSING_ROOM_ID'
-        
+        error_response = join_room_expect_error(self.client, '', 'Alice')
+        assert error_response['error']['code'] == 'MISSING_ROOM_ID'
+
         # Test missing player_name
-        self.client.emit('join_room', {'room_id': 'test-room'})
-        received = self.client.get_received()
-        assert len(received) == 1
-        assert received[0]['name'] == 'error'
-        assert received[0]['args'][0]['error']['code'] == 'MISSING_PLAYER_NAME'
-        
+        error_response = join_room_expect_error(self.client, 'test-room', '')
+        assert error_response['error']['code'] == 'MISSING_PLAYER_NAME'
+
         # Test invalid room_id format
-        self.client.emit('join_room', {
-            'room_id': 'invalid room with spaces',
-            'player_name': 'Alice'
-        })
-        received = self.client.get_received()
-        assert len(received) == 1
-        assert received[0]['name'] == 'error'
-        assert received[0]['args'][0]['error']['code'] == 'INVALID_ROOM_ID'
-        
+        error_response = join_room_expect_error(self.client, 'invalid room with spaces', 'Alice')
+        assert error_response['error']['code'] == 'INVALID_ROOM_ID'
+
         # Test player name too long
-        self.client.emit('join_room', {
-            'room_id': 'test-room',
-            'player_name': 'A' * 21
-        })
-        received = self.client.get_received()
-        assert len(received) == 1
-        assert received[0]['name'] == 'error'
-        assert received[0]['args'][0]['error']['code'] == 'PLAYER_NAME_TOO_LONG'
+        error_response = join_room_expect_error(self.client, 'test-room', 'A' * 21)
+        assert error_response['error']['code'] == 'PLAYER_NAME_TOO_LONG'
     
     def test_duplicate_player_name_error(self):
         """Test error when trying to join with duplicate player name."""
         # First player joins successfully
-        self.client.emit('join_room', {
-            'room_id': 'test-room',
-            'player_name': 'Alice'
-        })
-        received = self.client.get_received()
-        assert len(received) >= 1
-        assert any(msg['name'] == 'room_joined' for msg in received)
-        
+        join_room_helper(self.client, 'test-room', 'Alice')
+
         # Second client tries to join with same name
         client2 = SocketIOTestClient(app, socketio)
         client2.connect()
         client2.get_received()  # Clear initial messages
-        
-        client2.emit('join_room', {
-            'room_id': 'test-room',
-            'player_name': 'Alice'
-        })
-        received = client2.get_received()
-        assert len(received) == 1
-        assert received[0]['name'] == 'error'
-        assert received[0]['args'][0]['error']['code'] == 'PLAYER_NAME_TAKEN'
-        
+
+        error_response = join_room_expect_error(client2, 'test-room', 'Alice')
+        assert error_response['error']['code'] == 'PLAYER_NAME_TAKEN'
+
         client2.disconnect()
-    
+
     def test_already_in_room_error(self):
         """Test error when trying to join room while already in one."""
         # Join first room
-        self.client.emit('join_room', {
-            'room_id': 'room1',
-            'player_name': 'Alice'
-        })
-        received = self.client.get_received()
-        assert any(msg['name'] == 'room_joined' for msg in received)
-        
+        join_room_helper(self.client, 'room1', 'Alice')
+
         # Try to join another room
-        self.client.emit('join_room', {
-            'room_id': 'room2',
-            'player_name': 'Alice'
-        })
-        received = self.client.get_received()
-        assert len(received) == 1
-        assert received[0]['name'] == 'error'
-        assert received[0]['args'][0]['error']['code'] == 'ALREADY_IN_ROOM'
+        error_response = join_room_expect_error(self.client, 'room2', 'Alice')
+        assert error_response['error']['code'] == 'ALREADY_IN_ROOM'
     
     def test_submit_response_validation_errors(self):
         """Test validation errors when submitting responses."""

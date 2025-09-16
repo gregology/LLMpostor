@@ -1,8 +1,16 @@
+/**
+ * ConnectionMetrics Unit Tests
+ *
+ * SCOPE: Unit testing of ConnectionMetrics data collection class only
+ * FOCUS: Downtime tracking, latency recording, metrics calculation
+ * INTEGRATION: See ConnectionIntegration.test.js for metrics integration with connection flow
+ */
+
 import { describe, it, expect } from 'vitest';
 
 const ConnectionMetrics = (await import('../../static/js/modules/connection/ConnectionMetrics.js')).default;
 
-describe('ConnectionMetrics', () => {
+describe('ConnectionMetrics (Unit)', () => {
   it('tracks disconnect and reconnection downtime and count', () => {
     const m = new ConnectionMetrics();
     m.markDisconnected();

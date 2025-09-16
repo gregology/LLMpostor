@@ -7,6 +7,7 @@
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import ErrorDisplayManager from '../../static/js/modules/ErrorDisplayManager.js';
+import { setupBasicDOM, cleanupDOM } from '../helpers/domMocks.js';
 
 // Mock the IGameModule interface
 vi.mock('../../static/js/interfaces/IGameModule.js', () => ({
@@ -42,6 +43,9 @@ describe('ErrorDisplayManager', () => {
     let originalOnUnhandledRejection;
 
     beforeEach(() => {
+        // Setup DOM using shared helper
+        setupBasicDOM();
+
         // Save original error handlers
         originalOnError = window.onerror;
         originalOnUnhandledRejection = window.onunhandledrejection;
@@ -62,8 +66,7 @@ describe('ErrorDisplayManager', () => {
             getService: vi.fn()
         };
 
-        // Mock DOM
-        document.body.innerHTML = '';
+        // Clear global reference
         window.errorDisplayManager = undefined;
 
         // Create error display manager
@@ -87,8 +90,8 @@ describe('ErrorDisplayManager', () => {
         window.onerror = originalOnError;
         window.onunhandledrejection = originalOnUnhandledRejection;
 
-        // Clean up DOM
-        document.body.innerHTML = '';
+        // Clean up DOM using shared helper
+        cleanupDOM();
         window.errorDisplayManager = undefined;
 
         vi.clearAllMocks();

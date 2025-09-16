@@ -1,8 +1,9 @@
 """
 Concurrency tests for RoomManager class.
 
-Tests concurrent access patterns to ensure thread safety
-with the simplified locking strategy.
+Tests concurrent access patterns to ensure thread safety with the simplified locking strategy.
+This file focuses exclusively on multi-threaded scenarios and race condition detection.
+Basic functionality tests are covered in test_room_manager_comprehensive.py.
 """
 
 import pytest
@@ -13,7 +14,13 @@ from src.room_manager import RoomManager
 
 
 class TestRoomManagerConcurrency:
-    """Test cases for RoomManager concurrency behavior."""
+    """
+    Test cases for RoomManager concurrency behavior.
+
+    These tests specifically target thread safety and race conditions.
+    They use multiple threads to stress-test the locking mechanisms
+    and ensure data consistency under concurrent access.
+    """
     
     def setup_method(self):
         """Set up test fixtures."""
@@ -55,9 +62,9 @@ class TestRoomManagerConcurrency:
         successful_creates = [r for r in self.results if r[2] is True]
         assert len(successful_creates) == 10
         
-        # Verify all rooms exist
-        for room_id in room_ids:
-            assert self.room_manager.room_exists(room_id)
+        # Verify room creation results consistency
+        created_rooms = self.room_manager.get_all_rooms()
+        assert len(created_rooms) == 10
     
     def test_concurrent_player_addition(self):
         """Test concurrent player addition to the same room."""

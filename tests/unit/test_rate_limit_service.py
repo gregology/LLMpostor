@@ -20,6 +20,7 @@ from src.services.rate_limit_service import (
 )
 from src.core.errors import ErrorCode
 from config_factory import AppConfig, Environment
+from tests.helpers.socket_mocks import create_mock_socketio, MockSocketIOTestHelper
 
 
 class TestEventQueueManager:
