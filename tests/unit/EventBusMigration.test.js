@@ -12,7 +12,7 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { setupGlobalEnvironment, cleanupDOM } from '../helpers/domMocks.js';
 
 // Mock the EventBus module before importing
-vi.mock('/Users/greg/src/LLMpostor/static/js/modules/EventBus.js', () => {
+vi.mock('../../static/js/modules/EventBus.js', () => {
   const mockEventBus = {
     publish: vi.fn(),
     subscribe: vi.fn((eventName, handler, options) => {
@@ -47,10 +47,10 @@ import {
   EventValidator,
   migrationHelper,
   eventValidator
-} from '/Users/greg/src/LLMpostor/static/js/modules/EventBusMigration.js';
+} from '../../static/js/modules/EventBusMigration.js';
 
 // Import the mocked EventBus to access in tests
-import { EventBus as mockEventBus } from '/Users/greg/src/LLMpostor/static/js/modules/EventBus.js';
+import { EventBus as mockEventBus } from '../../static/js/modules/EventBus.js';
 
 describe('EventBusMigration', () => {
   beforeEach(() => {
