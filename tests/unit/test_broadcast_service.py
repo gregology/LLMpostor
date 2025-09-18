@@ -8,6 +8,7 @@ from unittest.mock import Mock, MagicMock, patch
 from datetime import datetime
 
 from src.services.broadcast_service import BroadcastService
+from tests.helpers.socket_mocks import create_broadcast_service_mocks
 
 
 class TestBroadcastService:
@@ -15,11 +16,13 @@ class TestBroadcastService:
 
     def setup_method(self):
         """Setup test fixtures for each test"""
-        self.mock_socketio = Mock()
-        self.mock_room_manager = Mock()
-        self.mock_game_manager = Mock()
-        self.mock_error_response_factory = Mock()
-        self.mock_room_state_presenter = Mock()
+        # Use shared mock pattern
+        mocks = create_broadcast_service_mocks()
+        self.mock_socketio = mocks['socketio']
+        self.mock_room_manager = mocks['room_manager']
+        self.mock_game_manager = mocks['game_manager']
+        self.mock_error_response_factory = mocks['error_response_factory']
+        self.mock_room_state_presenter = mocks['room_state_presenter']
 
         # Create broadcast service (payload optimizer is now disabled by default)
         self.broadcast_service = BroadcastService(

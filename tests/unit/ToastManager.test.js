@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { setupMinimalDOM, cleanupDOM } from '../helpers/domMocks.js';
 
-const ToastManager = (await import('../../static/js/modules/ToastManager.js')).default || 
+const ToastManager = (await import('../../static/js/modules/ToastManager.js')).default ||
                      (await import('../../static/js/modules/ToastManager.js')).ToastManager;
 
 describe('ToastManager', () => {
@@ -9,11 +10,11 @@ describe('ToastManager', () => {
 
   beforeEach(() => {
     vi.useFakeTimers();
-    
-    // Set up DOM
-    document.body.innerHTML = '<div id="toast-container"></div>';
+
+    // Set up DOM using shared helper
+    setupMinimalDOM();
     mockContainer = document.getElementById('toast-container');
-    
+
     toastManager = new ToastManager();
   });
 
@@ -24,6 +25,7 @@ describe('ToastManager', () => {
     } else if (toastManager && typeof toastManager.clearAll === 'function') {
       toastManager.clearAll();
     }
+    cleanupDOM();
     vi.useRealTimers();
   });
 

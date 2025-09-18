@@ -7,6 +7,7 @@ import pytest
 from flask_socketio import SocketIOTestClient
 # Service imports
 from tests.migration_compat import app, socketio, room_manager, game_manager, session_service, content_manager
+from tests.helpers.room_helpers import join_room_helper, join_room_expect_error, find_event_in_received
 import time
 
 
@@ -70,43 +71,24 @@ class TestResponseContracts:
     
     def test_join_room_success_contract(self):
         """Test join_room success response contract."""
-        # Join room
-        self.client.emit('join_room', {
-            'room_id': 'test-room',
-            'player_name': 'TestPlayer'
-        })
-        
-        # Get response
-        received = self.client.get_received()
-        room_joined_response = self._find_event_in_received(received, 'room_joined')
-        
-        assert room_joined_response is not None, "Should receive room_joined event"
-        self._validate_success_response(room_joined_response)
-        
+        # Join room using helper
+        response_data = join_room_helper(self.client, 'test-room', 'TestPlayer')
+
         # Validate specific data fields for join_room
-        data = room_joined_response['data']
-        assert 'room_id' in data
-        assert 'player_id' in data
-        assert 'player_name' in data
-        assert 'message' in data
-        assert data['room_id'] == 'test-room'
-        assert data['player_name'] == 'TestPlayer'
+        assert 'room_id' in response_data
+        assert 'player_id' in response_data
+        assert 'player_name' in response_data
+        assert 'message' in response_data
+        assert response_data['room_id'] == 'test-room'
+        assert response_data['player_name'] == 'TestPlayer'
     
     def test_join_room_error_contract(self):
         """Test join_room error response contract."""
-        # Try to join with invalid data
-        self.client.emit('join_room', {
-            'room_id': '',  # Invalid empty room ID
-            'player_name': 'TestPlayer'
-        })
-        
-        # Get response
-        received = self.client.get_received()
-        error_response = self._find_event_in_received(received, 'error')
-        
-        assert error_response is not None, "Should receive error event"
+        # Try to join with invalid data using helper
+        error_response = join_room_expect_error(self.client, '', 'TestPlayer')
+
         self._validate_error_response(error_response)
-        
+
         # Validate specific error for invalid room ID
         error = error_response['error']
         assert error['code'] in ['MISSING_ROOM_ID', 'INVALID_ROOM_ID']

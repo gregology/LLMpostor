@@ -1,58 +1,21 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { simulateUserInput, simulateClick, expectElementToHaveClasses } from '../helpers/testUtils.js';
+import { setupBasicDOM } from '../helpers/domMocks.js';
 
 // Import UIManager
-const UIManager = (await import('../../static/js/modules/UIManager.js')).default || 
+const UIManager = (await import('../../static/js/modules/UIManager.js')).default ||
                   (await import('../../static/js/modules/UIManager.js')).UIManager;
 
 describe('UIManager', () => {
   let uiManager;
 
   beforeEach(() => {
-    // Reset DOM to clean state
-    document.body.innerHTML = `
-      <div id="connectionStatus"></div>
-      <div class="room-name">TestRoom</div>
-      <div id="playerCount">0</div>
-      <div id="playersList"></div>
-      <div id="roundsPlayed">0</div>
-      <div id="waitingState" class="hidden"></div>
-      <div id="responseState" class="hidden"></div>
-      <div id="guessingState" class="hidden"></div>
-      <div id="resultsState" class="hidden"></div>
-      <div id="currentPrompt"></div>
-      <div id="targetModel"></div>
-      <textarea id="responseInput" maxlength="500"></textarea>
-      <div id="charCount">0</div>
-      <button id="submitResponseBtn" disabled>
-        <span class="btn-text">Submit Response</span>
-        <span class="btn-loading hidden">Loading...</span>
-      </button>
-      <div id="responseTimer">3:00</div>
-      <div id="responseTimerBar"></div>
-      <div id="submissionCount">
-        <span class="submitted-count">0</span>/<span class="total-count">0</span>
-      </div>
-      <div id="responsesList"></div>
-      <div id="guessingTimer">2:00</div>
-      <div id="guessingTimerBar"></div>
-      <div id="guessingCount">
-        <span class="guessed-count">0</span>/<span class="total-count">0</span>
-      </div>
-      <div id="correctResponse"></div>
-      <div id="roundScoresList"></div>
-      <div id="nextRoundTimer">30</div>
-      <button id="leaveRoomBtn">Leave Room</button>
-      <button id="shareRoomBtn">Share Room</button>
-      <button id="startRoundBtn" disabled>
-        <span class="btn-text">Start Round</span>
-        <span class="btn-loading hidden">Loading...</span>
-      </button>
-    `;
+    // Set up DOM using shared helper
+    setupBasicDOM();
 
     // Mock global variables
     global.window.maxResponseLength = 500;
-    
+
     uiManager = new UIManager();
   });
 

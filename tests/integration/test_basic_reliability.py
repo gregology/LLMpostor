@@ -7,6 +7,7 @@ import pytest
 import time
 import threading
 from flask_socketio import SocketIOTestClient
+from tests.helpers.room_helpers import join_room_helper, join_room_expect_error, find_event_in_received
 
 
 class TestBasicReliability:
@@ -31,21 +32,7 @@ class TestBasicReliability:
         """Create a Socket.IO test client"""
         return SocketIOTestClient(app, socketio)
     
-    def join_room(self, client, room_id, player_name):
-        """Helper to join a room"""
-        client.emit('join_room', {
-            'room_id': room_id,
-            'player_name': player_name
-        })
-        
-        # Get the response
-        received = client.get_received()
-        if received:
-            for response in received:
-                if response['name'] == 'room_joined':
-                    return response['args'][0]['data']  # Extract data from the response
-        
-        return None
+    # Removed local join_room helper - now using shared room_helpers
 
     def test_basic_connection_handling(self, app, socketio):
         """Test basic connection and disconnection handling"""
@@ -55,7 +42,7 @@ class TestBasicReliability:
         assert client.connected
         
         # Test room joining
-        join_data = self.join_room(client, "test-room", "TestPlayer")
+        join_data = join_room_helper(client, "test-room", "TestPlayer")
         assert join_data is not None
         assert 'player_id' in join_data
         
@@ -75,7 +62,7 @@ class TestBasicReliability:
         # Join room concurrently
         def join_room_threaded(client, player_name):
             try:
-                result = self.join_room(client, "concurrent-room", player_name)
+                result = join_room_helper(client, "concurrent-room", player_name)
                 join_results.append(result)
             except Exception as e:
                 join_results.append({'error': str(e)})
@@ -120,8 +107,8 @@ class TestBasicReliability:
         client2 = self.create_test_client(app, socketio)
         
         # Both join same room
-        self.join_room(client1, "consistency-room", "Player1")
-        self.join_room(client2, "consistency-room", "Player2")
+        join_room_helper(client1, "consistency-room", "Player1")
+        join_room_helper(client2, "consistency-room", "Player2")
         
         # Clear buffers
         client1.get_received()
@@ -152,7 +139,7 @@ class TestBasicReliability:
     def test_rapid_requests_handling(self, app, socketio):
         """Test handling of rapid successive requests"""
         client = self.create_test_client(app, socketio)
-        self.join_room(client, "rapid-room", "TestPlayer")
+        join_room_helper(client, "rapid-room", "TestPlayer")
         
         # Clear initial responses
         client.get_received()
@@ -174,7 +161,7 @@ class TestBasicReliability:
     def test_error_recovery(self, app, socketio):
         """Test system recovery after errors"""
         client = self.create_test_client(app, socketio)
-        self.join_room(client, "error-room", "TestPlayer")
+        join_room_helper(client, "error-room", "TestPlayer")
         
         # Clear buffer
         client.get_received()
@@ -199,18 +186,10 @@ class TestBasicReliability:
     def test_boundary_conditions(self, app, socketio):
         """Test boundary conditions and edge cases"""
         client = self.create_test_client(app, socketio)
-        
-        # Test extremely long player name
+
+        # Test extremely long player name - should be rejected
         long_name = 'A' * 100  # Much longer than reasonable
-        join_result = self.join_room(client, "boundary-room", long_name)
-        
-        # Should either accept (with truncation) or reject gracefully
-        if join_result:
-            # If accepted, name should be reasonable length
-            assert len(join_result.get('player_name', '')) <= 50
-        else:
-            # If rejected, error was already logged. The join_room returned None which indicates rejection.
-            # This is the expected behavior for overly long names.
-            pass  # Test passes - long name was properly rejected
-        
+        error_response = join_room_expect_error(client, "boundary-room", long_name)
+        assert error_response['error']['code'] == 'PLAYER_NAME_TOO_LONG'
+
         client.disconnect()

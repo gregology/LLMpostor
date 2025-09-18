@@ -4,6 +4,7 @@
  */
 
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { createMockDocument, createMockWindow, cleanupDOM } from '../helpers/domMocks.js';
 
 // Mock all dependencies
 const mockSocketManager = {
@@ -75,9 +76,13 @@ describe('GameClient', () => {
     let consoleWarnSpy;
 
     beforeEach(() => {
+        // Setup DOM using shared helpers with customizations
+        global.document = createMockDocument();
+        global.window = createMockWindow();
+
         // Reset all mocks
         vi.clearAllMocks();
-        
+
         // Mock console methods
         originalConsole = global.console;
         consoleLogSpy = vi.fn();
@@ -88,25 +93,23 @@ describe('GameClient', () => {
             warn: consoleWarnSpy
         };
 
-        // Mock DOM
-        global.document = {
-            readyState: 'complete',
-            addEventListener: vi.fn()
-        };
-        
-        // Mock window
-        global.window = {
-            roomId: 'test-room-123'
-        };
+        // Override specific properties for GameClient needs
+        global.document.readyState = 'complete';
+        global.document.addEventListener = vi.fn();
+        global.window.roomId = 'test-room-123';
     });
 
     afterEach(() => {
         // Restore console
         global.console = originalConsole;
-        
-        // Clean up global mocks
-        delete global.document;
-        delete global.window;
+
+        // Clean up DOM using shared helper (with safety check)
+        if (global.document) {
+            cleanupDOM();
+        } else {
+            // Restore document if it was deleted in a test
+            global.document = createMockDocument();
+        }
     });
 
     describe('Constructor and Initialization', () => {

@@ -1,20 +1,36 @@
+/**
+ * Browser Environment Reliability Tests
+ *
+ * Tests for browser-specific reliability concerns including:
+ * - Tab suspension and resumption
+ * - Browser navigation and page lifecycle
+ * - DOM manipulation safety
+ * - Memory management
+ * - Performance under stress
+ * - Error recovery
+ * - Local storage reliability
+ * - Mobile-specific scenarios
+ * - Cross-browser compatibility
+ *
+ * SCOPE: Browser environment only - connection scenarios are in ConnectionIntegration.test.js
+ * FOCUS: DOM, browser APIs, lifecycle events, performance, cross-browser compatibility
+ */
+
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 
 const GameClient = (await import('../../static/js/modules/GameClient.js')).default;
-const SocketManager = (await import('../../static/js/modules/SocketManager.js')).default;
-const GameStateManager = (await import('../../static/js/modules/GameStateManager.js')).default;
 const { EventBus } = await import('../../static/js/modules/EventBus.js');
 
 describe('Browser Environment Reliability', () => {
     let gameClient;
     let mockSocket;
-    
+
     beforeEach(() => {
         // Set test environment flag
         global.window = global.window || {};
         global.window.isTestEnvironment = true;
-        
-        // Mock Socket.IO
+
+        // Mock Socket.IO (minimal for browser environment testing)
         mockSocket = {
             on: vi.fn(),
             emit: vi.fn(),
@@ -23,10 +39,10 @@ describe('Browser Environment Reliability', () => {
             connected: true,
             id: 'test-socket-id'
         };
-        
+
         global.io = vi.fn(() => mockSocket);
-        
-        // Mock DOM elements
+
+        // Mock DOM elements needed for browser environment tests
         document.body.innerHTML = `
             <div id="connectionStatus"></div>
             <div id="playerCount"></div>
@@ -35,22 +51,22 @@ describe('Browser Environment Reliability', () => {
             <button id="submitResponseBtn"></button>
             <button id="startRoundBtn"></button>
         `;
-        
+
         global.window.roomId = 'test-room';
         global.window.maxResponseLength = 100;
-        
+
         gameClient = new GameClient();
     });
-    
+
     afterEach(() => {
-        // Clean up test environment flag
         if (global.window) {
             delete global.window.isTestEnvironment;
         }
-        
+
         EventBus.clear();
         vi.clearAllMocks();
         vi.clearAllTimers();
+        vi.useRealTimers();
     });
 
     describe('Tab Suspension and Resumption', () => {
@@ -165,52 +181,6 @@ describe('Browser Environment Reliability', () => {
         });
     });
 
-    describe('Connection Resilience', () => {
-        it('should handle sudden connection drops', () => {
-            const disconnectHandler = vi.fn();
-            mockSocket.on.mockImplementation((event, handler) => {
-                if (event === 'disconnect') {
-                    disconnectHandler.mockImplementation(handler);
-                }
-            });
-            
-            // Initialize socket manager
-            const socketManager = new SocketManager();
-            socketManager.initialize();
-            
-            // Simulate sudden disconnect
-            mockSocket.connected = false;
-            disconnectHandler();
-            
-            expect(socketManager.isConnected).toBe(false);
-        });
-
-        it('should attempt reconnection after disconnect', () => {
-            vi.useFakeTimers();
-            
-            const socketManager = new SocketManager();
-            socketManager.initialize();
-            
-            // Reset the spy count after initialization
-            global.io.mockClear();
-            
-            // Temporarily disable test environment to allow reconnection
-            global.window.isTestEnvironment = false;
-            
-            // Simulate disconnect
-            mockSocket.connected = false;
-            socketManager._handleDisconnect('transport close');
-            
-            // Fast-forward time to trigger reconnection attempt
-            vi.advanceTimersByTime(2000);
-            
-            expect(global.io).toHaveBeenCalledTimes(1); // One reconnection attempt
-            
-            // Restore test environment
-            global.window.isTestEnvironment = true;
-            vi.useRealTimers();
-        });
-    });
 
     describe('DOM Manipulation Safety', () => {
         it('should handle missing DOM elements gracefully', () => {
@@ -446,33 +416,6 @@ describe('Browser Environment Reliability', () => {
         });
     });
 
-    describe('Network Status Changes', () => {
-        it('should handle online/offline events', () => {
-            const onlineHandler = vi.fn();
-            const offlineHandler = vi.fn();
-            
-            window.addEventListener('online', onlineHandler);
-            window.addEventListener('offline', offlineHandler);
-            
-            // Simulate going offline
-            Object.defineProperty(navigator, 'onLine', {
-                value: false,
-                writable: true
-            });
-            window.dispatchEvent(new Event('offline'));
-            
-            expect(offlineHandler).toHaveBeenCalled();
-            
-            // Simulate coming back online
-            Object.defineProperty(navigator, 'onLine', {
-                value: true,
-                writable: true
-            });
-            window.dispatchEvent(new Event('online'));
-            
-            expect(onlineHandler).toHaveBeenCalled();
-        });
-    });
 
     describe('Cross-Browser Compatibility', () => {
         it('should handle different event implementations', () => {
@@ -491,19 +434,21 @@ describe('Browser Environment Reliability', () => {
             expect(customEvent.type).toBe('test:custom');
         });
 
-        it('should handle different WebSocket implementations', () => {
-            const originalWebSocket = global.WebSocket;
-            
-            // Mock WebSocket unavailable
-            delete global.WebSocket;
-            
-            // Should fall back to polling or handle gracefully
+        it('should handle different browser APIs gracefully', () => {
+            // Test handling of APIs that might not exist in all browsers
+            const originalRequestAnimationFrame = window.requestAnimationFrame;
+
+            // Mock API unavailability
+            delete window.requestAnimationFrame;
+
+            // Should provide fallback or handle gracefully
             expect(() => {
-                const socketManager = new SocketManager();
-                socketManager.initialize();
+                // Test a function that might use requestAnimationFrame
+                gameClient.uiManager.updateConnectionStatus('connected', 'Connected');
             }).not.toThrow();
-            
-            global.WebSocket = originalWebSocket;
+
+            // Restore API
+            window.requestAnimationFrame = originalRequestAnimationFrame;
         });
     });
 });

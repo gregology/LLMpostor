@@ -1,8 +1,16 @@
+/**
+ * ConnectionReliability Unit Tests
+ *
+ * SCOPE: Unit testing of ConnectionReliability utility class only
+ * FOCUS: Connection timeout, heartbeat intervals, recovery backoff algorithms
+ * INTEGRATION: See ConnectionIntegration.test.js for full connection stack testing
+ */
+
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 
 const ConnectionReliability = (await import('../../static/js/modules/connection/ConnectionReliability.js')).default;
 
-describe('ConnectionReliability', () => {
+describe('ConnectionReliability (Unit)', () => {
   let rel;
 
   beforeEach(() => {
