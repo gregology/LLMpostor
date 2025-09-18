@@ -45,7 +45,7 @@ class AppConfig:
     
     # Auto Game Flow settings
     game_flow_check_interval: int = 1  # seconds between checks
-    countdown_broadcast_interval: int = 10  # seconds between countdown updates
+    countdown_broadcast_interval: int = 15  # seconds between countdown updates
     room_status_broadcast_interval: int = 60  # seconds between room status broadcasts
     warning_threshold_seconds: int = 30  # seconds for first warning
     final_warning_threshold_seconds: int = 10  # seconds for final warning
@@ -55,8 +55,8 @@ class AppConfig:
     max_events_per_client_queue: int = 50  # max events in client queue
     max_events_rate_tracking: int = 100  # max events for rate tracking
     max_global_events_tracking: int = 1000  # max global events to track
-    max_events_per_second: int = 10  # max events per client per second
-    max_events_per_minute: int = 100  # max events per client per minute
+    max_events_per_second: int = 15  # max events per client per second
+    max_events_per_minute: int = 150  # max events per client per minute
     rate_limit_window_seconds: int = 60  # time window for rate calculations
     request_dedup_window_seconds: float = 1.0  # request deduplication window in seconds
     
@@ -67,8 +67,8 @@ class AppConfig:
     prompts_file: str = 'prompts.yaml'
     
     # Gunicorn settings (for production deployment)
-    worker_connections: int = 1000
-    timeout: int = 30
+    worker_connections: int = 2000
+    timeout: int = 60
     keepalive: int = 2
     log_level: str = 'info'
     

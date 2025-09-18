@@ -44,8 +44,8 @@ timeout = app_config.timeout
 keepalive = app_config.keepalive
 
 # Restart workers after this many requests, to help prevent memory leaks
-max_requests = 1000
-max_requests_jitter = 50
+max_requests = 2000
+max_requests_jitter = 100
 
 # Logging
 accesslog = "-"
